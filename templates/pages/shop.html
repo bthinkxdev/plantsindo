@@ -1,0 +1,441 @@
+﻿{% extends "base.html" %}
+{% load static %}{% load product_filters %}
+{% block title %}{{ page_title|default:"Shop" }} — {{ site_brand }}{% endblock %}
+{% block content %}
+<div class="shop-page">
+<section class="section-pad pt-0">
+    <div class="container px-0 px-md-3">
+
+        <nav class="shop-breadcrumb" aria-label="Breadcrumb">
+            <a href="{% url 'store:home' %}">Home</a>
+            <span class="shop-breadcrumb__sep" aria-hidden="true">/</span>
+            {% if selected_category %}
+            <span class="shop-breadcrumb__current">{{ selected_category.name }}</span>
+            {% else %}
+            <span class="shop-breadcrumb__current">{{ page_title|default:"Shop" }}</span>
+            {% endif %}
+        </nav>
+
+        {% if shop_category_banner %}
+        <div class="shop-category-hero">
+            <img src="{{ shop_category_banner.url }}" class="shop-category-hero__img" width="1600" height="600" decoding="async" loading="lazy" alt="{% if selected_category %}{{ selected_category.name }}{% else %}Category{% endif %}">
+            {% if shop_category_banner.tagline %}
+            <div class="shop-category-hero__overlay">
+                <p class="shop-category-hero__tagline">{{ shop_category_banner.tagline }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <header class="shop-head">
+            <h1 class="shop-head__title">{{ page_title|default:"Shop" }}</h1>
+        </header>
+
+        <div class="shop-toolbar">
+            <button type="button" class="shop-pill-btn" id="filterToggleBtn">
+                <i class="fas fa-sliders-h"></i> Filter
+            </button>
+            <div class="shop-toolbar__right">
+                <span class="results-count shop-toolbar__count">
+                    {% with n=total_product_count|default:0 %}
+                    <strong>{{ n }}</strong> product{{ n|pluralize }}
+                    {% endwith %}
+                </span>
+                <form method="get" action="{% url 'store:product_list' %}" id="shopFilters" class="shop-sort-wrap m-0">
+                    <input type="hidden" name="category" value="{{ filters.category|default:'all' }}">
+                    <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+                    <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+                    <input type="hidden" name="q" value="{{ filters.q }}">
+                    {% if filters.combo %}<input type="hidden" name="combo" value="{{ filters.combo }}">{% endif %}
+                    <label class="visually-hidden" for="shopSortSelect">Sort by</label>
+                    <select name="sort" id="shopSortSelect" onchange="this.form.submit()">
+                        {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if filters.sort == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+
+        <div class="wow fadeInUp" data-wow-delay="0.2s" id="shopProductGrid">
+
+            {# ── Page 1 cards rendered by Django on first load ── #}
+            {% for card in card_items %}
+                {% if card.kind == 'combo' %}
+                {% with c=card.combo %}
+                <div class="product-card">
+                    <div class="product-img-wrap">
+                        {% if c.original_price and c.original_price > c.price %}
+                        <span class="product-badge badge-sale">{{ c.discount_percent }}% OFF</span>
+                        {% endif %}
+                        <a href="{% url 'store:combo_detail' c.slug %}">
+                            {% if c.image %}
+                            <img src="{{ c.image.url }}" alt="{{ c.name }}" loading="lazy">
+                            {% else %}
+                            <img src="{% static 'img/product-1.png' %}" alt="{{ c.name }}" loading="lazy">
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="product-body">
+                        <div class="product-category">Bundle</div>
+                        <a href="{% url 'store:combo_detail' c.slug %}" class="text-decoration-none"><h3 class="product-name">{{ c.name }}</h3></a>
+                        <div class="product-price">
+                            <span class="price-current">₹{{ c.price|floatformat:0 }}</span>
+                            {% if c.original_price and c.original_price > c.price %}
+                            <span class="price-old">₹{{ c.original_price|floatformat:0 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-add-form">
+                            <a href="{% url 'store:combo_detail' c.slug %}" class="product-cta border-0 text-decoration-none">View product</a>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+                {% elif card.kind == 'variant' %}
+                {% with variant=card.variant is_jewellery=card.is_jewellery %}
+                {% if not is_jewellery %}
+                <div class="product-card">
+                    <div class="product-img-wrap">
+                        {% if variant.original_price and variant.original_price > variant.price %}
+                        <span class="product-badge badge-sale">{{ variant.discount_percent }}% OFF</span>
+                        {% endif %}
+                        {% include "partials/_rating_pill.html" with product=variant.product %}
+                        <a href="{% url 'store:product_detail' variant.product.slug %}?variant={{ variant.id }}">
+                            {% with imgs=variant.images.all %}
+                            {% if imgs %}
+                            <img src="{{ imgs.0.image.url }}" alt="{{ variant.product.name }}" loading="lazy">
+                            {% else %}
+                            <img src="{% static 'img/product-1.png' %}" alt="{{ variant.product.name }}" loading="lazy">
+                            {% endif %}
+                            {% endwith %}
+                        </a>
+                    </div>
+                    <div class="product-body">
+                        <a href="{% url 'store:product_detail' variant.product.slug %}?variant={{ variant.id }}" class="text-decoration-none">
+                            <h3 class="product-name">{{ variant.product.name }}</h3>
+                        </a>
+                        {% with p=variant.product %}
+                        {% if p.beginner_friendly or p.air_purifying or p.office_friendly or p.low_maintenance %}
+                        <div class="p99-tag-row">
+                            {% if p.beginner_friendly %}<span class="p99-mini-tag p99-mini-tag--y">Easy care</span>{% endif %}
+                            {% if p.air_purifying %}<span class="p99-mini-tag p99-mini-tag--b">Air purifying</span>{% endif %}
+                            {% if p.office_friendly %}<span class="p99-mini-tag p99-mini-tag--o">Desk friendly</span>{% endif %}
+                            {% if p.low_maintenance %}<span class="p99-mini-tag p99-mini-tag--g">Low maintenance</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <div class="product-price">
+                            <span class="price-current">₹{{ variant.price|floatformat:0 }}</span>
+                            {% if variant.original_price and variant.original_price > variant.price %}
+                            <span class="price-old">₹{{ variant.original_price|floatformat:0 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-add-form">
+                            <a href="{% url 'store:product_detail' variant.product.slug %}?variant={{ variant.id }}" class="product-cta border-0 text-decoration-none">View product</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endwith %}
+                {% endif %}
+            {% endfor %}
+
+            {% for product in simple_products %}
+            <div class="product-card">
+                <div class="product-img-wrap">
+                    {% if product.discount_percent %}<span class="product-badge badge-sale">{{ product.discount_percent }}% OFF</span>{% endif %}
+                    {% include "partials/_rating_pill.html" with product=product %}
+                    <a href="{% url 'store:product_detail' product.slug %}">
+                        {% with imgs=product.images.all %}
+                        {% if imgs %}
+                        <img src="{{ imgs.0.image.url }}" alt="{{ product.name }}" loading="lazy">
+                        {% else %}
+                        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy">
+                        {% endif %}
+                        {% endwith %}
+                    </a>
+                </div>
+                <div class="product-body">
+                    <a href="{% url 'store:product_detail' product.slug %}" class="text-decoration-none">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                    </a>
+                    {% if product.beginner_friendly or product.air_purifying or product.office_friendly or product.low_maintenance %}
+                    <div class="p99-tag-row">
+                        {% if product.beginner_friendly %}<span class="p99-mini-tag p99-mini-tag--y">Easy care</span>{% endif %}
+                        {% if product.air_purifying %}<span class="p99-mini-tag p99-mini-tag--b">Air purifying</span>{% endif %}
+                        {% if product.office_friendly %}<span class="p99-mini-tag p99-mini-tag--o">Desk friendly</span>{% endif %}
+                        {% if product.low_maintenance %}<span class="p99-mini-tag p99-mini-tag--g">Low maintenance</span>{% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="product-price">
+                        {% if product.base_price %}
+                        <span class="price-current">₹{{ product.base_price|floatformat:0 }}</span>
+                        {% else %}
+                        <span class="price-current">Price on request</span>
+                        {% endif %}
+                        {% if product.base_original_price and product.base_original_price > product.base_price %}
+                        <span class="price-old">₹{{ product.base_original_price|floatformat:0 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="product-add-form">
+                        <a href="{% url 'store:product_detail' product.slug %}" class="product-cta border-0 text-decoration-none">View product</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not card_items and not simple_products %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">No products found. Try adjusting filters.</p>
+                <a href="{% url 'store:product_list' %}" class="btn btn-outline-dark">Clear filters</a>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <div id="shopScrollSentinel" aria-hidden="true" style="height:1px;"></div>
+
+        {# 2. Loading spinner — shown while a fetch is in-flight #}
+        <div id="shopLoadingState" class="shop-infinite-state" style="display:none;" aria-live="polite" aria-label="Loading more products">
+            <div class="shop-spinner">
+                <span></span><span></span><span></span>
+            </div>
+            <p class="shop-infinite-state__text">Loading more plants…</p>
+        </div>
+
+        {# 3. End message — shown when all pages are exhausted #}
+        <div id="shopEndState" class="shop-infinite-state" style="display:none;" aria-live="polite">
+            <div class="shop-end-divider">
+                <span class="shop-end-divider__leaf">🌿</span>
+            </div>
+            <p class="shop-infinite-state__text shop-infinite-state__text--end">You've seen all our plants!</p>
+        </div>
+
+    </div>
+</section>
+
+{% include "partials/_filters.html" %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+/* ── Infinite scroll state UI ── */
+.shop-infinite-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 32px 16px 48px;
+    text-align: center;
+}
+.shop-infinite-state__text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #888;
+    letter-spacing: 0.02em;
+}
+.shop-infinite-state__text--end {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Three-dot bounce loader */
+.shop-spinner {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.shop-spinner span {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3a7d44; /* match your brand green — tweak this */
+    animation: shopDotBounce 1s ease-in-out infinite;
+}
+.shop-spinner span:nth-child(2) { animation-delay: 0.15s; }
+.shop-spinner span:nth-child(3) { animation-delay: 0.30s; }
+@keyframes shopDotBounce {
+    0%, 80%, 100% { transform: translateY(0);   opacity: 0.4; }
+    40%            { transform: translateY(-8px); opacity: 1;   }
+}
+
+/* End divider leaf */
+.shop-end-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 260px;
+    color: #ddd;
+}
+.shop-end-divider::before,
+.shop-end-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e0e0e0;
+}
+.shop-end-divider__leaf {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+/* Smooth card pop-in for newly appended items */
+@keyframes shopCardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.product-card--animate-in {
+    animation: shopCardIn 0.35s ease forwards;
+}
+</style>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── Filter offcanvas (unchanged from original) ── */
+    var btn       = document.getElementById('filterToggleBtn');
+    var closeBtn  = document.getElementById('filterCloseBtn');
+    var offcanvas = document.getElementById('filterOffcanvas');
+    var overlay   = document.getElementById('filterOverlay');
+
+    function openFilter()  { offcanvas && offcanvas.classList.add('open');    overlay && overlay.classList.add('open'); }
+    function closeFilter() { offcanvas && offcanvas.classList.remove('open'); overlay && overlay.classList.remove('open'); }
+
+    if (btn)      btn.addEventListener('click', openFilter);
+    if (closeBtn) closeBtn.addEventListener('click', closeFilter);
+    if (overlay)  overlay.addEventListener('click', closeFilter);
+
+
+    /* ── Infinite Scroll ── */
+
+    var grid      = document.getElementById('shopProductGrid');
+    var sentinel  = document.getElementById('shopScrollSentinel');
+    var loader    = document.getElementById('shopLoadingState');
+    var endMsg    = document.getElementById('shopEndState');
+
+    /*
+        nextPage  : which page number to fetch next  (starts at 2, page 1 is already rendered by Django)
+        isFetching: guard flag — prevents duplicate requests if user scrolls fast
+        isDone    : once True, observer is disconnected, nothing more to load
+    */
+    var nextPage   = 2;
+    var isFetching = false;
+    var isDone     = {% if page_obj and page_obj.has_next %}false{% else %}true{% endif %};
+
+    /* If page 1 already has everything, show end message immediately */
+    if (isDone && grid && (grid.children.length > 0)) {
+        endMsg && (endMsg.style.display = 'flex');
+    }
+
+    /*
+        buildUrl()
+        Reads ALL active filters from the URL search params (set by the filter
+        form / sort form) and appends the page number. This means infinite scroll
+        always respects whatever filters/sort the user has applied.
+    */
+    function buildUrl(page) {
+        var sp = new URLSearchParams(window.location.search);
+        sp.set('page', page);
+        return window.location.pathname + '?' + sp.toString();
+    }
+
+    /* Animate new cards that were just injected */
+    function animateNewCards(container, newHtml) {
+        var temp = document.createElement('div');
+        temp.innerHTML = newHtml;
+
+        var newCards = Array.from(temp.querySelectorAll('.product-card'));
+
+        newCards.forEach(function (card, i) {
+            card.classList.add('product-card--animate-in');
+            /* stagger each card by 40ms so they ripple in */
+            card.style.animationDelay = (i * 40) + 'ms';
+        });
+
+        /* Move nodes from temp into the real grid */
+        while (temp.firstChild) {
+            container.appendChild(temp.firstChild);
+        }
+    }
+
+    function fetchNextPage() {
+        if (isFetching || isDone) return;
+
+        isFetching = true;
+        loader && (loader.style.display = 'flex');
+
+        var url = buildUrl(nextPage);
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'   /* triggers the fragment response in your view */
+            }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Network error ' + response.status);
+            /* Custom header set by the view to tell us if more pages exist */
+            var hasNext = response.headers.get('X-Has-Next-Page');
+            return response.text().then(function (html) {
+                return { html: html, hasNext: hasNext };
+            });
+        })
+        .then(function (data) {
+            loader && (loader.style.display = 'none');
+
+            var trimmed = data.html.trim();
+
+            if (trimmed) {
+                animateNewCards(grid, trimmed);
+                nextPage++;
+            }
+
+            /*
+                Decide if we're done:
+                - Server said no more pages via header, OR
+                - The response was empty HTML (no products)
+            */
+            if (data.hasNext === 'false' || !trimmed) {
+                isDone = true;
+                observer.disconnect();
+                endMsg && (endMsg.style.display = 'flex');
+            }
+        })
+        .catch(function (err) {
+            loader && (loader.style.display = 'none');
+            console.error('Infinite scroll fetch failed:', err);
+            /*
+                On error we stop trying automatically — avoids a
+                loop of failing requests on a slow connection.
+                The user can still filter/reload to retry.
+            */
+            isDone = true;
+            observer.disconnect();
+        })
+        .finally(function () {
+            isFetching = false;
+        });
+    }
+
+    var observer = new IntersectionObserver(
+        function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    fetchNextPage();
+                }
+            });
+        },
+        { rootMargin: '200px', threshold: 0 }
+    );
+
+    if (sentinel && !isDone) {
+        observer.observe(sentinel);
+    }
+
+}());
+</script>
+{% endblock %}

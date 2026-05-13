@@ -1,0 +1,9 @@
+{% load static %}
+{% if product.total_reviews %}
+<div class="p99-rating-pill">
+    <span class="p99-star" aria-hidden="true">★</span>
+    <span>{{ product.average_rating|floatformat:1 }}</span>
+    <span class="p99-divider" aria-hidden="true"></span>
+    <span>{{ product.total_reviews }}</span>
+</div>
+{% endif %}

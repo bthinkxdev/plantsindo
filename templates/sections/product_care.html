@@ -1,0 +1,22 @@
+{% if product.sunlight or product.watering or product.maintenance_notes or product.care_instructions %}
+<section class="pdp-section pdp-care pdp-card border rounded-2 p-4 mb-4" id="pdp-care">
+    <h2 class="h5 mb-3">Care guide</h2>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="text-muted small text-uppercase">Sunlight</div>
+            <div class="fw-semibold">{{ product.get_sunlight_display }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small text-uppercase">Watering</div>
+            <div class="fw-semibold">{{ product.get_watering_display }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-muted small text-uppercase">Maintenance</div>
+            <div class="fw-semibold">{% if product.maintenance_notes %}{{ product.maintenance_notes|linebreaksbr }}{% else %}—{% endif %}</div>
+        </div>
+    </div>
+    {% if product.care_instructions %}
+    <div class="mt-3 small text-secondary border-top pt-3">{{ product.care_instructions|linebreaks }}</div>
+    {% endif %}
+</section>
+{% endif %}

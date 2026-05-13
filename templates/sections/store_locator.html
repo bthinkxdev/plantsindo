@@ -1,0 +1,72 @@
+{% load static %}
+<section class="p99-store-locator" id="store-locator" aria-label="Visit our stores">
+    <div class="section-container">
+        <div class="p99-store-head">
+            <p class="section-kicker">Experience centers</p>
+            <h2 class="product-section-title">Visit {{ site_brand }}</h2>
+        </div>
+        <div class="p99-store-tabs" role="tablist">
+            <button type="button" class="p99-store-tab is-active" role="tab" aria-selected="true" data-panel="delhi">Delhi – NCR</button>
+            <button type="button" class="p99-store-tab" role="tab" aria-selected="false" data-panel="blr">Bengaluru</button>
+            <button type="button" class="p99-store-tab" role="tab" aria-selected="false" data-panel="mum">Mumbai</button>
+            <button type="button" class="p99-store-tab" role="tab" aria-selected="false" data-panel="pune">Pune</button>
+        </div>
+        <div class="p99-store-panel is-active" data-panel="delhi" role="tabpanel">
+            <div class="p99-stores-grid">
+                <div class="p99-store-card">
+                    <div class="p99-store-card__img"></div>
+                    <a href="{% url 'store:contact' %}" class="p99-store-card__btn">Get directions <span aria-hidden="true">›</span></a>
+                </div>
+                <div class="p99-store-card">
+                    <div class="p99-store-card__img"></div>
+                    <a href="{% url 'store:contact' %}" class="p99-store-card__btn">Get directions <span aria-hidden="true">›</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="p99-store-panel" data-panel="blr" role="tabpanel" hidden>
+            <div class="p99-stores-grid">
+                <div class="p99-store-card">
+                    <div class="p99-store-card__img"></div>
+                    <a href="{% url 'store:contact' %}" class="p99-store-card__btn">Get directions <span aria-hidden="true">›</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="p99-store-panel" data-panel="mum" role="tabpanel" hidden>
+            <div class="p99-stores-grid">
+                <div class="p99-store-card">
+                    <div class="p99-store-card__img"></div>
+                    <a href="{% url 'store:contact' %}" class="p99-store-card__btn">Get directions <span aria-hidden="true">›</span></a>
+                </div>
+            </div>
+        </div>
+        <div class="p99-store-panel" data-panel="pune" role="tabpanel" hidden>
+            <div class="p99-stores-grid">
+                <div class="p99-store-card">
+                    <div class="p99-store-card__img"></div>
+                    <a href="{% url 'store:contact' %}" class="p99-store-card__btn">Get directions <span aria-hidden="true">›</span></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<script>
+(function(){
+    var root = document.getElementById('store-locator');
+    if (!root) return;
+    var tabs = root.querySelectorAll('.p99-store-tab');
+    var panels = root.querySelectorAll('.p99-store-panel');
+    tabs.forEach(function(tab){
+        tab.addEventListener('click', function(){
+            var id = tab.getAttribute('data-panel');
+            tabs.forEach(function(t){ t.classList.remove('is-active'); t.setAttribute('aria-selected','false'); });
+            tab.classList.add('is-active');
+            tab.setAttribute('aria-selected','true');
+            panels.forEach(function(p){
+                var on = p.getAttribute('data-panel') === id;
+                p.classList.toggle('is-active', on);
+                if (on) p.removeAttribute('hidden'); else p.setAttribute('hidden','');
+            });
+        });
+    });
+})();
+</script>

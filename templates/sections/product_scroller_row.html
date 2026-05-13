@@ -1,0 +1,57 @@
+{% load static %}
+{% if products %}
+<section class="p99-reels-section{% if section_modifier %} {{ section_modifier }}{% endif %}{% if section_banner_image %} p99-reels-section--banner-top{% endif %}{% if section_badge_text %} p99-reels-section--badge-nav{% endif %}" {% if section_id %}id="{{ section_id }}"{% endif %} {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}>
+    <div class="section-container">
+        {% if section_banner_image %}
+        {% if section_badge_text %}
+        <span class="p99-reels-section__badge">{{ section_badge_text }}</span>
+        {% endif %}
+        {% if section_badge_text and view_all_url %}
+        <a href="{{ view_all_url }}" class="link-view-all p99-reels-section__view-all-nav">View all</a>
+        {% endif %}
+        <a href="{{ section_banner_link|default:view_all_url|default:'#' }}" class="product-section-banner-link p99-reels-section__banner-link"{% if section_banner_aria %} aria-label="{{ section_banner_aria }}"{% endif %}>
+            <img
+                src="{% static section_banner_image %}"
+                alt=""
+                class="product-section-banner-img"
+                width="1200"
+                height="320"
+                loading="lazy"
+                decoding="async">
+        </a>
+        {% elif intro_kicker or intro_subtitle %}
+        <div class="p99-reels-intro">
+            <div class="p99-rich-band__inner">
+                {% if intro_kicker %}<p class="p99-rich-band__kicker">{{ intro_kicker }}</p>{% endif %}
+                {% if row_title %}<h2 class="p99-rich-band__title">{{ row_title }}</h2>{% endif %}
+                {% if intro_subtitle %}<p class="p99-rich-band__sub">{{ intro_subtitle }}</p>{% endif %}
+                {% if intro_cta_label and intro_cta_url or view_all_url %}
+                <div class="p99-reels-intro__actions">
+                    {% if intro_cta_label and intro_cta_url %}
+                    <a href="{{ intro_cta_url }}" class="btn-store btn-store--light p99-rich-band__cta">{{ intro_cta_label }}</a>
+                    {% endif %}
+                    {% if view_all_url %}
+                    <a href="{{ view_all_url }}" class="link-view-all">View all</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% elif row_title %}
+        <div class="p99-reels-head">
+            <h2 class="p99-reels-title">{{ row_title }}</h2>
+            {% if view_all_url %}
+            <a href="{{ view_all_url }}" class="link-view-all">View all</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        <div class="p99-reels-scroll">
+            {% for product in products %}
+            <div class="p99-reels-card">
+                {% include "partials/_product_card.html" with product=product compact=1 %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}

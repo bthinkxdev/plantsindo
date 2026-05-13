@@ -1,0 +1,10 @@
+{% if product.whats_in_box_items.count %}
+<section class="pdp-section pdp-box pdp-card border rounded-2 p-4 mb-4" id="pdp-box">
+    <h2 class="h5 mb-3">What&rsquo;s in the box</h2>
+    <ul class="mb-0 ps-3">
+        {% for item in product.whats_in_box_items.all %}
+        <li><span class="fw-semibold">{{ item.label }}</span>{% if item.detail %}: {{ item.detail }}{% endif %}</li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}

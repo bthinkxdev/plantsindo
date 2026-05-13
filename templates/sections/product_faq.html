@@ -1,0 +1,19 @@
+{% if product.faqs.count %}
+<section class="pdp-section pdp-faq mb-4" id="pdp-faq">
+    <h2 class="h5 mb-3">Frequently asked questions</h2>
+    <div class="accordion" id="pdpFaqAccordion">
+        {% for faq in product.faqs.all %}
+        <div class="accordion-item">
+            <h3 class="accordion-header" id="faqHead{{ faq.id }}">
+                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#faqCol{{ faq.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="faqCol{{ faq.id }}">
+                    {{ faq.question }}
+                </button>
+            </h3>
+            <div id="faqCol{{ faq.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#pdpFaqAccordion" aria-labelledby="faqHead{{ faq.id }}">
+                <div class="accordion-body">{{ faq.answer|linebreaks }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

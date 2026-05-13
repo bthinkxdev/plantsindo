@@ -1,0 +1,52 @@
+{% load static %}
+<div class="col-lg-6 gallery-section">
+    <div class="gallery-main-wrap">
+        <div class="gallery-main wow fadeInLeft" data-wow-delay="0.1s">
+            {% if selected_variant %}
+                {% with imgs=selected_variant.images.all %}
+                {% if imgs %}
+                <img id="mainProductImg" src="{{ imgs.0.image.url }}" alt="{{ product.name }}">
+                {% else %}
+                <img id="mainProductImg" src="{% static 'img/product-1.png' %}" alt="{{ product.name }}">
+                {% endif %}
+                {% endwith %}
+            {% elif product.is_simple_product and product_display_image_urls %}
+                <img id="mainProductImg" src="{{ product_display_image_urls.0 }}" alt="{{ product.name }}">
+            {% else %}
+                <img id="mainProductImg" src="{% static 'img/product-1.png' %}" alt="{{ product.name }}">
+            {% endif %}
+        </div>
+        {% if WISHLIST_ENABLED %}
+        <button type="button"
+                id="productWishlistBtn"
+                class="pdp-wishlist-btn js-wishlist-toggle {% if selected_variant and selected_variant.id in wishlist_variant_ids %}in-wishlist{% elif product.is_simple_product and product.id in wishlist_product_ids %}in-wishlist{% endif %}"
+                {% if product.is_simple_product %}data-product-id="{{ product.id }}"{% else %}data-variant-id="{{ selected_variant.id|default:'' }}"{% endif %}
+                aria-label="Add to wishlist"
+                title="Add to wishlist">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+        </button>
+        {% endif %}
+    </div>
+    <div class="gallery-thumbs mt-3">
+        {% if selected_variant %}
+            {% for img in selected_variant.images.all %}
+            <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
+                <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy" data-full="{{ img.image.url }}">
+            </div>
+            {% endfor %}
+        {% elif product.is_simple_product and product_display_image_urls %}
+            {% for url in product_display_image_urls %}
+            <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
+                <img src="{{ url }}" alt="{{ product.name }}" loading="lazy" data-full="{{ url }}">
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% if product.video_url %}
+    <div class="pdp-video mt-3">
+        <a href="{{ product.video_url }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener noreferrer">Watch product video</a>
+    </div>
+    {% endif %}
+</div>

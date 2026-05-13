@@ -1,0 +1,25 @@
+{% load static %}
+{% if banners and banners|length > 1 %}
+<section class="p99-hero-secondary-wrap" aria-label="Featured banners">
+    <div class="hero-section p99-hero-secondary-inner">
+        <div class="header-carousel owl-carousel">
+            {% for banner in banners %}
+            {% if not forloop.first %}
+            <div class="hero-carousel-item">
+                <div class="hero-carousel-item__surface">
+                    {% if banner.redirect_url %}
+                    <a href="{{ banner.redirect_url }}" class="hero-carousel-item__link d-block">
+                    {% endif %}
+                        <img src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}" class="hero-full-img" loading="lazy">
+                    {% if banner.redirect_url %}
+                    </a>
+                    {% endif %}
+                    <div class="hero-media-cover" aria-hidden="true"></div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}

@@ -1,0 +1,70 @@
+{% if REVIEW_ENABLED %}
+<section class="pdp-section pdp-reviews" id="pdp-reviews">
+    <h2 class="h5 mb-3">Customer reviews {% if total_reviews %}({{ total_reviews }}){% endif %}</h2>
+
+    {% if average_rating is not None %}
+    <div class="pdp-review-summary mb-4 p-3 border rounded-2">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <div class="fs-3 fw-bold">{{ average_rating|floatformat:1 }}</div>
+            <div>
+                <div class="stars">{% for i in "12345" %}<span class="{% if forloop.counter <= average_rating %}star-full{% else %}star-empty{% endif %}">&#9733;</span>{% endfor %}</div>
+                <div class="small text-muted">Based on {{ total_reviews }} review{{ total_reviews|pluralize }}</div>
+            </div>
+        </div>
+        {% if rating_breakdown_rows %}
+        <ul class="list-unstyled small mb-0 mt-3">
+            {% for row in rating_breakdown_rows %}
+            <li class="d-flex align-items-center gap-2"><span>{{ row.star }}★</span><span class="flex-grow-1 bg-light rounded-pill" style="height:6px;max-width:180px;"><span class="d-block bg-dark rounded-pill" style="height:6px;width:{{ row.percent }}%;"></span></span><span class="text-muted">{{ row.count }}</span></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if reviews %}
+    <div class="pdp-review-list">
+        {% for review in reviews %}
+        <article class="review-card mb-3 p-3 border rounded-2">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div class="fw-semibold">{{ review.user.get_full_name|default:review.user.email }}</div>
+                <time class="small text-muted" datetime="{{ review.created_at|date:'c' }}">{{ review.created_at|date }}</time>
+            </div>
+            <div class="review-stars small my-1">{% for i in "12345" %}<span class="{% if forloop.counter <= review.rating %}star-full{% else %}star-empty{% endif %}">&#9733;</span>{% endfor %}</div>
+            {% if review.title %}<div class="fw-semibold">{{ review.title }}</div>{% endif %}
+            <p class="mb-0 text-secondary">{{ review.comment }}</p>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if can_review %}
+    <div class="mt-4 p-3 border rounded-2">
+        <h3 class="h6 mb-3">Write a review</h3>
+        <form id="reviewForm" action="{% url 'store:product_review_create' product.id %}" method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold d-block">Rating <span class="text-danger">*</span></label>
+                <div class="d-flex gap-1 mt-1">
+                    {% for i in "12345" %}
+                    <button type="button" class="star-btn btn btn-link p-0 text-decoration-none" data-value="{{ forloop.counter }}" style="font-size:1.75rem;line-height:1;color:#ddd;">&#9733;</button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="rating" id="reviewRating">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Title <span class="text-muted fw-normal small">(optional)</span></label>
+                <input type="text" name="title" class="form-control" placeholder="Summarise your experience" maxlength="200">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Review <span class="text-muted fw-normal small">(optional)</span></label>
+                <textarea name="comment" class="form-control" rows="4" placeholder="Share your thoughts…"></textarea>
+            </div>
+            <button type="submit" class="btn btn-dark px-4" id="reviewSubmitBtn">Submit review</button>
+            <span id="reviewMsg" class="ms-3 small"></span>
+        </form>
+    </div>
+    {% elif user_review %}
+    <p class="text-muted small mb-0">You have already reviewed this product.</p>
+    {% endif %}
+</section>
+{% endif %}

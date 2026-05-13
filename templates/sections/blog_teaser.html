@@ -1,0 +1,53 @@
+{% load static %}
+<section class="product-section blog-teaser-section">
+    <div class="container section-container">
+        <div class="product-section-head">
+            <div>
+                <p class="section-kicker">Plant care</p>
+                <h2 class="product-section-title">Tips for thriving plants</h2>
+            </div>
+            <a href="{% url 'store:about' %}" class="link-view-all">More on {{ site_brand }}</a>
+        </div>
+        <div class="blog-teaser-stack">
+            <details class="blog-teaser-acc">
+                <summary class="blog-teaser-acc__summary">
+                    <span class="blog-teaser-acc__main">
+                        <span class="blog-teaser-card__tag">Watering</span>
+                        <span class="blog-teaser-acc__title">How much water is enough?</span>
+                    </span>
+                    <span class="blog-teaser-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="blog-teaser-acc__body">
+                    <p class="blog-teaser-card__excerpt">Match watering to light and season — we help you avoid the #1 mistake: over-loving with too much water.</p>
+                    <a href="{% url 'store:contact' %}" class="blog-teaser-acc__link">Learn more</a>
+                </div>
+            </details>
+            <details class="blog-teaser-acc">
+                <summary class="blog-teaser-acc__summary">
+                    <span class="blog-teaser-acc__main">
+                        <span class="blog-teaser-card__tag">Spaces</span>
+                        <span class="blog-teaser-acc__title">Desk &amp; office picks</span>
+                    </span>
+                    <span class="blog-teaser-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="blog-teaser-acc__body">
+                    <p class="blog-teaser-card__excerpt">Compact greens that tolerate artificial light and a little forgetfulness — perfect for work-from-home setups.</p>
+                    <a href="{% url 'store:product_list' %}?guide=office" class="blog-teaser-acc__link">Shop desk plants</a>
+                </div>
+            </details>
+            <details class="blog-teaser-acc">
+                <summary class="blog-teaser-acc__summary">
+                    <span class="blog-teaser-acc__main">
+                        <span class="blog-teaser-card__tag">Wellness</span>
+                        <span class="blog-teaser-acc__title">Fresh air, naturally</span>
+                    </span>
+                    <span class="blog-teaser-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="blog-teaser-acc__body">
+                    <p class="blog-teaser-card__excerpt">Explore plants often chosen for busy living rooms — lush leaves and easy routines.</p>
+                    <a href="{% url 'store:product_list' %}?guide=air_purifying" class="blog-teaser-acc__link">Browse picks</a>
+                </div>
+            </details>
+        </div>
+    </div>
+</section>

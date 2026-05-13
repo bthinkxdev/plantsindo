@@ -1,0 +1,213 @@
+{% load static %}
+<div class="services-strip">
+    <div class="container px-0">
+        <div class="row g-0">
+            <div class="col-6 col-md-3">
+                {% comment %} reserved service slot {% endcomment %}
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="service-item">
+                    <i class="fas fa-spa"></i>
+                    <div><h6>Happy plant promise</h6><p>Care-first packing &amp; help if something arrives stressed</p></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="service-item">
+                    <i class="fas fa-lock"></i>
+                    <div><h6>Secure checkout</h6><p>Encrypted payments you can trust</p></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="service-item service-item--last">
+                    <i class="fas fa-headset"></i>
+                    <div><h6>Plant advisors</h6><p>Reach us by chat, call or WhatsApp</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="footer pi-footer">
+    <div class="container">
+        <div class="row g-5 pb-2 align-items-start">
+            <div class="col-md-6 col-lg-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <span class="site-brand__leaf site-brand__leaf--footer" aria-hidden="true"><i class="fas fa-leaf"></i></span>
+                    <span class="pi-footer__brand text-white">{{ site_brand }}</span>
+                </div>
+                <p class="mt-2 footer-lead">
+                    {{ site_tagline }} — curated tropicals, calming greens and ceramics for calmer rooms.
+                </p>
+                <div class="social-links mt-4">
+                    <a href="https://www.instagram.com/{{ site_instagram }}/" target="_blank" rel="noopener" class="social-link" title="Instagram @{{ site_instagram }}" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://wa.me/{{ site_whatsapp }}" target="_blank" rel="noopener" class="social-link" title="WhatsApp {{ site_whatsapp }}" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <h6 class="footer-heading">Explore</h6>
+                <a href="{% url 'store:home' %}" class="footer-link">Home</a>
+                <a href="{% url 'store:product_list' %}" class="footer-link">Shop all</a>
+                <a href="#" class="footer-link js-open-cart-drawer">Cart</a>
+                <a href="{% url 'store:contact' %}" class="footer-link">Plant care desk</a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-3">
+                <h6 class="footer-heading">Your account</h6>
+                {% if user.is_authenticated %}
+                <a href="{% url 'auth:account' %}" class="footer-link">Profile</a>
+                <a href="{% url 'store:order_history' %}" class="footer-link">Orders</a>
+                {% else %}
+                <a href="{% url 'auth:login' %}" class="footer-link">Sign in</a>
+                {% endif %}
+                {% if WISHLIST_ENABLED %}
+                <a href="{% url 'store:wishlist' %}" class="footer-link">Wishlist</a>
+                {% endif %}
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <h6 class="footer-heading">Policies</h6>
+                <a href="{% url 'store:about' %}" class="footer-link">Our story</a>
+                <a href="{% url 'store:privacy' %}" class="footer-link">Privacy</a>
+                <a href="{% url 'store:terms' %}" class="footer-link">Terms</a>
+                <a href="{% url 'store:shipping' %}" class="footer-link">Shipping &amp; refunds</a>
+            </div>
+        </div>
+
+        <div class="pi-footer__newsletter">
+            <div class="pi-footer__newsletter-inner">
+                <div class="pi-footer__newsletter-copy">
+                    <h3>Notes from the greenhouse</h3>
+                    <p>Restocks, styling ideas and care reminders — one relaxed email on occasion.</p>
+                </div>
+                <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="pi-footer__newsletter-form">
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="piFooterEmail">Email</label>
+                    <input id="piFooterEmail" type="email" name="email" placeholder="you@example.com" required autocomplete="email" aria-label="Email for newsletter">
+                    <button type="submit">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<div class="copyright">
+    <div class="container">
+        <div class="col-12 text-center">
+            <span>&copy; 2026 {{ site_brand }}. Crafted for plant-forward living.</span>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-bar" role="navigation" aria-label="Main">
+    <div class="bottom-bar-inner">
+        <a href="{% url 'store:product_list' %}" class="bottom-bar-item {% if active_page == 'collection' %}active{% endif %}" aria-label="Shop">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            </span>
+            <span class="bottom-bar-label">Shop</span>
+        </a>
+        <a href="#" class="bottom-bar-item js-open-cart-drawer js-bottom-bar-cart" aria-label="Cart">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                <span class="bottom-bar-badge js-cart-count{% if not cart_count %} bottom-bar-badge--hidden{% endif %}{% if cart_count %} bottom-bar-badge--visible{% endif %}">{{ cart_count|default:0 }}</span>
+            </span>
+            <span class="bottom-bar-label">Cart</span>
+        </a>
+        <a href="{% url 'store:home' %}" class="bottom-bar-item {% if active_page == 'home' %}active{% endif %}" aria-label="Home">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </span>
+            <span class="bottom-bar-label">Home</span>
+        </a>
+        {% if WISHLIST_ENABLED %}
+        <a href="{% url 'store:wishlist' %}"
+           class="bottom-bar-item {% if active_page == 'wishlist' %}active{% endif %} {% if not user.is_authenticated %}js-wishlist-guest{% endif %}"
+           aria-label="Wishlist">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                <span class="bottom-bar-badge js-wishlist-count{% if not wishlist_count %} bottom-bar-badge--hidden{% else %} bottom-bar-badge--visible{% endif %}">{{ wishlist_count|default:0 }}</span>
+            </span>
+            <span class="bottom-bar-label">Wishlist</span>
+        </a>
+        {% endif %}
+        {% if user.is_authenticated %}
+        <a href="{% url 'auth:account' %}" class="bottom-bar-item {% if active_page == 'account' %}active{% endif %}" aria-label="Account">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="bottom-bar-label">Account</span>
+        </a>
+        {% else %}
+        <a href="{% url 'auth:login' %}" class="bottom-bar-item {% if active_page == 'account' %}active{% endif %}" aria-label="Login">
+            <span class="bottom-bar-icon">
+                <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            </span>
+            <span class="bottom-bar-label">Account</span>
+        </a>
+        {% endif %}
+    </div>
+</nav>
+
+<div id="cartDrawerOverlay" class="cd-overlay" aria-hidden="true"></div>
+
+<aside id="cartDrawer" class="cd-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart">
+
+  <div class="cd-header">
+    <div class="cd-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cd-title__icon">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+      </svg>
+      Cart
+      <span id="cdBadge" class="cd-badge">0</span>
+    </div>
+    <button id="cdClose" class="cd-close" aria-label="Close cart">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="cdItems" class="cd-items"></div>
+
+  <div id="cdFooter" class="cd-footer" hidden>
+    <div class="cd-total-row">
+      <span class="cd-total-label">Estimated total</span>
+      <span id="cdTotal" class="cd-total-val">₹0</span>
+    </div>
+    <p class="cd-tax-note">Taxes, discounts and shipping calculated at checkout.</p>
+    <div class="cd-actions">
+      <a href="/checkout/" class="cd-btn cd-btn-solid">Check out</a>
+    </div>
+  </div>
+
+  <div id="cdEmpty" class="cd-empty" hidden>
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c9c3b9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+      <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+    </svg>
+    <p>Your cart is empty</p>
+    <a href="{% url 'store:product_list' %}" class="cd-btn cd-btn-solid cd-btn--shop">Shop now</a>
+  </div>
+
+</aside>
+
+<div id="mobileSearchOverlay" class="mobile-search-overlay" aria-hidden="true">
+    <form class="mobile-search-inner" action="{% url 'store:product_list' %}" method="get">
+        <button type="button" id="mobileSearchClose" class="mobile-search-close" aria-label="Close">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="typed-ghost-wrap" data-typed-ghost="search">
+            <div class="typed-ghost-hint typed-ghost-hint--mobile" aria-hidden="true">
+                <span class="typed-ghost-prefix">Search</span>
+                <span class="typed-ghost typed-ghost--mobile"></span>
+            </div>
+            <input type="text" name="q" id="mobileSearchInput"
+                   placeholder="Tropicals, ceramics, tools…"
+                   value="{{ request.GET.q|default:'' }}"
+                   autocomplete="off">
+        </div>
+        <button type="submit" class="mobile-search-submit">
+            <i class="fas fa-search"></i>
+        </button>
+    </form>
+</div>
+
+<a href="#" class="back-to-top back-to-top--hidden"><i class="fa fa-arrow-up"></i></a>

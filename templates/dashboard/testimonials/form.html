@@ -1,0 +1,157 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'admin_panel:testimonial_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+  <h1 class="page-title mb-0">{{ form_title }}</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <div class="card p-4">
+
+      {# Non-field errors #}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {# ── Name ─────────────────────────────────────────────────────── #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.name.id_for_label }}">
+            Customer Name <span class="text-danger">*</span>
+          </label>
+          {{ form.name }}
+          {% if form.name.errors %}
+            <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {# ── Photo ────────────────────────────────────────────────────── #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Profile Photo <span class="text-muted fw-normal">(optional)</span>
+          </label>
+
+          {# Preview existing photo on edit #}
+          {% if form.instance.pk and form.instance.photo %}
+          <div class="mb-2 d-flex align-items-center gap-3">
+            <img id="photo-preview"
+                 src="{{ form.instance.photo.url }}"
+                 alt="Current photo"
+                 class="rounded-circle"
+                 style="width:72px;height:72px;object-fit:cover;border:2px solid #dee2e6;">
+            <span class="text-muted small">Current photo</span>
+          </div>
+          {% else %}
+          <div class="mb-2">
+            <img id="photo-preview" src="" alt=""
+                 class="rounded-circle d-none"
+                 style="width:72px;height:72px;object-fit:cover;border:2px solid #dee2e6;">
+          </div>
+          {% endif %}
+
+          {{ form.photo }}
+          <div class="form-text">Square portrait, min 200 × 200 px. JPG/PNG/WebP, max 5 MB.</div>
+          {% if form.photo.errors %}
+            <div class="invalid-feedback d-block">{{ form.photo.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {# ── Rating ───────────────────────────────────────────────────── #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.rating.id_for_label }}">
+            Star Rating <span class="text-danger">*</span>
+          </label>
+          {{ form.rating }}
+          {% if form.rating.errors %}
+            <div class="invalid-feedback d-block">{{ form.rating.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {# ── Description ──────────────────────────────────────────────── #}
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">
+            Review Text <span class="text-danger">*</span>
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}
+            <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {# ── Toggles row ──────────────────────────────────────────────── #}
+        <div class="row mb-3">
+          <div class="col-sm-6">
+            <div class="form-check form-switch">
+              {{ form.is_verified }}
+              <label class="form-check-label" for="{{ form.is_verified.id_for_label }}">
+                Verified Buyer
+              </label>
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="form-check form-switch">
+              {{ form.is_active }}
+              <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                Active (show on site)
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {# ── Display order ─────────────────────────────────────────────── #}
+        <div class="mb-4">
+          <label class="form-label fw-semibold" for="{{ form.display_order.id_for_label }}">
+            Display Order
+          </label>
+          {{ form.display_order }}
+          <div class="form-text">Lower number = shown first. Default 0.</div>
+          {% if form.display_order.errors %}
+            <div class="invalid-feedback d-block">{{ form.display_order.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        {# ── Actions ──────────────────────────────────────────────────── #}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i>
+            {% if form.instance.pk %}Save changes{% else %}Create testimonial{% endif %}
+          </button>
+          <a href="{% url 'admin_panel:testimonial_list' %}" class="btn btn-outline-secondary">
+            Cancel
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+/* Live photo preview */
+document.getElementById('{{ form.photo.id_for_label }}')
+  ?.addEventListener('change', function () {
+    const preview = document.getElementById('photo-preview');
+    if (!preview) return;
+    if (this.files && this.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+      };
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% load static %}
+{% if rent_products %}
+<section class="p99-rent-focus" aria-label="{{ aria_label|default:'Rent plants' }}">
+  <div class="section-container">
+    <div class="p99-rent-focus__wrap">
+      {% with va=view_all_url|default:cta_url %}
+      {% if va and va != '#' %}
+      <div class="storefront-section-actions storefront-section-actions--rent">
+        <a href="{{ va }}" class="link-view-all">View all</a>
+      </div>
+      {% endif %}
+      {% endwith %}
+      <a href="{{ cta_url|default:'#' }}" class="p99-rent-focus__banner-link" aria-label="{{ aria_label|default:'Rent plants' }}{% if cta_label %} — {{ cta_label }}{% endif %}">
+        <img src="{% static 'img/rent_plants.png' %}" alt="" class="p99-rent-focus__banner-img" width="1200" height="320" loading="lazy" decoding="async">
+      </a>
+
+      <div class="p99-rent-focus__rail" role="list">
+        {% for product in rent_products %}
+          {% with cfg=product.rental_config %}
+          <div class="p99-rent-focus__card" role="listitem">
+            <a class="p99-rent-focus__media" href="{% url 'store:product_detail' product.slug %}" aria-label="{{ product.name }}">
+              {% with urls=product.get_card_image_urls %}
+                {% if product.primary_variant and product.primary_variant.images.all %}
+                  <img src="{{ product.primary_variant.images.all.0.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                {% elif urls %}
+                  <img src="{{ urls.0 }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                {% else %}
+                  <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                {% endif %}
+              {% endwith %}
+              <span class="p99-rent-focus__badge">Rent</span>
+            </a>
+
+            <div class="p99-rent-focus__body">
+              <a class="p99-rent-focus__name" href="{% url 'store:product_detail' product.slug %}" title="{{ product.name }}">{{ product.name }}</a>
+              <p class="p99-rent-focus__price">
+                ₹{{ cfg.rent_price_per_day|default:"—" }}<span class="p99-rent-focus__per">/day</span>
+              </p>
+              <a class="p99-rent-focus__btn" href="{% url 'store:product_detail' product.slug %}">Choose dates</a>
+            </div>
+          </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+

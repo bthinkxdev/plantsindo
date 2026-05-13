@@ -1,0 +1,81 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ form_title|default:"Home Category" }}{% endblock %}
+{% block page_title %}{{ form_title|default:"Home Category" }}{% endblock %}
+{% block content %}
+
+<div class="card p-4" style="max-width: 800px; margin: 40px auto;">
+    <p class="text-muted mb-4">Home categories appear on the homepage as a large banner with headline (name), subtitle (description), featured products, and optional shop link. They are separate from catalog categories.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label">Name *</label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger mt-1">{{ form.name.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Slug (optional)</label>
+            {{ form.slug }}
+            {% if form.slug.errors %}<div class="text-danger mt-1">{{ form.slug.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="text-danger mt-1">{{ form.description.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Banner image *</label>
+            {{ form.banner_image }}
+            {% if form.instance.pk and form.instance.banner_image %}
+            <div class="mt-2 small text-muted">Current: {{ form.instance.banner_image.name }}</div>
+            {% endif %}
+            {% if form.banner_image.errors %}<div class="text-danger mt-1">{{ form.banner_image.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Display order</label>
+            {{ form.display_order }}
+            {% if form.display_order.errors %}<div class="text-danger mt-1">{{ form.display_order.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3 form-check">
+            {{ form.is_active }}
+            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
+            {% if form.is_active.errors %}<div class="text-danger mt-1">{{ form.is_active.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Custom link URL</label>
+            {{ form.link_url }}
+            {% if form.link_url.errors %}<div class="text-danger mt-1">{{ form.link_url.errors }}</div>{% endif %}
+            <div class="form-text">If set, the tile uses this link instead of the shop category below.</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Shop category (optional)</label>
+            {{ form.linked_category }}
+            {% if form.linked_category.errors %}<div class="text-danger mt-1">{{ form.linked_category.errors }}</div>{% endif %}
+            <div class="form-text">If no custom URL, visitors go to the shop filtered by this category.</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Featured products (optional)</label>
+            {{ form.products }}
+            {% if form.products.errors %}<div class="text-danger mt-1">{{ form.products.errors }}</div>{% endif %}
+            <div class="form-text">Hold Ctrl (Windows) or ⌘ (Mac) to select multiple. Order is taken from the form list top-to-bottom where supported; any extra validated picks are appended.</div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="{% url 'admin_panel:home_category_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

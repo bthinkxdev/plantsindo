@@ -1,0 +1,11 @@
+<div id="pdpStickyBar" class="pdp-sticky-bar" aria-hidden="true">
+    <div class="container-fluid container-lg">
+        <div class="pdp-sticky-inner d-flex align-items-center gap-3 py-2">
+            <div class="flex-grow-1 min-w-0">
+                <div id="pdpStickyTitle" class="text-truncate fw-semibold small">{{ product.name }}</div>
+                <div id="pdpStickyPrice" class="small text-muted">{% if selected_variant %}&#8377;{{ selected_variant.price|floatformat:0 }}{% elif product.base_price %}&#8377;{{ product.base_price|floatformat:0 }}{% endif %}</div>
+            </div>
+            <button type="button" class="btn btn-dark btn-sm flex-shrink-0" id="pdpStickyAdd" {% if product.is_simple_product %}{% if product.is_combo_product %}{% if not pdp_combo_available %}disabled{% endif %}{% elif not product.base_stock or product.base_stock <= 0 %}disabled{% endif %}{% else %}{% if not selected_variant or selected_variant.stock_quantity <= 0 %}disabled{% endif %}{% endif %}>Add to cart</button>
+        </div>
+    </div>
+</div>

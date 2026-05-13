@@ -1,0 +1,11 @@
+{% if pdp_breadcrumbs %}
+<nav class="pdp-breadcrumb mb-3" aria-label="Breadcrumb">
+    <ol class="breadcrumb mb-0 small">
+        {% for b in pdp_breadcrumbs %}
+        <li class="breadcrumb-item{% if not b.url %} active{% endif %}" {% if not b.url %}aria-current="page"{% endif %}>
+            {% if b.url %}<a href="{{ b.url }}">{{ b.label }}</a>{% else %}<span>{{ b.label }}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}

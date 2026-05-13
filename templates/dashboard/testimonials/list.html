@@ -1,0 +1,136 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Testimonials{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="page-title">Testimonials</h1>
+    <p class="text-muted mb-0">Manage customer reviews shown on the homepage.</p>
+  </div>
+  <a href="{% url 'admin_panel:testimonial_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-1"></i> Add Testimonial
+  </a>
+</div>
+
+<form method="get" class="mb-3 d-flex gap-2 align-items-center flex-wrap">
+  <select name="status" class="form-control form-control-sm" style="width:auto;"
+          onchange="this.form.submit()">
+    <option value="">All</option>
+    <option value="active"   {% if filter_status == 'active'   %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+  </select>
+  <small class="text-muted">{{ paginator.count }} testimonial{{ paginator.count|pluralize }}</small>
+</form>
+
+{% if testimonials %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 testimonials-table">
+      <thead class="table-light">
+        <tr>
+          <th style="width:48px;">#</th>
+          <th>Customer</th>
+          <th style="width:130px;">Rating</th>
+          <th>Review (preview)</th>
+          <th style="width:90px;">Verified</th>
+          <th style="width:80px;">Order</th>
+          <th style="width:80px;">Status</th>
+          <th style="width:130px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in testimonials %}
+        <tr>
+          <td data-label="">
+            {% if t.photo %}
+              <img src="{{ t.photo.url }}" alt="{{ t.name }}"
+                   class="rounded-circle"
+                   style="width:40px;height:40px;object-fit:cover;">
+            {% else %}
+              <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
+                   style="width:40px;height:40px;font-size:.85rem;font-weight:600;">
+                {{ t.name|first|upper }}
+              </div>
+            {% endif %}
+          </td>
+          <td data-label="Name"><strong>{{ t.name }}</strong></td>
+          <td data-label="Rating">
+            <span class="text-warning" aria-label="{{ t.rating }} out of 5 stars">
+              {% for i in "12345" %}
+                {% if forloop.counter <= t.rating %}★{% else %}☆{% endif %}
+              {% endfor %}
+            </span>
+          </td>
+          <td data-label="Review">
+            <span class="text-muted small">{{ t.description|truncatechars:80 }}</span>
+          </td>
+          <td data-label="Verified">
+            {% if t.is_verified %}
+              <span class="badge bg-success">Verified</span>
+            {% else %}
+              <span class="badge bg-secondary">—</span>
+            {% endif %}
+          </td>
+          <td data-label="Order" class="text-center">{{ t.display_order }}</td>
+          <td data-label="Status">
+            <form method="post" action="{% url 'admin_panel:testimonial_toggle_active' t.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-sm {% if t.is_active %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                {% if t.is_active %}Active{% else %}Inactive{% endif %}
+              </button>
+            </form>
+          </td>
+          <td data-label="Actions">
+            <div class="tbl-actions">
+              <a href="{% url 'admin_panel:testimonial_update' t.pk %}"
+                 class="btn btn-sm btn-outline-primary" title="Edit">
+                <i class="fas fa-pencil-alt"></i>
+              </a>
+              <form method="post" action="{% url 'admin_panel:testimonial_delete' t.pk %}"
+                    class="d-inline"
+                    onsubmit="return confirm('Delete testimonial by {{ t.name|escapejs }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ filter_status }}">‹</a>
+      </li>
+    {% endif %}
+    {% for num in paginator.page_range %}
+      <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+        <a class="page-link" href="?page={{ num }}&status={{ filter_status }}">{{ num }}</a>
+      </li>
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ filter_status }}">›</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info">
+  No testimonials yet.
+  <a href="{% url 'admin_panel:testimonial_create' %}">Add the first one.</a>
+</div>
+{% endif %}
+
+{% endblock %}

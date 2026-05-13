@@ -1,0 +1,39 @@
+{% if product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.difficulty %}
+<section class="pdp-section pdp-info-cards mb-4" id="pdp-plant-facts">
+    <h2 class="h5 mb-3">Plant information</h2>
+    <div class="row g-3">
+        {% if product.germination_time_display %}
+        <div class="col-sm-6 col-lg-3">
+            <div class="pdp-mini-card border rounded-2 p-3 h-100">
+                <div class="text-muted small text-uppercase">Germination</div>
+                <div class="fw-semibold">{{ product.germination_time_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if product.harvest_time_display %}
+        <div class="col-sm-6 col-lg-3">
+            <div class="pdp-mini-card border rounded-2 p-3 h-100">
+                <div class="text-muted small text-uppercase">Harvest</div>
+                <div class="fw-semibold">{{ product.harvest_time_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if product.sowing_season_display %}
+        <div class="col-sm-6 col-lg-3">
+            <div class="pdp-mini-card border rounded-2 p-3 h-100">
+                <div class="text-muted small text-uppercase">Sowing season</div>
+                <div class="fw-semibold">{{ product.sowing_season_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if product.difficulty %}
+        <div class="col-sm-6 col-lg-3">
+            <div class="pdp-mini-card border rounded-2 p-3 h-100">
+                <div class="text-muted small text-uppercase">Difficulty</div>
+                <div class="fw-semibold">{{ product.get_difficulty_display }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}

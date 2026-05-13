@@ -1,0 +1,28 @@
+{% load static %}
+{% if products %}
+<section class="p99-jsbanner {% if extra_class %}{{ extra_class }}{% endif %}">
+    <div class="p99-jsbanner__bg {% if not banner_image %}p99-jsbanner__bg--gradient{% endif %}">
+        <a href="{{ banner_link|default:shop_url }}" class="p99-jsbanner__bglink">
+            {% if banner_image %}
+            <img src="{{ banner_image }}" alt="" class="p99-jsbanner__bgimg" loading="lazy" width="1600" height="420">
+            <div class="p99-jsbanner__veil" aria-hidden="true"></div>
+            {% endif %}
+        </a>
+    </div>
+    <div class="p99-jsbanner__overlay">
+        {% if row_title %}
+        <div class="p99-jsbanner__row-head">
+            <h2 class="p99-jsbanner__row-title">{{ row_title }}</h2>
+            <a href="{{ banner_link|default:shop_url }}" class="link-view-all">View all</a>
+        </div>
+        {% endif %}
+        <div class="owl-carousel productList-carousel p99-jsbanner-carousel">
+            {% for product in products %}
+            <div class="p99-jsbanner-slide">
+                {% include "partials/_product_card.html" with product=product compact=1 %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}

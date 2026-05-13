@@ -1,0 +1,82 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+
+{% block title %}Rental bookings{% endblock %}
+{% block page_title %}Rental bookings{% endblock %}
+
+{% block content %}
+<div class="product-listing-card">
+  <div class="product-listing-header">
+    <div class="product-listing-title-group">
+      <h2 class="product-listing-title">Bookings</h2>
+      {% if bookings %}
+        <span class="product-count-badge">{{ bookings|length }}</span>
+      {% endif %}
+    </div>
+    <a href="{% url 'admin_panel:rental_list' %}" class="btn btn-secondary">Products</a>
+  </div>
+
+  <div class="product-listing-toolbar">
+    <form method="get" class="filters filters-inline product-listing-filters">
+      <select name="status" class="form-control product-filter-select" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        {% for key,label in status_choices %}
+          <option value="{{ key }}" {% if filter_status == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% if filter_status %}
+        <a href="{% url 'admin_panel:rental_bookings' %}" class="btn btn-secondary product-filter-btn">
+          <i class="fas fa-times"></i> Clear
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="product-listing-body">
+    {% if bookings %}
+      <div class="list-cards">
+        {% for b in bookings %}
+          <div class="list-card">
+            <div class="list-card-header" style="flex-wrap:wrap;">
+              <div style="flex:1;min-width:0;">
+                <div class="list-card-title" style="margin-bottom:0.2rem;font-size:0.95rem;">
+                  {{ b.product.name|truncatechars:60 }}
+                </div>
+                <div style="font-size:0.8rem;color:var(--gray-500);">
+                  {{ b.rental_start_date }} → {{ b.rental_end_date }} · {{ b.total_days }} day(s) · ₹{{ b.total_amount }}
+                </div>
+                <div style="font-size:0.8rem;color:var(--gray-500);">
+                  Order: {% if b.order_item and b.order_item.order %}{{ b.order_item.order.order_number }}{% else %}—{% endif %}
+                  · User: {% if b.user %}{{ b.user.username|default:b.user.email }}{% else %}Guest{% endif %}
+                </div>
+              </div>
+              <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                <span class="badge" style="background:#eef2ff;color:#3730a3;">{{ b.get_status_display }}</span>
+              </div>
+            </div>
+            <div class="list-card-actions" style="justify-content:space-between;align-items:center;">
+              <a class="btn btn-secondary" href="{% url 'admin_panel:product_edit' b.product.pk %}">Product</a>
+              <form method="post" action="{% url 'admin_panel:rental_booking_status' b.pk %}" style="display:flex;gap:.5rem;align-items:center;">
+                {% csrf_token %}
+                <select name="status" class="form-control" style="min-width:180px;">
+                  {% for key,label in status_choices %}
+                    <option value="{{ key }}" {% if b.status == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">Update</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="product-listing-empty">
+        <div class="product-listing-empty-icon"><i class="fas fa-calendar-check"></i></div>
+        <p class="product-listing-empty-title">No bookings</p>
+        <p class="product-listing-empty-desc">Bookings will appear when customers checkout rental orders.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,35 @@
+{% load static %}
+{% if products %}
+<section class="featured-pick-rail" aria-label="Featured plants">
+    <div class="featured-pick-rail__shell">
+        {% with va=view_all_url|default:banner_link %}
+        {% if va %}
+        <div class="storefront-section-actions">
+            <a href="{{ va }}" class="link-view-all">View all</a>
+        </div>
+        {% endif %}
+        {% endwith %}
+        <a href="{{ banner_link|default:shop_url }}" class="featured-pick-rail__banner-link" aria-label="Shop staff featured picks">
+            <img
+                src="{% if banner_image %}{{ banner_image }}{% else %}{% static 'img/ourr_pick_for_you.png' %}{% endif %}"
+                alt=""
+                class="featured-pick-rail__banner-img"
+                width="1200"
+                height="320"
+                loading="lazy"
+                decoding="async">
+        </a>
+        <div class="featured-pick-rail__rail">
+            <div
+                class="owl-carousel featured-pick-rail__carousel"
+                data-rail-count="{{ products|length }}">
+                {% for product in products %}
+                <div class="featured-pick-rail__slide">
+                    {% include "partials/_storefront_rail_product_card.html" with product=product %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}

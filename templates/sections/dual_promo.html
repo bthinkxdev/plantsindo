@@ -1,0 +1,17 @@
+{% load static %}
+<section class="p99-dual-promo" aria-label="Promotions">
+    <div class="section-container p99-dual-promo__container">
+        <div class="p99-dual-grid">
+            <a href="{% url 'store:product_list' %}?combo=1" class="p99-dual-card p99-dual-card--green">
+                <span class="p99-dual-tag">Bundles</span>
+                <h3 class="p99-dual-title">Curated plant + pot stories</h3>
+                <span class="p99-dual-cta">Explore bundles <i class="fas fa-arrow-right ms-1"></i></span>
+            </a>
+            <a href="{% url 'store:product_list' %}?sort=price_asc" class="p99-dual-card p99-dual-card--cream">
+                <span class="p99-dual-tag">Deals</span>
+                <h3 class="p99-dual-title">Seasonal picks at softer prices</h3>
+                <span class="p99-dual-cta">View offers <i class="fas fa-arrow-right ms-1"></i></span>
+            </a>
+        </div>
+    </div>
+</section>

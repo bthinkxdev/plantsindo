@@ -1,0 +1,16 @@
+{% if product.description or product.highlights.count %}
+<section class="pdp-section pdp-about pdp-card border rounded-2 p-4 mb-4" id="pdp-about">
+    <h2 class="h5 mb-3">About this product</h2>
+    {% if product.description %}
+    <div class="pdp-prose text-secondary">{{ product.description|linebreaks }}</div>
+    {% endif %}
+    {% if product.highlights.count %}
+    <h3 class="h6 mt-4 mb-2">Highlights</h3>
+    <ul class="mb-0 ps-3">
+        {% for h in product.highlights.all %}
+        <li>{{ h.text }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endif %}

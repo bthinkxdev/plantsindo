@@ -1,0 +1,112 @@
+﻿{% extends "base.html" %}
+{% load static %}{% load product_filters %}
+{% block title %}{{ product.name }} — {{ site_brand }}{% endblock %}
+{% block meta_description %}{{ product.description|truncatewords:20|default:product.name }}{% endblock %}
+{% block content %}
+<section class="product-detail-main product-detail-store">
+    <div class="container">
+        {% include "sections/product_breadcrumb.html" %}
+
+        <div class="row g-5">
+            {% include "sections/product_gallery.html" %}
+
+            <div class="col-lg-6 product-detail-info wow fadeInRight" data-wow-delay="0.1s">
+                <div class="pdp-details-inner">
+                    {% include "sections/product_info.html" %}
+                    {% include "sections/product_actions.html" %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5 pt-2">
+            <div class="col-12 col-xl-10 mx-auto">
+                {% include "sections/product_about.html" %}
+                {% include "sections/product_info_cards.html" %}
+                {% include "sections/product_care.html" %}
+                {% include "sections/product_box.html" %}
+                {% include "sections/product_specs.html" %}
+                {% include "sections/product_faq.html" %}
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-12 col-xl-10 mx-auto">
+                <div id="pdp-reviews-root" class="pdp-lazy-root" data-src="{{ pdp_reviews_url }}">
+                    <p class="text-muted small py-3 mb-0">Loading reviews…</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-2">
+            <div class="col-12 col-xl-10 mx-auto">
+                <div id="pdp-seo-root" class="pdp-lazy-root" data-src="{{ pdp_seo_url }}">
+                    <p class="text-muted small py-2 mb-0"></p>
+                </div>
+            </div>
+        </div>
+
+        {% if related_products %}
+        <div class="row mt-5 pt-4">
+            <div class="col-12">
+                <h3 class="mb-4">You may also like</h3>
+                <div class="products-grid">
+                    {% for rel in related_products %}
+                    {% if rel.is_simple_product %}
+                    <div class="product-card">
+                        <div class="product-img-wrap">
+                            {% include "partials/_rating_pill.html" with product=rel %}
+                            <a href="{% url 'store:product_detail' rel.slug %}">
+                                {% with imgs=rel.images.all %}{% if imgs %}<img src="{{ imgs.0.image.url }}" alt="{{ rel.name }}" loading="lazy">{% else %}<img src="{% static 'img/product-1.png' %}" alt="{{ rel.name }}" loading="lazy">{% endif %}{% endwith %}
+                            </a>
+                        </div>
+                        <div class="product-body">
+                            <a href="{% url 'store:product_detail' rel.slug %}" class="text-decoration-none"><h3 class="product-name">{{ rel.name }}</h3></a>
+                            <div class="product-price">
+                                {% if rel.base_original_price and rel.base_original_price > rel.base_price %}
+                                    <span class="price-mrp">&#8377;{{ rel.base_original_price|floatformat:0 }}</span>
+                                {% endif %}
+                                <span class="price-current">&#8377;{{ rel.base_price|floatformat:0 }}</span>
+                                {% if rel.discount_percent > 0 %}
+                                    <span class="price-off-badge" style="font-size:.65rem;">{{ rel.discount_percent }}% OFF</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    {% with fv=rel.variants.all|first %}
+                    {% if fv %}
+                    <div class="product-card">
+                        <div class="product-img-wrap">
+                            {% include "partials/_rating_pill.html" with product=rel %}
+                            <a href="{% url 'store:product_detail' rel.slug %}?variant={{ fv.id }}">
+                                {% with imgs=fv.images.all %}{% if imgs %}<img src="{{ imgs.0.image.url }}" alt="{{ rel.name }}" loading="lazy">{% else %}<img src="{% static 'img/product-1.png' %}" alt="{{ rel.name }}" loading="lazy">{% endif %}{% endwith %}
+                            </a>
+                        </div>
+                        <div class="product-body">
+                            <a href="{% url 'store:product_detail' rel.slug %}?variant={{ fv.id }}" class="text-decoration-none"><h3 class="product-name">{{ rel.name }}</h3></a>
+                            <div class="product-price">
+                                {% if fv.original_price and fv.original_price > fv.price %}
+                                    <span class="price-mrp">&#8377;{{ fv.original_price|floatformat:0 }}</span>
+                                {% endif %}
+                                <span class="price-current">&#8377;{{ fv.price|floatformat:0 }}</span>
+                                {% if fv.discount_percent > 0 %}
+                                    <span class="price-off-badge" style="font-size:.65rem;">{{ fv.discount_percent }}% OFF</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% include "sections/product_sticky_bar.html" %}
+
+{% include "partials/_pdp_scripts.html" %}
+{% endblock %}

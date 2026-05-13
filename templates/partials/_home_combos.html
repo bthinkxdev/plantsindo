@@ -1,0 +1,81 @@
+{# partials/_home_combos.html #}
+
+{% load static %}
+<section class="combo-hub-section product-section product-section--tight" aria-label="Bundles, combos, and why {{ site_brand }}">
+    <div class="container section-container">
+        {% if combo_products %}
+        <a href="{% url 'store:product_list' %}?combo=1" class="combo-hub-section__banner-link featured-pick-rail__banner-link" aria-label="Shop all combos">
+            <img
+                src="{% static 'img/best_combo.png' %}"
+                alt=""
+                class="featured-pick-rail__banner-img"
+                width="1200"
+                height="320"
+                loading="lazy"
+                decoding="async">
+        </a>
+        <div class="combo-hub-section__rail-wrap featured-pick-rail featured-pick-rail--hub">
+            <div class="featured-pick-rail__shell">
+                <div class="featured-pick-rail__rail">
+                    <div
+                        class="owl-carousel featured-pick-rail__carousel"
+                        data-rail-count="{{ combo_products|length }}">
+                        {% for combo in combo_products %}
+                        <div class="featured-pick-rail__slide">
+                            {% include "partials/_combo_rail_card.html" with combo=combo %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="combo-hub-section__lower">
+            <details class="combo-hub-acc combo-hub-acc--offer combo-hub-acc--green">
+                <summary class="combo-hub-acc__summary">
+                    <span class="combo-hub-acc__main">
+                        <span class="combo-hub-acc__tag">Starter kits</span>
+                        <span class="combo-hub-acc__headline">Plant comes with a matching pot — ready to display</span>
+                    </span>
+                    <span class="combo-hub-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="combo-hub-acc__body">
+                    <a href="{% url 'store:product_list' %}?combo=1" class="combo-hub-acc__link">Browse bundles <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </details>
+            <details class="combo-hub-acc combo-hub-acc--offer combo-hub-acc--yellow">
+                <summary class="combo-hub-acc__summary">
+                    <span class="combo-hub-acc__main">
+                        <span class="combo-hub-acc__tag">Under budget</span>
+                        <span class="combo-hub-acc__headline">Great greens at gentler prices — sort low to high</span>
+                    </span>
+                    <span class="combo-hub-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="combo-hub-acc__body">
+                    <a href="{% url 'store:product_list' %}?sort=price_asc" class="combo-hub-acc__link">View deals <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </details>
+            <details class="combo-hub-acc combo-hub-acc--why">
+                <summary class="combo-hub-acc__summary combo-hub-acc__summary--why">
+                    <span class="combo-hub-acc__main">
+                        <span class="combo-hub-acc__tag combo-hub-acc__tag--why">Why {{ site_brand }}</span>
+                        <span class="combo-hub-acc__headline combo-hub-acc__headline--why">{{ site_brand }} — {{ site_tagline }}</span>
+                    </span>
+                    <span class="combo-hub-acc__chev" aria-hidden="true"></span>
+                </summary>
+                <div class="combo-hub-acc__body combo-hub-acc__body--why">
+                    <p class="combo-hub-acc__excerpt">
+                        Beginner‑friendly picks, honest care notes, and safe packing — so your plants arrive happy and thrive at home.
+                    </p>
+                    <a class="combo-hub-acc__cta" href="{% url 'store:about' %}">Read our story</a>
+                </div>
+            </details>
+        </div>
+
+        <div class="combo-hub-section__shop-footer">
+            <a href="{% url 'store:product_list' %}?combo=1" class="link-view-all combo-hub-section__shop-link">Shop combos</a>
+        </div>
+    </div>
+</section>
+

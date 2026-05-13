@@ -1,0 +1,77 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+
+{% block title %}Blog{% endblock %}
+{% block page_title %}{{ form_title|default:"Blog post" }}{% endblock %}
+
+{% block content %}
+<div class="product-listing-card">
+  <div class="product-listing-header">
+    <div class="product-listing-title-group">
+      <h2 class="product-listing-title">{{ form_title|default:"Blog post" }}</h2>
+    </div>
+    <a href="{% url 'admin_panel:blog_list' %}" class="btn btn-secondary">Back</a>
+  </div>
+
+  <div class="product-listing-body" style="padding: 1.5rem;">
+    <form method="post" enctype="multipart/form-data" class="admin-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        {{ form.title }}
+        {% for e in form.title.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Slug</label>
+        {{ form.slug }}
+        <div class="form-hint">Leave empty to auto-generate.</div>
+        {% for e in form.slug.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Excerpt</label>
+        {{ form.excerpt }}
+        {% for e in form.excerpt.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Body</label>
+        {{ form.body }}
+        {% for e in form.body.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cover image</label>
+        {{ form.cover_image }}
+        {% if form.instance.pk and form.instance.cover_image %}
+          <div style="margin-top:0.5rem;">
+            <img src="{{ form.instance.cover_image.url }}" alt="" style="max-width:220px;border-radius:10px;border:1px solid #e5e7eb;">
+          </div>
+        {% endif %}
+        {% for e in form.cover_image.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+
+      <div class="form-group" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+        <label style="display:flex;gap:0.5rem;align-items:center;">
+          {{ form.is_published }} <span>Published</span>
+        </label>
+        <div style="min-width:260px;">
+          <label class="form-label">Published at</label>
+          {{ form.published_at }}
+          {% for e in form.published_at.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem;">
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

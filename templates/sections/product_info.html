@@ -1,0 +1,71 @@
+<h1 class="product-detail-title">{{ product.name }}</h1>
+
+    {% if REVIEW_ENABLED and average_rating is not None %}
+    <div class="product-detail-rating">
+        <span class="stars" aria-hidden="true">{% for i in "12345" %}<span class="{% if forloop.counter <= average_rating %}star-full{% else %}star-empty{% endif %}">&#9733;</span>{% endfor %}</span>
+        <span class="rating-count">{{ average_rating|floatformat:1 }} / 5 · {{ total_reviews }} review{{ total_reviews|pluralize }}</span>
+        {% if total_reviews %}<a href="#pdp-reviews-root" class="ms-2 small">See all</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="product-detail-price" id="productPriceBlock">
+        {% if selected_variant %}
+            {% if product.is_gst_applicable and product_gst_percentage is not None %}
+            <div class="price-breakdown">
+                {% if selected_variant.original_price and selected_variant.original_price > selected_variant.price %}
+                <div class="mb-1">
+                    <span class="price-mrp">&#8377;{{ selected_variant.original_price|floatformat:0 }}</span>
+                    {% if selected_variant.discount_percent > 0 %}
+                    <span class="price-off-badge">{{ selected_variant.discount_percent }}% OFF</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div>Base Price: <span class="price-main">&#8377;{{ selected_variant.price|floatformat:2 }}</span></div>
+                <div>GST ({{ product_gst_percentage }}%): <span class="price-gst">&#8377;{{ product_detail_gst_amount|floatformat:2 }}</span></div>
+                <div class="price-total-line">Total: <span class="price-main">&#8377;{{ product_detail_total_with_gst|floatformat:2 }}</span></div>
+            </div>
+            {% else %}
+            <div class="price-block">
+                {% if selected_variant.original_price and selected_variant.original_price > selected_variant.price %}
+                <span class="price-mrp" id="price-mrp">&#8377;{{ selected_variant.original_price|floatformat:0 }}</span>
+                {% else %}
+                <span class="price-mrp" id="price-mrp" style="display:none;"></span>
+                {% endif %}
+                <span class="price-main price-selling" id="price-selling">&#8377;{{ selected_variant.price|floatformat:0 }}</span>
+                {% if selected_variant.discount_percent > 0 %}
+                <span class="price-off-badge" id="price-badge">{{ selected_variant.discount_percent }}% OFF</span>
+                {% else %}
+                <span class="price-off-badge" id="price-badge" style="display:none;"></span>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% elif product.is_simple_product and product.base_price is not None %}
+            {% if product.is_gst_applicable and product_gst_percentage is not None %}
+            <div class="price-breakdown">
+                {% if product.base_original_price and product.base_original_price > product.base_price %}
+                <div class="mb-1">
+                    <span class="price-mrp">&#8377;{{ product.base_original_price|floatformat:0 }}</span>
+                    {% if product.discount_percent > 0 %}
+                    <span class="price-off-badge">{{ product.discount_percent }}% OFF</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div>Base Price: <span class="price-main">&#8377;{{ product.base_price|floatformat:2 }}</span></div>
+                <div>GST ({{ product_gst_percentage }}%): <span class="price-gst">&#8377;{{ product_detail_gst_amount|floatformat:2 }}</span></div>
+                <div class="price-total-line">Total: <span class="price-main">&#8377;{{ product_detail_total_with_gst|floatformat:2 }}</span></div>
+            </div>
+            {% else %}
+            <div class="price-block">
+                {% if product.base_original_price and product.base_original_price > product.base_price %}
+                <span class="price-mrp">&#8377;{{ product.base_original_price|floatformat:0 }}</span>
+                {% endif %}
+                <span class="price-main price-selling">&#8377;{{ product.base_price|floatformat:0 }}</span>
+                {% if product.discount_percent > 0 %}
+                <span class="price-off-badge">{{ product.discount_percent }}% OFF</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+<div class="stock-indicator small mb-2 text-muted"></div>

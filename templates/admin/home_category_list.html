@@ -1,0 +1,65 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Home Categories{% endblock %}
+{% block page_title %}Home Categories{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <div class="text-muted">Independent homepage tiles (banner, description). Not the same as catalog categories.</div>
+    </div>
+    <a href="{% url 'admin_panel:home_category_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add
+    </a>
+</div>
+
+<table class="table table-hover align-middle home-cat-table">
+        <thead>
+            <tr>
+                <th style="width:100px;">Order</th>
+                <th style="width:72px;">Banner</th>
+                <th>Name</th>
+                <th>Link</th>
+                <th style="width:100px;">Active</th>
+                <th style="width:200px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hc in home_categories %}
+            <tr>
+                <td data-label="Order">{{ hc.display_order }}</td>
+                <td data-label="Banner">
+                    {% if hc.banner_image %}
+                    <img src="{{ hc.banner_image.url }}" alt="" width="48" height="48" style="object-fit:cover;border-radius:8px;">
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td data-label="Name" style="font-weight:500;">
+                    {{ hc.name }}
+                    {% if hc.description %}
+                    <div class="small text-muted text-truncate" style="max-width:320px;">{{ hc.description }}</div>
+                    {% endif %}
+                </td>
+                <td data-label="Link" class="small">
+                    {% if hc.link_url %}{{ hc.link_url|truncatechars:40 }}{% elif hc.linked_category %}Shop → {{ hc.linked_category.name }}{% else %}Shop (all){% endif %}
+                </td>
+                <td data-label="Active">{% if hc.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+                <td data-label="Actions">
+                    <a class="btn btn-sm btn-secondary" href="{% url 'admin_panel:home_category_edit' hc.pk %}">Edit</a>
+                    <form method="post" action="{% url 'admin_panel:home_category_delete' hc.pk %}" style="display:inline;" onsubmit="return confirm('Remove this home category?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted py-5">
+                    No home categories yet. Click <strong>Add</strong> to create homepage tiles.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+</table>
+
+{% endblock %}

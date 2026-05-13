@@ -1,0 +1,56 @@
+{% load static %}
+{% comment %} <div class="promo-marquee" aria-label="Promotions">
+    <div class="promo-marquee-track">
+        <span>Free delivery on orders above ₹999 — <a href="{% url 'store:product_list' %}">Shop plants</a></span>
+        <span>Potted bundles &amp; garden essentials</span>
+        <span>Care-first packing · Secure checkout</span>
+        <span>Free delivery on orders above ₹999 — <a href="{% url 'store:product_list' %}">Shop plants</a></span>
+        <span>Potted bundles &amp; garden essentials</span>
+        <span>Care-first packing · Secure checkout</span>
+    </div>
+</div> {% endcomment %}
+<div class="promo-marquee" aria-label="Promotions">
+    <div class="promo-marquee-track">
+        <span>Fresh drops · sage ceramics · care-first packing</span>
+        <span>Curated tropicals for sunlit corners</span>
+        <span>Secure checkout · WhatsApp support</span>
+        <span>Fresh drops · sage ceramics · care-first packing</span>
+        <span>Curated tropicals for sunlit corners</span>
+        <span>Secure checkout · WhatsApp support</span>
+    </div>
+</div>
+<div class="hero-wrap">
+    <section class="hero-section hero-section-main">
+        {% if banners %}
+        <div class="header-carousel owl-carousel">
+            {% for banner in banners %}
+            <div class="hero-carousel-item">
+                <div class="hero-carousel-item__surface">
+                    {% if banner.redirect_url %}
+                    <a href="{{ banner.redirect_url }}" class="hero-carousel-item__link d-block">
+                    {% endif %}
+                        <img src="{{ banner.image.url }}" alt="{{ banner.title|default:'Banner' }}"
+                             class="hero-full-img" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">
+                    {% if banner.redirect_url %}
+                    </a>
+                    {% endif %}
+                    <div class="hero-media-cover" aria-hidden="true"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="hero-brand-badge d-md-none" aria-hidden="true">
+            <div class="hero-brand-badge__pill">Plant-forward lifestyle studio</div>
+        </div>
+        {% else %}
+        <div class="hero-fallback">
+            <div class="hero-fallback__inner">
+                <p class="hero-fallback__kicker">{{ site_brand }} · {{ site_tagline }}</p>
+                <h1 class="hero-fallback__title">Let every room breathe greener</h1>
+                <p class="hero-fallback__lead">Tropical foliage, soft ceramics and honest care notes — chosen so your space feels lighter the day they arrive.</p>
+                <a href="{% url 'store:product_list' %}" class="btn-store btn-store--light">Browse the greenhouse</a>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>

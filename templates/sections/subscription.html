@@ -1,0 +1,17 @@
+<section class="p99-subscribe" aria-label="Subscription">
+  <div class="section-container">
+    <div class="p99-subscribe-card">
+      <div class="p99-subscribe-copy">
+        <p class="p99-subscribe-kicker">Plantsindo letters</p>
+        <h2 class="p99-subscribe-title">Slow newsletters, fast restocks</h2>
+        <p class="p99-subscribe-sub">Care rhythms, new ceramics and member-only drops — no clutter, just green notes.</p>
+      </div>
+      <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="p99-subscribe-form">
+        {% csrf_token %}
+        <input type="email" name="email" placeholder="Enter your email" required autocomplete="email" aria-label="Email address">
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+  </div>
+</section>
+

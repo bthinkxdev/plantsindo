@@ -1,0 +1,143 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }}{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-body">
+        <a href="{% url 'admin_panel:combo_list' %}" class="btn btn-sm btn-outline-secondary">&larr; All combos</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" class="combo-meta-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <label for="{{ form.name.id_for_label }}">Name</label>
+                    {{ form.name }}
+                    {{ form.name.errors }}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="{{ form.slug.id_for_label }}">Slug</label>
+                    {{ form.slug }}
+                    <small class="form-text text-muted">Leave blank to auto-generate.</small>
+                    {{ form.slug.errors }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.instructions.id_for_label }}">Instructions</label>
+                {{ form.instructions }}
+                {{ form.instructions.errors }}
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="{{ form.price.id_for_label }}">Price (₹)</label>
+                    {{ form.price }}
+                    {{ form.price.errors }}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="{{ form.original_price.id_for_label }}">Original / MRP (₹)</label>
+                    {{ form.original_price }}
+                    {{ form.original_price.errors }}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="{{ form.image.id_for_label }}">Cover image</label>
+                    {{ form.image }}
+                    {{ form.image.errors }}
+                </div>
+            </div>
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-3">
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <div class="form-check">
+                        {{ form.purchase_enabled }}
+                        <label class="form-check-label" for="{{ form.purchase_enabled.id_for_label }}">{{ form.purchase_enabled.label }}</label>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <div class="form-check">
+                        {{ form.show_in_combos_nav }}
+                        <label class="form-check-label" for="{{ form.show_in_combos_nav.id_for_label }}">{{ form.show_in_combos_nav.label }}</label>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <h6 class="text-muted">GST (optional)</h6>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <div class="form-check">
+                        {{ form.is_gst_applicable }}
+                        <label class="form-check-label" for="{{ form.is_gst_applicable.id_for_label }}">{{ form.is_gst_applicable.label }}</label>
+                    </div>
+                </div>
+                <div class="form-group col-md-3">
+                    <label for="{{ form.gst_percentage.id_for_label }}">GST %</label>
+                    {{ form.gst_percentage }}
+                    {{ form.gst_percentage.errors }}
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="{{ form.hsn_code.id_for_label }}">HSN</label>
+                    {{ form.hsn_code }}
+                    {{ form.hsn_code.errors }}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save bundle details</button>
+        </form>
+    </div>
+</div>
+
+{% if editing %}
+<div
+    id="dashboard-combo-app"
+    class="card"
+    data-combo-id="{{ object.pk }}"
+    data-url-combo-list="{% url 'admin_panel:combo_items_list' object.pk %}"
+    data-url-combo-add="{% url 'admin_panel:combo_item_add' object.pk %}"
+    data-url-combo-candidates="{% url 'admin_panel:combo_candidates' object.pk %}"
+    data-url-combo-update="{% url 'admin_panel:combo_item_update' 0 %}"
+    data-url-combo-delete="{% url 'admin_panel:combo_item_delete' 0 %}"
+>
+    <div class="card-body">
+        <h5 class="card-title">Bundle components</h5>
+        <p class="section-hint text-muted small">Add <strong>simple products only</strong> (no variants, not a legacy combo product). Storefront availability requires enough base stock for each line × bundle quantity.</p>
+        <div id="combo-components-panel" class="nested-block">
+            <div id="combo-components-toolbar" class="attribute-add-row" style="flex-wrap: wrap; gap: 0.5rem;">
+                <input type="search" id="combo-candidate-search" class="form-control" placeholder="Search products to add…" style="min-width: 200px; flex: 1;">
+                <select id="combo-candidate-select" class="form-control" style="max-width: 280px;">
+                    <option value="">— pick a product —</option>
+                </select>
+                <input type="number" id="combo-add-qty" class="form-control" value="1" min="1" step="1" style="max-width: 90px;">
+                <button type="button" class="btn btn-primary btn-sm" id="combo-add-btn"><i class="fas fa-plus"></i> Add to bundle</button>
+            </div>
+            <p id="combo-components-empty" class="section-hint" style="margin-top: 0.75rem;">No components yet.</p>
+            <div class="table-responsive">
+                <table class="table table-sm" id="combo-components-table" style="display: none;">
+                    <thead><tr><th>Product</th><th>Qty</th><th>Order</th><th></th></tr></thead>
+                    <tbody id="combo-components-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/dashboard_combo_form.js' %}"></script>
+{% else %}
+<div class="card"><div class="card-body text-muted">Save this bundle once to add component products.</div></div>
+{% endif %}
+{% endblock %}

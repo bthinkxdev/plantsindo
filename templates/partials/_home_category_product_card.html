@@ -1,0 +1,57 @@
+{% load static %}
+{# Hero carousel card: badge, image, title, delivery line, View product CTA #}
+{% with v=product.primary_variant %}
+{% if v %}
+{% with imgs=v.images.all %}
+<a href="{% url 'store:product_detail' product.slug %}?variant={{ v.id }}" class="hc-pcard">
+    {% if product.is_plant_combo %}
+    <span class="hc-pcard__badge">Easy care bundle</span>
+    {% elif product.beginner_friendly %}
+    <span class="hc-pcard__badge">Easy care pick</span>
+    {% elif product.is_bestseller %}
+    <span class="hc-pcard__badge">Perfect for gifting</span>
+    {% elif product.is_featured %}
+    <span class="hc-pcard__badge">Staff favourite</span>
+    {% else %}
+    <span class="hc-pcard__badge">Shop now</span>
+    {% endif %}
+    <span class="hc-pcard__img-wrap">
+        {% if imgs %}
+        <img src="{{ imgs.0.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280">
+        {% else %}
+        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280">
+        {% endif %}
+    </span>
+    <span class="hc-pcard__title">{{ product.name }}</span>
+    <span class="hc-pcard__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</span>
+    <span class="hc-pcard__meta">Delivers in 48 hrs</span>
+    <span class="hc-pcard__cta">View product</span>
+</a>
+{% endwith %}
+{% elif product.is_simple_product and product.base_price %}
+<a href="{% url 'store:product_detail' product.slug %}" class="hc-pcard">
+    {% if product.is_plant_combo %}
+    <span class="hc-pcard__badge">Easy care bundle</span>
+    {% elif product.beginner_friendly %}
+    <span class="hc-pcard__badge">Easy care pick</span>
+    {% elif product.is_bestseller %}
+    <span class="hc-pcard__badge">Perfect for gifting</span>
+    {% else %}
+    <span class="hc-pcard__badge">Shop now</span>
+    {% endif %}
+    <span class="hc-pcard__img-wrap">
+        {% with urls=product.get_card_image_urls %}
+        {% if urls %}
+        <img src="{{ urls.0 }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280">
+        {% else %}
+        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280">
+        {% endif %}
+        {% endwith %}
+    </span>
+    <span class="hc-pcard__title">{{ product.name }}</span>
+    <span class="hc-pcard__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</span>
+    <span class="hc-pcard__meta">Delivers in 48 hrs</span>
+    <span class="hc-pcard__cta">View product</span>
+</a>
+{% endif %}
+{% endwith %}

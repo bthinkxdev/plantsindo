@@ -1,0 +1,19 @@
+{% load static %}
+<section class="p99-about" aria-label="About">
+  <div class="section-container">
+    <div class="p99-about-card">
+      <div class="p99-about-copy">
+        <p class="p99-about-kicker">About</p>
+        <h2 class="p99-about-title">{{ site_brand }} — {{ site_tagline }}</h2>
+        <p class="p99-about-sub">
+          Beginner‑friendly picks, honest care notes, and safe packing—so your plants arrive happy and thrive at home.
+        </p>
+        <a class="p99-about-cta" href="{% url 'store:about' %}">Read our story</a>
+      </div>
+      <div class="p99-about-media" aria-hidden="true">
+        <img src="{% static 'img/product-1.png' %}" alt="" loading="lazy" decoding="async">
+      </div>
+    </div>
+  </div>
+</section>
+

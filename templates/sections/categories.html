@@ -1,0 +1,36 @@
+{% load static %}
+<section class="category-strip-section" aria-label="Shop popular categories">
+    <div class="category-strip-page-width">
+        <div class="category-strip-scroll" data-category-marquee>
+            <div class="category-strip-scroll__marquee">
+                <div class="category-strip-scroll__segment">
+                    <a href="{% url 'store:shipping' %}" class="category-strip-item category-strip-item--wide">
+                        <span class="category-strip-badge">Fast</span>
+                        <div class="category-strip-img-wrap" aria-hidden="true">
+                            <img src="{% static 'img/fast.png' %}" alt="" loading="lazy" class="category-strip-img" width="360" height="360">
+                        </div>
+                        <span class="category-strip-label">Next‑Day<br>Delivery</span>
+                    </a>
+                    <a href="{% url 'store:product_list' %}" class="category-strip-item">
+                        <div class="category-strip-img-wrap">
+                            <img src="{% static 'img/product-1.png' %}" alt="" loading="lazy" class="category-strip-img" width="180" height="200">
+                        </div>
+                        <span class="category-strip-label">All plants</span>
+                    </a>
+                    {% for c in shop_categories|slice:":6" %}
+                    <a href="{% url 'store:product_list' %}?category={{ c.slug }}" class="category-strip-item">
+                        <div class="category-strip-img-wrap">
+                            {% if c.image %}
+                            <img src="{{ c.image.url }}" alt="{{ c.name }}" loading="lazy" class="category-strip-img" width="180" height="200">
+                            {% else %}
+                            <img src="{% static 'img/product-1.png' %}" alt="{{ c.name }}" loading="lazy" class="category-strip-img" width="180" height="200">
+                            {% endif %}
+                        </div>
+                        <span class="category-strip-label">{{ c.name }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

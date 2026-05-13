@@ -1,0 +1,360 @@
+{# partials/_home_testimonials.html  #}
+{% if testimonials %}
+  {% if testimonials %}
+<section class="p99-testimonials" aria-label="Customer testimonials">
+  <div class="section-container">
+
+    {# Section heading #}
+    <div class="p99-testimonials__head">
+      <span class="p99-testimonials__kicker">Testimonials</span>
+      <h2 class="p99-testimonials__title">What Our Customers Say</h2>
+    </div>
+
+    {# ── Track wrapper (enables horizontal scroll + auto-scroll) ── #}
+    <div class="p99-testimonials__viewport" role="region" aria-label="Testimonial carousel">
+      <div class="p99-testimonials__track" id="testimonialTrack">
+        {% for t in testimonials %}
+        <article class="p99-testimonial-card" aria-label="Review by {{ t.name }}">
+
+          {# Stars #}
+          <div class="p99-testimonial-card__stars" aria-label="{{ t.rating }} out of 5 stars">
+            {% for i in "12345" %}
+              <span class="p99-star {% if forloop.counter <= t.rating %}p99-star--filled{% endif %}"
+                    aria-hidden="true">★</span>
+            {% endfor %}
+          </div>
+
+          {# Review text #}
+          <p class="p99-testimonial-card__text">{{ t.description }}</p>
+
+          {# Author row #}
+          <div class="p99-testimonial-card__author">
+            {# Photo or initials avatar #}
+            {% if t.photo %}
+              <img src="{{ t.photo.url }}"
+                   alt="{{ t.name }}"
+                   class="p99-testimonial-card__avatar"
+                   loading="lazy"
+                   width="48" height="48">
+            {% else %}
+              <div class="p99-testimonial-card__avatar p99-testimonial-card__avatar--initials"
+                   aria-hidden="true">
+                {{ t.name|first|upper }}
+              </div>
+            {% endif %}
+
+            <div class="p99-testimonial-card__meta">
+              <span class="p99-testimonial-card__name">{{ t.name }}</span>
+              {% if t.is_verified %}
+              <span class="p99-testimonial-card__badge" aria-label="Verified buyer">
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none"
+                     aria-hidden="true" focusable="false">
+                  <circle cx="6" cy="6" r="6" fill="#22c55e"/>
+                  <path d="M3.5 6l1.8 1.8L8.5 4.5" stroke="#fff" stroke-width="1.4"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Verified Buyer
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+        </article>
+        {% endfor %}
+      </div>{# /.p99-testimonials__track #}
+    </div>{# /.p99-testimonials__viewport #}
+
+    {# ── Dot indicators (JS injects these, fallback hidden) ── #}
+    <div class="p99-testimonials__dots" id="testimonialDots" aria-hidden="true"></div>
+
+  </div>{# /.section-container #}
+</section>
+{% endif %}
+
+
+<style>
+/* ── Section shell ───────────────────────────────────────────────────────── */
+.p99-testimonials {
+  padding: 4rem 0 3.5rem;
+  background: linear-gradient(160deg, #fdf6f0 0%, #fff8f5 60%, #f9fdf6 100%);
+  overflow: hidden;
+}
+
+.p99-testimonials__head {
+  text-align: center;
+  margin-bottom: 2.25rem;
+}
+
+.p99-testimonials__kicker {
+  display: inline-block;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #6b9e5e;
+  margin-bottom: .45rem;
+}
+
+.p99-testimonials__title {
+  font-size: clamp(1.45rem, 3.5vw, 2rem);
+  font-weight: 700;
+  color: #1a2d1a;
+  margin: 0;
+  letter-spacing: -.02em;
+}
+
+/* ── Viewport + scrollable track ─────────────────────────────────────────── */
+.p99-testimonials__viewport {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;           /* Firefox */
+  cursor: grab;
+}
+.p99-testimonials__viewport::-webkit-scrollbar { display: none; }
+.p99-testimonials__viewport.is-dragging        { cursor: grabbing; }
+
+.p99-testimonials__track {
+  display: flex;
+  gap: 1.1rem;
+  padding: .25rem .5rem 1.25rem;
+  /* Each card ~340px; track stretches naturally */
+}
+
+/* ── Individual card ──────────────────────────────────────────────────────── */
+.p99-testimonial-card {
+  flex: 0 0 min(85vw, 340px);     /* mobile: nearly full-width; desktop: fixed */
+  background: #ffffff;
+  border-radius: 1.1rem;
+  padding: 1.5rem 1.4rem 1.35rem;
+  box-shadow: 0 2px 14px rgba(0,0,0,.07), 0 0 0 1px rgba(0,0,0,.04);
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  transition: box-shadow .2s ease, transform .2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.p99-testimonial-card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,.11);
+  transform: translateY(-2px);
+}
+
+/* Stars */
+.p99-testimonial-card__stars {
+  display: flex;
+  gap: 2px;
+}
+.p99-star            { font-size: 1.15rem; color: #d1d5db; line-height: 1; }
+.p99-star--filled    { color: #f59e0b; }
+
+/* Review text */
+.p99-testimonial-card__text {
+  font-size: .92rem;
+  line-height: 1.62;
+  color: #374151;
+  margin: 0;
+  /* Clamp long reviews so cards stay uniform height */
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Author row */
+.p99-testimonial-card__author {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-top: auto;
+}
+
+/* Avatar — photo or initials */
+.p99-testimonial-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #e5f0e0;
+}
+.p99-testimonial-card__avatar--initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #6b9e5e, #4c7a42);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+/* Name + badge */
+.p99-testimonial-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+.p99-testimonial-card__name {
+  font-size: .88rem;
+  font-weight: 700;
+  color: #111827;
+}
+.p99-testimonial-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .71rem;
+  font-weight: 600;
+  color: #16a34a;
+  letter-spacing: .01em;
+}
+
+/* ── Dot indicators ───────────────────────────────────────────────────────── */
+.p99-testimonials__dots {
+  display: flex;
+  justify-content: center;
+  gap: .4rem;
+  margin-top: .75rem;
+}
+.p99-testimonials__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background .25s, transform .25s;
+}
+.p99-testimonials__dot.is-active {
+  background: #6b9e5e;
+  transform: scale(1.35);
+}
+
+/* ── Mobile: single card per view ────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .p99-testimonial-card {
+    flex: 0 0 calc(100vw - 2.5rem); /* one card fills viewport */
+    scroll-snap-align: center;
+  }
+  .p99-testimonials__track {
+    scroll-snap-type: x mandatory;
+  }
+}
+</style>
+
+
+   {% comment %} JAVASCRIPT
+   • Desktop: auto-scrolls every 4 s, pauses on hover/touch, loops
+   • All screens: mouse drag + touch swipe
+   • Dot indicators sync with scroll position {% endcomment %}
+<script>
+(function () {
+  'use strict';
+
+  const viewport = document.getElementById('testimonialTrack')?.parentElement;
+  const track    = document.getElementById('testimonialTrack');
+  const dotsWrap = document.getElementById('testimonialDots');
+
+  if (!viewport || !track) return;
+
+  /* ── Build dot indicators ──────────────────────────────────────────────── */
+  const cards = Array.from(track.querySelectorAll('.p99-testimonial-card'));
+  let dots = [];
+
+  if (dotsWrap && cards.length > 1) {
+    dotsWrap.removeAttribute('aria-hidden');
+    cards.forEach((_, i) => {
+      const btn = document.createElement('button');
+      btn.className  = 'p99-testimonials__dot' + (i === 0 ? ' is-active' : '');
+      btn.setAttribute('aria-label', `Go to testimonial ${i + 1}`);
+      btn.addEventListener('click', () => scrollToCard(i));
+      dotsWrap.appendChild(btn);
+      dots.push(btn);
+    });
+  }
+
+  function scrollToCard(index) {
+    const card   = cards[index];
+    if (!card) return;
+    const offset = card.offsetLeft - (viewport.offsetWidth - card.offsetWidth) / 2;
+    viewport.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+  }
+
+  function updateDots() {
+    if (!dots.length) return;
+    const center = viewport.scrollLeft + viewport.offsetWidth / 2;
+    let closest  = 0, minDist = Infinity;
+    cards.forEach((c, i) => {
+      const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+      if (dist < minDist) { minDist = dist; closest = i; }
+    });
+    dots.forEach((d, i) => d.classList.toggle('is-active', i === closest));
+  }
+
+  viewport.addEventListener('scroll', updateDots, { passive: true });
+
+  /* ── Auto-scroll (desktop, pause on interaction) ───────────────────────── */
+  let autoTimer   = null;
+  let currentIdx  = 0;
+  let isPaused    = false;
+
+  function autoNext() {
+    if (isPaused) return;
+    currentIdx = (currentIdx + 1) % cards.length;
+    scrollToCard(currentIdx);
+  }
+
+  function startAuto() { autoTimer = setInterval(autoNext, 4000); }
+  function stopAuto()  { clearInterval(autoTimer); }
+  function pause()     { isPaused = true;  stopAuto(); }
+  function resume()    { isPaused = false; startAuto(); }
+
+  viewport.addEventListener('mouseenter', pause);
+  viewport.addEventListener('mouseleave', resume);
+  viewport.addEventListener('touchstart',  pause,  { passive: true });
+  viewport.addEventListener('touchend',    () => setTimeout(resume, 3000), { passive: true });
+
+  // Keep currentIdx in sync when user manually scrolls
+  viewport.addEventListener('scroll', function () {
+    const center = viewport.scrollLeft + viewport.offsetWidth / 2;
+    let minDist = Infinity;
+    cards.forEach((c, i) => {
+      const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+      if (dist < minDist) { minDist = dist; currentIdx = i; }
+    });
+  }, { passive: true });
+
+  // Only auto-scroll on non-touch / desktop
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+  if (!isMobile && cards.length > 1) startAuto();
+
+  /* ── Mouse drag to scroll ──────────────────────────────────────────────── */
+  let isDragging = false, startX = 0, scrollLeft = 0;
+
+  viewport.addEventListener('mousedown', e => {
+    isDragging = true;
+    startX     = e.pageX - viewport.offsetLeft;
+    scrollLeft = viewport.scrollLeft;
+    viewport.classList.add('is-dragging');
+    pause();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    viewport.classList.remove('is-dragging');
+    setTimeout(resume, 2000);
+  });
+  viewport.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x  = e.pageX - viewport.offsetLeft;
+    const dx = (x - startX) * 1.4;             // slight speed multiplier
+    viewport.scrollLeft = scrollLeft - dx;
+  });
+  viewport.addEventListener('mouseleave', () => {
+    if (isDragging) { isDragging = false; viewport.classList.remove('is-dragging'); }
+  });
+
+})();
+</script>
+{% endif %}

@@ -1,0 +1,194 @@
+{% load static %}
+{% if combo_lines %}
+<div class="pdp-combo-bundle mb-3 p-3 border rounded-2 small pdp-card">
+    <div class="fw-bold mb-2 text-uppercase small letter-spaced">Bundle includes</div>
+    <ul class="mb-0 ps-3">
+        {% for row in combo_lines %}<li>{{ row.name }} × {{ row.quantity }}</li>{% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if not product.is_legacy_combo %}
+<div class="pdp-state-check mb-3 pdp-card p-3 border rounded-2" id="pdpStateModule">
+    <label class="form-label small fw-bold mb-1">Check delivery availability</label>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <select class="form-select form-select-sm" style="max-width:16rem;"
+                id="pdpStateSelect" aria-label="Select your state">
+            <option value="">Select your state…</option>
+        </select>
+        <span class="small fw-semibold" id="pdpStateResult" aria-live="polite"></span>
+    </div>
+    <p class="text-muted small mt-1 mb-0" id="pdpStateHint" style="display:none;"></p>
+</div>
+{% endif %}
+
+{# Rental / buy-or-rent UI disabled for this customer — restore pdp-offer-mode block from history when re-enabling rental. #}
+
+{% if product.is_simple_product %}
+    {% with threshold=product.low_stock_threshold|default:5 %}
+        {% if not product.is_combo_product %}
+            {% if product.base_stock and product.base_stock > 0 %}
+                {% if product.base_stock <= threshold %}
+                    <div class="stock-indicator small mb-2" style="color:#c00;">
+                        <i class="fas fa-exclamation-circle me-1"></i> Only {{ product.base_stock }} left in stock!
+                    </div>
+                {% else %}
+                    <div class="stock-indicator small mb-2 text-muted">
+                        <i class="fas fa-check-circle me-1"></i> In Stock
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="stock-indicator small mb-2" style="color:#c00;">
+                    <i class="fas fa-times-circle me-1"></i> Out of Stock
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endwith %}
+{% else %}
+    <div class="stock-indicator small mb-2 text-muted"></div>
+{% endif %}
+
+{% if attributes_grouped %}
+<div class="mb-3" id="variantAttributeGroups">
+    {% for attr in attributes_grouped %}
+    <div class="mb-2">
+        <span class="small fw-bold text-uppercase">{{ attr.name }}</span>
+        <div class="d-flex gap-2 mt-1 flex-wrap" data-attribute-id="{{ attr.id }}" data-attribute-name="{{ attr.name }}">
+            {% for av in attr.values %}
+            <button type="button" class="btn {% if av.id in selected_attribute_value_ids %}btn-dark{% else %}btn-outline-dark{% endif %} px-3 attribute-value-btn" data-attribute-value-id="{{ av.id }}" data-attribute-value="{{ av.value }}" style="min-height:38px;">{{ av.value }}</button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% elif variants %}
+<div class="mb-3">
+    <span class="small fw-bold text-uppercase">Option</span>
+    <div class="d-flex gap-2 mt-2 flex-wrap" id="variantOptions">
+        {% for v in variants %}
+        <a href="?variant={{ v.id }}" class="btn {% if selected_variant and selected_variant.id == v.id %}btn-dark{% else %}btn-outline-dark{% endif %} px-3 variant-option" data-variant-id="{{ v.id }}" style="min-height:38px;">{{ v.get_attribute_values_display|default:"Option" }} {{ forloop.counter }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% comment %} {% if product.is_giftable and product.purchase_enabled %}
+<div class="form-check form-switch mb-3" id="pdpGiftWrap">
+    <input class="form-check-input" type="checkbox" id="pdpGiftToggle" name="pdp_gift_visual">
+    <label class="form-check-label small" for="pdpGiftToggle">Send as a gift (gift message at checkout when available)</label>
+</div>
+{% endif %} {% endcomment %}
+
+<form method="post" action="{% url 'store:cart_add' %}" id="addToCartForm" class="product-add-form mb-3" data-simple-product="{{ product.is_simple_product|yesno:'true,false' }}" data-cart-url="#" data-pincode-url="{{ pincode_check_url }}" data-purchase-in-cart="{{ pdp_purchase_in_cart|yesno:'true,false' }}">
+    {% csrf_token %}
+    <input type="hidden" name="product_id" value="{{ product.id }}">
+    <input type="hidden" name="variant_id" id="formVariantId" value="{{ selected_variant.id|default:'' }}">
+    <input type="hidden" name="quantity" id="formQuantity" value="1">
+    <input type="hidden" name="line_type" id="formLineType" value="purchase">
+    <input type="hidden" name="is_gift" id="formIsGift" value="0">
+    {# Rental hidden fields omitted while storefront rental is disabled. #}
+
+    {% if pot_addons %}
+    <div class="pdp-pot-selector mb-3" id="pdpPotSelector">
+    
+    {# Header #}
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;">
+        <span style="font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;">Add a Pot</span>
+        <span style="font-size:.75rem;color:#9ca3af;">(optional)</span>
+    </div>
+    
+    {# Horizontal scrollable strip #}
+    <div class="pdp-pot-strip-wrap">
+        <div class="pdp-pot-strip" id="pdpPotStrip">
+    
+        {# No pot option — always first #}
+        <button type="button"
+                class="pdp-pot-card pdp-pot-card--selected"
+                data-pot-id=""
+                data-pot-price="0"
+                id="pdpPotNone"
+                aria-pressed="true">
+            <div class="pdp-pot-img-wrap">
+            <span style="font-size:1.5rem;line-height:1;">🚫</span>
+            </div>
+            <div class="pdp-pot-name">Without Pot</div>
+            <div class="pdp-pot-price" style="color:#9ca3af;">—</div>
+        </button>
+    
+        {# Pot options #}
+        {% for pot in pot_addons %}
+        <button type="button"
+                class="pdp-pot-card{% if not pot.in_stock %} pdp-pot-card--oos{% endif %}"
+                data-pot-id="{{ pot.id }}"
+                data-pot-price="{{ pot.price }}"
+                data-pot-name="{{ pot.name }}"
+                {% if not pot.in_stock %}disabled aria-disabled="true"{% endif %}
+                aria-pressed="false">
+            <div class="pdp-pot-img-wrap">
+            {% if pot.image_url %}
+            <img src="{{ pot.image_url }}" alt="{{ pot.name }}" loading="lazy"
+                style="width:100%;height:100%;object-fit:cover;border-radius:6px;">
+            {% else %}
+            <span style="font-size:1.5rem;line-height:1;">🪴</span>
+            {% endif %}
+            </div>
+            <div class="pdp-pot-name">{{ pot.name }}</div>
+            <div class="pdp-pot-price">
+            {% if pot.in_stock %}+₹{{ pot.price }}{% else %}<span style="color:#dc2626;font-size:.65rem;">Out of stock</span>{% endif %}
+            </div>
+        </button>
+        {% endfor %}
+    
+        </div>
+    </div>
+    
+    {# Hidden input — submitted with the add-to-cart form #}
+    <input type="hidden" name="selected_pot_id" id="formSelectedPotId" value="">
+    
+    {# Pot price breakdown line — shown when a pot is selected #}
+    <div id="pdpPotBreakdown" style="display:none;font-size:.78rem;color:#6b7280;margin-top:6px;">
+        Includes pot: <span id="pdpPotBreakdownPrice"></span>
+    </div>
+    
+    </div>
+    {% endif %}
+
+    <div class="product-cta-row">
+        <div class="qty-selector quantity">
+            <button class="btn-minus" type="button"><i class="fas fa-minus"></i></button>
+            <input type="number" id="qtyInput" value="1" min="1" max="99" readonly style="width:50px;text-align:center;">
+            <button class="btn-plus" type="button"><i class="fas fa-plus"></i></button>
+        </div>
+        {% if product.is_simple_product and product.id in cart_simple_product_ids %}
+        <a href="#" class="btn btn-add-cart btn-view-cart js-open-cart-drawer">
+            <i class="fas fa-shopping-cart me-2"></i> View Cart
+        </a>
+        {% elif not product.is_simple_product and selected_variant and selected_variant.id in cart_variant_ids %}
+        <a href="#" class="btn btn-add-cart btn-view-cart js-open-cart-drawer">
+            <i class="fas fa-shopping-cart me-2"></i> View Cart
+        </a>
+        {% elif product.is_simple_product %}
+        <button type="submit" class="btn-add-cart btn js-pdp-add-cart" {% if product.is_combo_product %}{% if not pdp_combo_available %}disabled{% endif %}{% elif not product.base_stock or product.base_stock <= 0 %}disabled{% endif %}>
+            <span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>
+        </button>
+        {% else %}
+        <button type="submit" class="btn-add-cart btn js-pdp-add-cart" {% if not selected_variant or selected_variant.stock_quantity <= 0 %}disabled{% endif %}>
+            <span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>
+        </button>
+        {% endif %}
+    </div>
+
+    {% if product.is_simple_product %}
+    <button type="button" class="btn-buy-now btn mt-2 w-100" id="buyNowBtn" {% if product.is_combo_product %}{% if not pdp_combo_available %}disabled{% endif %}{% elif not product.base_stock or product.base_stock <= 0 %}disabled{% endif %}>
+        Buy Now
+    </button>
+    {% else %}
+    <button type="button" class="btn-buy-now btn mt-2 w-100" id="buyNowBtn" {% if not selected_variant or selected_variant.stock_quantity <= 0 %}disabled{% endif %}>
+        Buy Now
+    </button>
+    {% endif %}
+</form>
+
+<script>
+window.productId = {{ product.id }};
+</script>

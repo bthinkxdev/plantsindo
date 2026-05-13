@@ -1,0 +1,17 @@
+{% if product.specifications.count %}
+<section class="pdp-section pdp-specs pdp-card border rounded-2 p-4 mb-4" id="pdp-specs">
+    <h2 class="h5 mb-3">Specifications</h2>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <tbody>
+                {% for row in product.specifications.all %}
+                <tr>
+                    <th scope="row" class="text-muted w-35">{{ row.name }}</th>
+                    <td>{{ row.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}

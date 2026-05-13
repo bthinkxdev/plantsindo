@@ -1,0 +1,10 @@
+{% if product.extended_content and product.extended_content.body %}
+<section class="pdp-section pdp-seo pdp-card border rounded-2 p-4 mb-4" id="pdp-seo">
+    {% if product.extended_content.title %}
+    <h2 class="h5 mb-3">{{ product.extended_content.title }}</h2>
+    {% endif %}
+    <div class="pdp-seo-body text-secondary small lh-lg">
+        {{ product.extended_content.body|linebreaks }}
+    </div>
+</section>
+{% endif %}

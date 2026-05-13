@@ -1,0 +1,52 @@
+{# partials/_home_reels.html #}
+{% load static %}
+{% if reels %}
+<section class="p99-reels-section p99-reels-section--banner-top" id="section-reels" aria-label="Video reels">
+  <div class="section-container">
+    <a href="{% url 'store:product_list' %}" class="product-section-banner-link p99-reels-section__banner-link" aria-label="Video reels — shop featured plants">
+      <img src="{% static 'img/reel.png' %}" alt="" class="product-section-banner-img" width="1200" height="320" loading="lazy" decoding="async">
+    </a>
+    <div class="p99-reels-scroll">
+      {% for reel in reels %}
+        {% with product=reel.product %}
+        {% if product %}
+          {% with v=product.primary_variant %}
+          <div class="p99-reels-card">
+            <div class="p99-reel-tile">
+              <a class="p99-reel-media" href="{% url 'store:product_detail' product.slug %}{% if v %}?variant={{ v.id }}{% endif %}" aria-label="{{ product.name }}">
+                <video class="p99-reel-video" muted playsinline autoplay loop preload="metadata" {% if reel.poster_image %}poster="{{ reel.poster_image.url }}"{% endif %}>
+                  <source src="{{ reel.video.url }}" type="video/mp4">
+                </video>
+                <span class="p99-reel-play" aria-hidden="true">▶</span>
+              </a>
+              <div class="p99-reel-meta">
+                <div class="p99-reel-name" title="{{ product.name }}">{{ product.name }}</div>
+                {% include "partials/_rating_pill.html" with product=product %}
+                <div class="p99-reel-row">
+                  <span class="p99-reel-price">₹{{ product.lowest_price|default:product.base_price|floatformat:0 }}</span>
+                  <a class="p99-reel-btn" href="{% url 'store:product_detail' product.slug %}{% if v %}?variant={{ v.id }}{% endif %}">View product</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endwith %}
+        {% endif %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  function tryPlayAll(){
+    var vids = document.querySelectorAll('.p99-reel-video');
+    if (!vids || !vids.length) return;
+    vids.forEach(function(v){
+      try { v.muted = true; v.playsInline = true; var p = v.play(); if (p && typeof p.catch === 'function') p.catch(function(){}); } catch (e) {}
+    });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') tryPlayAll();
+  else document.addEventListener('DOMContentLoaded', tryPlayAll);
+})();
+</script>
+{% endif %}

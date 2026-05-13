@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}{% load product_filters %}
+{% block title %}{{ combo.name }} — {{ site_brand }}{% endblock %}
+{% block meta_description %}{{ combo.description|truncatewords:24|default:combo.name }}{% endblock %}
+{% block content %}
+<section class="product-detail-main product-detail-store section-pad">
+    <div class="container">
+        <nav class="shop-breadcrumb mb-3" aria-label="Breadcrumb">
+            <a href="{% url 'store:home' %}">Home</a>
+            <span class="shop-breadcrumb__sep">/</span>
+            <a href="{% url 'store:product_list' %}?combo=1">Combos</a>
+            <span class="shop-breadcrumb__sep">/</span>
+            <span class="shop-breadcrumb__current">{{ combo.name }}</span>
+        </nav>
+        <div class="row g-5 align-items-start">
+            <div class="col-lg-6">
+                <div class="product-img-wrap rounded overflow-hidden bg-light">
+                    {% if combo.image %}
+                    <img src="{{ combo.image.url }}" alt="{{ combo.name }}" class="w-100" loading="eager" decoding="async">
+                    {% elif combo_lines %}
+                    <a href="{% url 'store:product_detail' combo_lines.0.product_slug %}">
+                        <img src="{% static 'img/product-1.png' }}" alt="{{ combo.name }}" class="w-100">
+                    </a>
+                    {% else %}
+                    <img src="{% static 'img/product-1.png' }}" alt="{{ combo.name }}" class="w-100">
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h1 class="h2 mb-2">{{ combo.name }}</h1>
+                <div class="product-price mb-3">
+                    <span class="price-current h4 mb-0">₹{{ combo.price|floatformat:0 }}</span>
+                    {% if combo.original_price and combo.original_price > combo.price %}
+                    <span class="price-old text-muted ms-2">₹{{ combo.original_price|floatformat:0 }}</span>
+                    {% if combo.discount_percent %}
+                    <span class="badge bg-danger ms-2">{{ combo.discount_percent }}% OFF</span>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% if combo.description %}
+                <div class="mb-3 text-muted">{{ combo.description|linebreaks }}</div>
+                {% endif %}
+                {% if combo_lines %}
+                <div class="pdp-combo-bundle mb-3 p-3 border rounded-2 small">
+                    <div class="fw-semibold mb-2">This bundle includes</div>
+                    <ul class="mb-0 ps-3">
+                        {% for row in combo_lines %}
+                        <li><a href="{% url 'store:product_detail' row.product_slug %}">{{ row.name }}</a> × {{ row.quantity }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                {% if combo.instructions %}
+                <div class="mb-4 small text-muted"><strong>Good to know:</strong> {{ combo.instructions|linebreaks }}</div>
+                {% endif %}
+
+                <div id="pdp-pin-wrap" class="mb-3">
+                    <div class="pincode-service d-flex flex-md-row flex-column justify-content-between align-items-md-center gap-3 p-3 border rounded-2">
+                        <div class="small">
+                            <span class="fw-semibold d-block">Delivery pincode</span>
+                            <span class="pincode-msg text-muted">Check if this combo can be delivered to you.</span>
+                        </div>
+                        <div class="pincode-service-input input-group" style="min-width: 240px;">
+                            <input type="text" inputmode="numeric" maxlength="6" class="form-control" id="comboPinInput" placeholder="Enter 6-digit pincode" aria-label="Pincode">
+                            <button type="button" class="btn btn-dark" id="comboPinBtn">Check</button>
+                        </div>
+                    </div>
+                </div>
+
+                {% if combo.id in cart_combo_ids %}
+                <a href="#" class="product-cta border-0 d-inline-block text-center text-decoration-none w-100 py-3 js-open-cart-drawer">View Cart</a>
+                {% else %}
+                <form method="post" action="{% url 'store:cart_add' %}" class="product-add-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="combo_id" value="{{ combo.id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="product-cta border-0 w-100 py-3" {% if not pdp_combo_available %}disabled{% endif %}>Add to Cart</button>
+                </form>
+                <form method="post" action="{% url 'store:buy_now' %}" class="mt-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="combo_id" value="{{ combo.id }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" class="btn btn-outline-dark w-100 py-2" {% if not pdp_combo_available %}disabled{% endif %}>Buy now</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    var url = "{% url 'store:pincode_check' %}";
+    var btn = document.getElementById('comboPinBtn');
+    var input = document.getElementById('comboPinInput');
+    var msg = document.querySelector('#pdp-pin-wrap .pincode-msg');
+    if (!btn || !input || !msg) return;
+    btn.addEventListener('click', function(){
+        var v = (input.value || '').replace(/\D/g, '');
+        if (v.length !== 6) { msg.textContent = 'Enter a 6-digit pincode.'; msg.className = 'pincode-msg text-danger'; return; }
+        msg.textContent = 'Checking…';
+        msg.className = 'pincode-msg text-muted';
+        fetch(url + '?pincode=' + encodeURIComponent(v) + '&combo=true&line_type=purchase', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                msg.textContent = d.message || '';
+                msg.className = d.serviceable ? 'pincode-msg text-success' : 'pincode-msg text-danger';
+            })
+            .catch(function(){ msg.textContent = 'Could not check right now.'; msg.className = 'pincode-msg text-muted'; });
+    });
+})();
+</script>
+{% endblock %}

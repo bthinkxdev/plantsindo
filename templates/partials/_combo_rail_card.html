@@ -1,0 +1,18 @@
+{% load static %}
+<div class="p99-compact-card p99-compact-card--combo">
+    <a href="{% url 'store:combo_detail' combo.slug %}" class="p99-compact-card__img-wrap">
+        {% if combo.image %}
+        <img src="{{ combo.image.url }}" alt="{{ combo.name }}" loading="lazy" decoding="async" width="200" height="200">
+        {% else %}
+        <img src="{% static 'img/product-1.png' %}" alt="{{ combo.name }}" loading="lazy" decoding="async" width="200" height="200">
+        {% endif %}
+    </a>
+    <a href="{% url 'store:combo_detail' combo.slug %}" class="p99-compact-card__name">{{ combo.name }}</a>
+    <div class="p99-compact-card__rating-slot" aria-hidden="true"></div>
+    <span class="p99-compact-card__price">
+        ₹{{ combo.price|floatformat:0 }}
+        {% if combo.original_price and combo.original_price > combo.price %}
+        <span class="p99-compact-card__was">₹{{ combo.original_price|floatformat:0 }}</span>
+        {% endif %}
+    </span>
+</div>
