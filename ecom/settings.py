@@ -127,3 +127,8 @@ else:
     MEDIA_ROOT = BASE_DIR / 'media'
     MEDIA_URL = '/media/'
 # ALLOWED_SERVICE_PINCODES = ('682001', '682002', '682003', '682016', '695001', '695002', '673001', '673002', '686001', '688001')
+CSRF_TRUSTED_ORIGINS = [
+    "https://plantsindo.bthinkx.com",
+]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
