@@ -4,41 +4,51 @@ services:
   plantsindo_db:
     image: postgres:16-alpine
     container_name: plantsindo_postgres
+
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-plantsindo}
-      POSTGRES_USER: ${POSTGRES_USER:-plantsindo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plantsindo}
+      POSTGRES_DB: plantsindo
+      POSTGRES_USER: plantsindo
+      POSTGRES_PASSWORD: plantsindo
+
     volumes:
       - plantsindo_pgdata:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PUBLISH_PORT:-5432}:5432"
+
+    restart: unless-stopped
+
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-plantsindo} -d ${POSTGRES_DB:-plantsindo}"]
+      test: ["CMD-SHELL", "pg_isready -U plantsindo -d plantsindo"]
       interval: 5s
       timeout: 5s
       retries: 10
-    restart: unless-stopped
 
   plantsindo_web:
     build: .
+
     container_name: plantsindo_container
-    command: gunicorn ecom.wsgi:application --bind 0.0.0.0:8027
+
+    command: gunicorn ecom.wsgi:application --bind 0.0.0.0:8031 --workers 3
+
     volumes:
       - .:/app
+
     ports:
-      - "8027:8027"
+      - "8031:8031"
+
     env_file:
       - .env
+
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-plantsindo}
-      POSTGRES_USER: ${POSTGRES_USER:-plantsindo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-plantsindo}
+      POSTGRES_DB: plantsindo
+      POSTGRES_USER: plantsindo
+      POSTGRES_PASSWORD: plantsindo
       POSTGRES_HOST: plantsindo_db
-      POSTGRES_PORT: "5432"
+      POSTGRES_PORT: 5432
+
     depends_on:
       plantsindo_db:
         condition: service_healthy
-    restart: always
+
+    restart: unless-stopped
 
 volumes:
   plantsindo_pgdata:

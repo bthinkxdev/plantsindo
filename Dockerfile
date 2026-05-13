@@ -1,22 +1,25 @@
-# Use lightweight Python
-FROM python:3.11-slim
+# Lightweight Python
+FROM python:3.12-slim
 
-# Set environment
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set work dir
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy project
+COPY requirements.txt .
+
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
 COPY . .
 
-# Collect static
 RUN python manage.py collectstatic --noinput
 
-# Run with Gunicorn
-CMD ["gunicorn", "ecom.wsgi:application", "--bind", "0.0.0.0:8027"]
+EXPOSE 8031
+
+CMD ["gunicorn", "ecom.wsgi:application", "--bind", "0.0.0.0:8031", "--workers", "3"]
