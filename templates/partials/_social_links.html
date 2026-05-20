@@ -1,0 +1,34 @@
+{% comment %}
+Social links — Instagram, Facebook, WhatsApp.
+  variant="footer"  — circular icons on dark footer (default)
+  variant="page"    — premium labeled pills for About / static pages
+  variant="compact" — circular icons on light backgrounds (Contact)
+{% endcomment %}
+{% if variant == "page" %}
+<div class="pi-social pi-social--page" role="list" aria-label="Follow us on social media">
+    <a href="{{ site_instagram_url }}" target="_blank" rel="noopener noreferrer" class="pi-social__btn pi-social__btn--instagram" role="listitem" title="Instagram @{{ site_instagram }}" aria-label="Follow us on Instagram">
+        <span class="pi-social__icon" aria-hidden="true"><i class="fab fa-instagram"></i></span>
+        <span class="pi-social__label">Instagram</span>
+    </a>
+    <a href="{{ site_facebook_url }}" target="_blank" rel="noopener noreferrer" class="pi-social__btn pi-social__btn--facebook" role="listitem" title="Facebook" aria-label="Follow us on Facebook">
+        <span class="pi-social__icon" aria-hidden="true"><i class="fab fa-facebook-f"></i></span>
+        <span class="pi-social__label">Facebook</span>
+    </a>
+    <a href="https://wa.me/{{ site_whatsapp }}" target="_blank" rel="noopener noreferrer" class="pi-social__btn pi-social__btn--whatsapp" role="listitem" title="WhatsApp" aria-label="Chat on WhatsApp">
+        <span class="pi-social__icon" aria-hidden="true"><i class="fab fa-whatsapp"></i></span>
+        <span class="pi-social__label">WhatsApp</span>
+    </a>
+</div>
+{% elif variant == "compact" %}
+<div class="pi-social pi-social--compact" aria-label="Follow us on social media">
+    <a href="{{ site_instagram_url }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--instagram" title="Instagram @{{ site_instagram }}" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="{{ site_facebook_url }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--facebook" title="Facebook" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+    <a href="https://wa.me/{{ site_whatsapp }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--whatsapp" title="WhatsApp" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+</div>
+{% else %}
+<div class="social-links{% if extra_class %} {{ extra_class }}{% endif %}" aria-label="Follow us on social media">
+    <a href="{{ site_instagram_url }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--instagram" title="Instagram @{{ site_instagram }}" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    <a href="{{ site_facebook_url }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--facebook" title="Facebook" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+    <a href="https://wa.me/{{ site_whatsapp }}" target="_blank" rel="noopener noreferrer" class="social-link social-link--whatsapp" title="WhatsApp" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+</div>
+{% endif %}

@@ -790,6 +790,29 @@ body.storefront {
   color: #fff !important;
   border-bottom-color: rgba(255, 255, 255, 0.25);
 }
+.storefront .social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+.storefront .social-link {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: transform var(--ease-out), background var(--ease-out), box-shadow var(--ease-out), color var(--ease-out);
+  border: 1px solid transparent;
+}
+.storefront .social-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(var(--brand-rgb), 0.22);
+}
 .storefront .footer .social-link {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -797,6 +820,16 @@ body.storefront {
 .storefront .footer .social-link:hover {
   background: var(--accent-green);
   color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.storefront .footer .social-link--instagram:hover {
+  background: linear-gradient(135deg, #f09433 0%, #dc2743 55%, #bc1888 100%);
+}
+.storefront .footer .social-link--facebook:hover {
+  background: #1877f2;
+}
+.storefront .footer .social-link--whatsapp:hover {
+  background: #25d366;
 }
 .storefront .pi-footer__newsletter {
   margin-top: 2rem;

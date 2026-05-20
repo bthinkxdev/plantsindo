@@ -37,10 +37,7 @@
                 <p class="mt-2 footer-lead">
                     {{ site_tagline }} — curated tropicals, calming greens and ceramics for calmer rooms.
                 </p>
-                <div class="social-links mt-4">
-                    <a href="https://www.instagram.com/{{ site_instagram }}/" target="_blank" rel="noopener" class="social-link" title="Instagram @{{ site_instagram }}" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    <a href="https://wa.me/{{ site_whatsapp }}" target="_blank" rel="noopener" class="social-link" title="WhatsApp {{ site_whatsapp }}" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                </div>
+                {% include "partials/_social_links.html" with extra_class="mt-4" %}
             </div>
             <div class="col-6 col-md-3 col-lg-2">
                 <h6 class="footer-heading">Explore</h6>

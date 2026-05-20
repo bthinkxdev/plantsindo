@@ -93,7 +93,15 @@ ADMIN_NOTIFICATION_EMAILS = ['adithyamc@bthinkx.com']
 SITE_PHONE = config('SITE_PHONE', default='+91 7559947750')
 SITE_WHATSAPP = config('SITE_WHATSAPP', default='917559947750')
 SITE_EMAIL = config('SITE_EMAIL', default='hello@plantsindo.com')
-SITE_INSTAGRAM = config('SITE_INSTAGRAM', default='plantsindo')
+SITE_INSTAGRAM = config('SITE_INSTAGRAM', default='plantsindo.co')
+SITE_INSTAGRAM_URL = config(
+    'SITE_INSTAGRAM_URL',
+    default='https://www.instagram.com/plantsindo.co/',
+)
+SITE_FACEBOOK_URL = config(
+    'SITE_FACEBOOK_URL',
+    default='https://www.facebook.com/profile.php?id=61587089061711',
+)
 SITE_BRAND = config('SITE_BRAND', default='Plantsindo')
 SITE_TAGLINE = config('SITE_TAGLINE', default='Calm corners, lush leaves')
 RZP_CLIENT_ID = config('RZP_CLIENT_ID')

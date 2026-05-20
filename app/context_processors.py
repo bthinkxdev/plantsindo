@@ -12,11 +12,22 @@ from .wishlist_utils import (
 from .services.category_tree import build_active_category_tree
 
 def site_contact_context(request):
+    instagram_handle = getattr(settings, 'SITE_INSTAGRAM', 'plantsindo.co')
     return {
         'site_phone': getattr(settings, 'SITE_PHONE', '+91 7559947750'),
         'site_whatsapp': getattr(settings, 'SITE_WHATSAPP', '917559947750'),
         'site_email': getattr(settings, 'SITE_EMAIL', 'hello@plantsindo.com'),
-        'site_instagram': getattr(settings, 'SITE_INSTAGRAM', 'plants_.99'),
+        'site_instagram': instagram_handle,
+        'site_instagram_url': getattr(
+            settings,
+            'SITE_INSTAGRAM_URL',
+            f'https://www.instagram.com/{instagram_handle}/',
+        ),
+        'site_facebook_url': getattr(
+            settings,
+            'SITE_FACEBOOK_URL',
+            'https://www.facebook.com/profile.php?id=61587089061711',
+        ),
     }
 
 def cart_context(request):
