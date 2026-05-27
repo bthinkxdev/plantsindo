@@ -14,6 +14,8 @@ from .auth_service import AuthenticationService, OTPService, RateLimitError
 from .forms import AddressForm, EmailOTPRequestForm, OTPVerificationForm, UserProfileForm
 from .models import Address, Order
 from .services import CartService
+from .captcha import CaptchaError, captcha_required, extract_captcha_token, verify_captcha
+from django.conf import settings
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -33,7 +35,7 @@ class OTPLoginView(View):
         if 'clear' in request.GET or not request.session.get('otp_email'):
             request.session.pop('otp_email', None)
             request.session.pop('otp_next', None)
-        context = {'email_form': EmailOTPRequestForm(), 'next': next_url, 'show_otp_input': False}
+        context = {'email_form': EmailOTPRequestForm(), 'next': next_url, 'show_otp_input': False, 'captcha_site_key': settings.CAPTCHA_SITE_KEY,}
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -51,9 +53,16 @@ class OTPLoginView(View):
         form = EmailOTPRequestForm(request.POST)
         if not form.is_valid():
             messages.error(request, 'Please enter a valid email address.')
-            return render(request, self.template_name, {'email_form': form, 'next': next_url})
+            return render(request, self.template_name, {'email_form': form, 'next': next_url, 'captcha_site_key': settings.CAPTCHA_SITE_KEY},)
         email = form.cleaned_data['email']
         ip_address = get_client_ip(request)
+        try:
+            if captcha_required():
+                verify_captcha(extract_captcha_token(request), remote_ip=ip_address)
+        except CaptchaError as exc:
+            messages.error(request, str(exc))
+            return render(request, self.template_name, {'email_form': form, 'next': next_url, 'captcha_site_key': settings.CAPTCHA_SITE_KEY,})
+
         try:
             otp_request, plain_otp = OTPService.create_otp(email, ip_address)
             if OTPService.send_otp_email(email, plain_otp):

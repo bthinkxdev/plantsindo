@@ -82,6 +82,12 @@ CACHES = {
 }
 HOME_CACHE_TTL = 120
 SHOP_CACHE_TTL = 60
+
+CAPTCHA_SECRET = config('CAPTCHA_SECRET', default='').strip()
+CAPTCHA_SITE_KEY = config('CAPTCHA_SITE_KEY', default='').strip()
+CAPTCHA_PROVIDER = config('CAPTCHA_PROVIDER', default='turnstile')
+CAPTCHA_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+
 EMAIL_BACKEND = 'app.email_backend.CustomEmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587

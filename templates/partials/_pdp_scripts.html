@@ -1417,4 +1417,77 @@
             });
     });
 })();
+
+(function () {
+    var btn      = document.getElementById('pdpShareBtn');
+    var overlay  = document.getElementById('pdpShareModal');
+    var closeBtn = document.getElementById('pdpShareClose');
+    if (!btn || !overlay) return;
+
+    function getShareData() {
+        var name  = btn.getAttribute('data-product-name') || document.title;
+        var price = btn.getAttribute('data-product-price');
+        var url   = window.location.href;
+        var text  = price ? name + ' — ₹' + price + '\n' + url : name + '\n' + url;
+        return { name: name, price: price, url: url, text: text };
+    }
+
+    function openSheet() {
+        var d = getShareData();
+        var enc = encodeURIComponent;
+        document.getElementById('shareWhatsapp').href = 'https://wa.me/?text=' + enc(d.text);
+        document.getElementById('shareFacebook').href = 'https://www.facebook.com/sharer/sharer.php?u=' + enc(d.url);
+        document.getElementById('shareMail').href = 'mailto:?subject=' + enc(d.name) + '&body=' + enc(d.text);
+        var smsBody = enc(d.text);
+        document.getElementById('shareSMS').href = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+            ? 'sms:&body=' + smsBody : 'sms:?body=' + smsBody;
+        overlay.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSheet() {
+        overlay.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    btn.addEventListener('click', function () {
+        var d = getShareData();
+        if (navigator.share) {
+            navigator.share({ title: d.name, text: '₹' + (d.price || '') + ' — Check this out!', url: d.url })
+                .catch(function () {});
+            return;
+        }
+        openSheet();
+    });
+
+    closeBtn.addEventListener('click', closeSheet);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeSheet(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+
+    document.getElementById('shareCopy').addEventListener('click', function () {
+        var d = getShareData();
+        var label = document.getElementById('shareCopyLabel');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(d.url).then(function () {
+                label.textContent = 'Copied!';
+                setTimeout(function () { label.textContent = 'Copy Link'; }, 2000);
+            });
+        } else {
+            var ta = document.createElement('textarea');
+            ta.value = d.url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); label.textContent = 'Copied!'; } catch(e) {}
+            document.body.removeChild(ta);
+            setTimeout(function () { label.textContent = 'Copy Link'; }, 2000);
+        }
+    });
+
+    var priceEl = document.getElementById('price-selling');
+    if (priceEl) {
+        new MutationObserver(function () {
+            var raw = (priceEl.textContent || '').replace(/[^\d.]/g, '');
+            if (raw) btn.setAttribute('data-product-price', raw);
+        }).observe(priceEl, { childList: true, subtree: true, characterData: true });
+    }
+})();
 </script>
