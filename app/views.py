@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 from django.utils import timezone
+from .captcha import CaptchaError, captcha_required, extract_captcha_token, verify_captcha
+from .auth_views import get_client_ip
 import json
 import razorpay
 import hmac
@@ -1724,6 +1726,7 @@ class CheckoutView(TemplateView):
                 if payment_method in ('cod', 'razorpay'):
                     initial['payment'] = payment_method
             context.update({
+                'captcha_site_key': settings.CAPTCHA_SITE_KEY,
                 'cart': cart,
                 'items': cart.items.select_related('product', 'combo', 'selected_variant').prefetch_related(
                     'selected_variant__images', 'product__images', 'combo__items__product'
@@ -1784,6 +1787,12 @@ class OrderCreateView(FormView):
         return context
 
     def form_valid(self, form):
+        try:
+            if captcha_required():
+                verify_captcha(extract_captcha_token(self.request), remote_ip=get_client_ip(self.request))
+        except CaptchaError as exc:
+            messages.error(self.request, str(exc))
+            return redirect('store:checkout')
         cart = CartService.get_or_create_cart(self.request)
         payment_method = form.cleaned_data.get('payment')
         order_user = self.request.user if self.request.user.is_authenticated else None
@@ -1960,6 +1969,12 @@ class ContactView(FormView):
 
     def form_valid(self, form):
         try:
+            if captcha_required():
+                verify_captcha(extract_captcha_token(self.request), remote_ip=get_client_ip(self.request))
+        except CaptchaError as exc:
+            messages.error(self.request, str(exc))
+            return self.form_invalid(form)
+        try:
             form.save()
             messages.success(self.request, 'Thanks for reaching out! We will respond soon.')
         except Exception as e:
@@ -1970,6 +1985,7 @@ class ContactView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['active_page'] = 'contact'
+        context['captcha_site_key'] = settings.CAPTCHA_SITE_KEY
         return context
 
 class StaticPageView(TemplateView):

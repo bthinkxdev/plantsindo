@@ -7528,10 +7528,9 @@ body.storefront:has(.storefront--ios-home) {
 }
 
 .storefront.storefront--ios-home .p99-rich-band--footer {
-  border-radius: var(--ios-radius-xl);
-  margin-left: var(--store-pad-left);
-  margin-right: var(--store-pad-right);
-  box-shadow: var(--ios-shadow-md);
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
 }
 
 .storefront.storefront--ios-home .p99-reels-section__badge {

@@ -48,6 +48,11 @@
                     </div>
                 </div>
 
+                {% if captcha_site_key %}
+                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                <div class="cf-turnstile" data-sitekey="{{ captcha_site_key }}" style="margin-bottom: 1rem;"></div>
+                {% endif %}
+
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
                     <i class="fas fa-sign-in-alt"></i>
                     <span>Login</span>

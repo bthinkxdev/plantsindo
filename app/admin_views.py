@@ -207,11 +207,19 @@ class AdminLoginView(View):
         if request.user.is_authenticated and request.user.is_staff:
             return redirect('admin_panel:dashboard')
         form = AdminLoginForm()
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name, {'form': form, 'captcha_site_key': settings.CAPTCHA_SITE_KEY})
 
     def post(self, request):
         form = AdminLoginForm(request.POST)
         if form.is_valid():
+            from app.captcha import CaptchaError, captcha_required, extract_captcha_token, verify_captcha
+            from app.views import get_client_ip
+            try:
+                if captcha_required():
+                    verify_captcha(extract_captcha_token(request), remote_ip=get_client_ip(request))
+            except CaptchaError as exc:
+                messages.error(request, str(exc))
+                return render(request, self.template_name, {'form': form, 'captcha_site_key': settings.CAPTCHA_SITE_KEY})
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(request, username=username, password=password)
@@ -221,7 +229,7 @@ class AdminLoginView(View):
                 return redirect('admin_panel:dashboard')
             else:
                 messages.error(request, 'Invalid credentials or insufficient permissions.')
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name, {'form': form, 'captcha_site_key': settings.CAPTCHA_SITE_KEY})
 
 class AdminLogoutView(View):
 
