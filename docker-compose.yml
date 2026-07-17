@@ -1,22 +1,26 @@
-version: "3.9"
-
 services:
-  plantsindo_db:
+
+  postgres:
     image: postgres:16-alpine
-    container_name: plantsindo_postgres
+    container_name: postgres
 
     environment:
-      POSTGRES_DB: plantsindo
-      POSTGRES_USER: plantsindo
-      POSTGRES_PASSWORD: plantsindo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: plants@098765
 
     volumes:
-      - plantsindo_pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"
+
+    networks:
+      - shared_network
 
     restart: unless-stopped
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U plantsindo -d plantsindo"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,16 +43,23 @@ services:
 
     environment:
       POSTGRES_DB: plantsindo
-      POSTGRES_USER: plantsindo
-      POSTGRES_PASSWORD: plantsindo
-      POSTGRES_HOST: plantsindo_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: plants@098765
+      POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
 
     depends_on:
-      plantsindo_db:
+      postgres:
         condition: service_healthy
+
+    networks:
+      - shared_network
 
     restart: unless-stopped
 
 volumes:
-  plantsindo_pgdata:
+  pgdata:
+
+networks:
+  shared_network:
+    external: true
