@@ -18,7 +18,12 @@
 
         {% if shop_category_banner %}
         <div class="shop-category-hero">
-            <img src="{{ shop_category_banner.url }}" class="shop-category-hero__img" width="1600" height="600" decoding="async" loading="lazy" alt="{% if selected_category %}{{ selected_category.name }}{% else %}Category{% endif %}">
+            <picture>
+                {% if shop_category_banner.mobile_image %}
+                <source media="(max-width: 575px)" srcset="{{ shop_category_banner.mobile_image.url }}">
+                {% endif %}
+                <img src="{{ shop_category_banner.url }}" class="shop-category-hero__img" decoding="async" loading="lazy" alt="{% if selected_category %}{{ selected_category.name }}{% else %}Category{% endif %}">
+            </picture>
             {% if shop_category_banner.tagline %}
             <div class="shop-category-hero__overlay">
                 <p class="shop-category-hero__tagline">{{ shop_category_banner.tagline }}</p>

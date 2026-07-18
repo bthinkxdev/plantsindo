@@ -1004,19 +1004,22 @@ body.storefront {
   width: 100%;
   max-width: var(--container-max);
   margin: 0 auto var(--spacing-md);
-  padding: 0;  /* remove padding from here */
+  padding: 0;
   position: relative;
-  border-radius: 20px;
+  border-radius: 17px;
   overflow: hidden;
-  height: clamp(200px, 38vh, 420px);
   background: var(--secondary-green);
+}
+.shop-category-hero picture,
+.shop-category-hero__img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 @media (max-width: 575px) {
   .shop-category-hero {
-    height: 200px;
-    border-radius: 14px;
-    padding: 0 12px;
+    border-radius: 5px;
   }
 }
 
