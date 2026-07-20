@@ -107,6 +107,12 @@
                                 {% if form.message.errors %}<div class="text-danger small mt-1">{{ form.message.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="col-12">
+                                {% if captcha_site_key %}
+                                <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                                <div class="cf-turnstile" data-sitekey="{{ captcha_site_key }}"></div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
                                 <button type="submit" class="btn-contact-submit w-100">
                                     Send Message <i class="fas fa-paper-plane ms-2"></i>
                                 </button>

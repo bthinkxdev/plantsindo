@@ -173,6 +173,8 @@
                             <span class="form-error" id="emailError"></span>
                         </div>
 
+                        <div class="cf-turnstile" data-sitekey="{{ captcha_site_key }}"></div>
+                        
                         <button type="submit" class="btn btn-primary btn-full" id="sendOtpBtn">
                             <span class="btn-text">Send OTP / Verify Email</span>
                             <span class="btn-loader" style="display: none;">
@@ -252,6 +254,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
     window.AUTH_LOGIN_URL = "{% url 'auth:login' %}";
 </script>

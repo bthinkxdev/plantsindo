@@ -7528,10 +7528,9 @@ body.storefront:has(.storefront--ios-home) {
 }
 
 .storefront.storefront--ios-home .p99-rich-band--footer {
-  border-radius: var(--ios-radius-xl);
-  margin-left: var(--store-pad-left);
-  margin-right: var(--store-pad-right);
-  box-shadow: var(--ios-shadow-md);
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 0 !important;
 }
 
 .storefront.storefront--ios-home .p99-reels-section__badge {
@@ -8975,3 +8974,97 @@ body.storefront .order-line .line-info {
   width: 100% !important;
 }
 
+/* ── PDP Share Button ─────────────────────────────── */
+.pdp-share-btn {
+    position: absolute;
+    top: 68px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
+}
+.pdp-share-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: #0d1a3c;
+}
+.pdp-share-btn:hover {
+    background: #ffffff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+.pdp-share-btn:active { transform: scale(0.96); }
+
+@media (max-width: 575px) {
+    .pdp-share-btn { top: 58px; right: 10px; width: 38px; height: 38px; }
+    .pdp-share-btn svg { width: 17px; height: 17px; }
+}
+
+/* ── Share Modal ──────────────────────────────────── */
+.pdp-share-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 9999;
+    align-items: flex-end;
+    justify-content: center;
+}
+.pdp-share-overlay.is-open { display: flex; }
+.pdp-share-sheet {
+    background: #fff;
+    border-radius: 1rem 1rem 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 1.25rem 1.25rem 2rem;
+    animation: shareSlideUp .25s ease;
+}
+@keyframes shareSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+@media (min-width: 640px) {
+    .pdp-share-overlay { align-items: center; }
+    .pdp-share-sheet { border-radius: 1rem; max-width: 400px; animation: sharePopIn .2s ease; }
+    @keyframes sharePopIn {
+        from { transform: scale(.92); opacity: 0; }
+        to   { transform: scale(1); opacity: 1; }
+    }
+}
+.pdp-share-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+}
+.pdp-share-preview { display: flex; align-items: center; gap: .75rem; }
+.pdp-share-preview img { width: 3rem; height: 3rem; object-fit: cover; border-radius: .5rem; border: 1px solid #eee; }
+.pdp-share-name  { font-size: .9rem; font-weight: 600; color: #111; line-height: 1.3; }
+.pdp-share-price { font-size: .85rem; color: #555; margin-top: .1rem; }
+.pdp-share-close { background: none; border: none; font-size: 1.6rem; line-height: 1; color: #888; cursor: pointer; padding: 0 .25rem; flex-shrink: 0; }
+.pdp-share-close:hover { color: #111; }
+.pdp-share-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: .75rem 1rem; }
+.pdp-share-option {
+    display: flex; flex-direction: column; align-items: center; gap: .45rem;
+    font-size: .75rem; color: #333; text-decoration: none; background: none;
+    border: none; cursor: pointer; padding: .5rem .25rem; border-radius: .5rem; transition: background .15s;
+}
+.pdp-share-option:hover { background: #f5f5f5; color: #111; text-decoration: none; }
+.pdp-share-icon { width: 2.75rem; height: 2.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+.pdp-share-icon svg { width: 1.3rem; height: 1.3rem; }
+.pdp-share-icon--wa   { background: #25d366; }
+.pdp-share-icon--fb   { background: #1877f2; }
+.pdp-share-icon--mail { background: #ea4335; }
+.pdp-share-icon--sms  { background: #34aadc; }
+.pdp-share-icon--copy { background: #6c757d; }
