@@ -1,0 +1,65 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: plants@098765
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    ports:
+      - "5432:5432"
+
+    networks:
+      - shared_network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  plantsindo_web:
+    build: .
+
+    container_name: plantsindo_container
+
+    command: gunicorn ecom.wsgi:application --bind 0.0.0.0:8031 --workers 3
+
+    volumes:
+      - .:/app
+
+    ports:
+      - "8031:8031"
+
+    env_file:
+      - .env
+
+    environment:
+      POSTGRES_DB: plantsindo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: plants@098765
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    networks:
+      - shared_network
+
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+
+networks:
+  shared_network:
+    external: true
