@@ -2,12 +2,11 @@
 Delivery state models.
 
 DeliveryState          — master list of all 28 Indian states + 8 UTs.
-ProductDeliveryState   — bridge: which states a product ships to.
-
-TL's requirement: "create a bridge table with one-to-many fields
-connecting both client side and customer side."
+ProductDeliveryState   — bridge: which states a product ships to,
+                         plus per-state delivery charge (per unit).
 """
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from .base import TimeStampedModel
 
@@ -68,13 +67,9 @@ class DeliveryState(models.Model):
 
 class ProductDeliveryState(models.Model):
     """
-    One row = this product can be delivered to this state.
+    One row = this product can be delivered to this state at a given charge.
 
-    This is the 'bridge table with one-to-many fields connecting both
-    client side and customer side' requested by TL.
-
-    Seller side: creates rows via the product edit form.
-    Customer side: reads rows to populate the state dropdown on PDP.
+    delivery_charge is per unit (quantity 1). Checkout multiplies by qty.
     """
 
     product = models.ForeignKey(
@@ -87,6 +82,13 @@ class ProductDeliveryState(models.Model):
         on_delete=models.CASCADE,
         related_name="product_deliveries",
     )
+    delivery_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="Delivery charge for this product to this state (per unit).",
+    )
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -96,4 +98,4 @@ class ProductDeliveryState(models.Model):
         verbose_name_plural = "Product Delivery States"
 
     def __str__(self) -> str:
-        return f"{self.product.name} → {self.state.name}"
+        return f"{self.product.name} → {self.state.name} (₹{self.delivery_charge})"

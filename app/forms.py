@@ -4,6 +4,27 @@ from django.contrib.auth.models import User
 from django.utils.dateparse import parse_date
 from .models import Address, ContactMessage, NewsletterSubscription, Review
 from .delivery_utils import delivery_enabled
+from .services.state_delivery_service import get_all_active_states, resolve_delivery_state_id
+from .services.cart_order import format_cart_delivery_error, get_cart_delivery_issues
+
+
+def active_delivery_state_queryset():
+    return get_all_active_states()
+
+
+def configure_delivery_state_field(field, *, widget_class='form-input', empty_label='Select state…'):
+    field.queryset = active_delivery_state_queryset()
+    field.empty_label = empty_label
+    field.label = 'State'
+    existing = field.widget.attrs.get('class', '')
+    field.widget.attrs['class'] = f'{existing} {widget_class}'.strip()
+
+
+def sync_state_text_from_delivery_state(cleaned_data):
+    ds = cleaned_data.get('delivery_state')
+    if ds is not None and hasattr(ds, 'name'):
+        cleaned_data['state'] = ds.name
+    return cleaned_data
 
 class CartAddForm(forms.Form):
     product_id = forms.IntegerField(min_value=1, required=False)
@@ -77,13 +98,13 @@ class CheckoutForm(forms.Form):
     phone        = forms.CharField(max_length=20, required=False)
     address_line = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False, label="Address")
     city         = forms.CharField(max_length=80, required=False)
-    state        = forms.CharField(max_length=80, required=False)
+    state        = forms.CharField(max_length=80, required=False, widget=forms.HiddenInput())
     pincode      = forms.CharField(max_length=10, required=False)
- 
-    delivery_state = forms.IntegerField(
+    delivery_state = forms.ModelChoiceField(
+        queryset=active_delivery_state_queryset(),
         required=False,
-        widget=forms.HiddenInput(),
-        help_text="PK of the DeliveryState the customer selected on the PDP.",
+        empty_label='Select state…',
+        label='State',
     )
  
     payment = forms.ChoiceField(
@@ -92,10 +113,11 @@ class CheckoutForm(forms.Form):
     )
  
     def __init__(self, *args, **kwargs):
-        self.user              = kwargs.pop("user", None)
-        self._cart_product_ids = kwargs.pop("cart_product_ids", [])
+        self.user        = kwargs.pop("user", None)
+        self._cart_items = kwargs.pop("cart_items", None)
         super().__init__(*args, **kwargs)
         self.fields["payment"].initial = "cod"
+        configure_delivery_state_field(self.fields["delivery_state"], widget_class="form-control-bw")
         for field in self.fields.values():
             if isinstance(field.widget, (forms.RadioSelect, forms.HiddenInput)):
                 continue
@@ -123,10 +145,17 @@ class CheckoutForm(forms.Form):
                     cleaned_data["email"]        = address.email
                     cleaned_data["address_line"] = address.address_line
                     cleaned_data["city"]         = address.city
-                    cleaned_data["state"]        = address.state
                     cleaned_data["pincode"]      = address.pincode
-                    if not cleaned_data.get("delivery_state") and address.delivery_state_id:
-                        cleaned_data["delivery_state"] = address.delivery_state_id
+                    if address.delivery_state_id:
+                        cleaned_data["delivery_state"] = address.delivery_state
+                        cleaned_data["state"] = address.delivery_state.name
+                    else:
+                        cleaned_data["state"] = address.state
+                        resolved_id = resolve_delivery_state_id(state_text=address.state)
+                        if resolved_id:
+                            from app.models import DeliveryState
+                            cleaned_data["delivery_state"] = DeliveryState.objects.get(pk=resolved_id)
+                            cleaned_data["state"] = cleaned_data["delivery_state"].name
                 except Address.DoesNotExist:
                     raise forms.ValidationError("Selected address not found.")
                 except Exception:
@@ -145,9 +174,9 @@ class CheckoutForm(forms.Form):
                         raise forms.ValidationError("Failed to retrieve addresses. Please try again.")
  
                 if use_new_address and delivery_on:
-                    required_fields = ["full_name", "phone", "address_line", "city", "state", "pincode"]
+                    required_fields = ["full_name", "phone", "address_line", "city", "delivery_state", "pincode"]
                     if is_guest:
-                        required_fields = ["full_name", "email", "phone", "address_line", "city", "state", "pincode"]
+                        required_fields = ["full_name", "email", "phone", "address_line", "city", "delivery_state", "pincode"]
                     for field in required_fields:
                         if not cleaned_data.get(field):
                             self.add_error(field, "This field is required.")
@@ -155,38 +184,27 @@ class CheckoutForm(forms.Form):
                         self._validate_phone(cleaned_data.get("phone"))
                     if cleaned_data.get("pincode"):
                         self._validate_pincode_format(cleaned_data.get("pincode"))
- 
-            if delivery_on:
-                state_id = cleaned_data.get("delivery_state")
-                self._validate_delivery_state(state_id, self._cart_product_ids)
- 
+                    sync_state_text_from_delivery_state(cleaned_data)
+
+            state_id = resolve_delivery_state_id(
+                delivery_state=cleaned_data.get("delivery_state"),
+                state_text=cleaned_data.get("state", ""),
+            )
+            if self._cart_items is not None:
+                if not state_id:
+                    self.add_error("delivery_state", "Please select a valid delivery state.")
+                else:
+                    delivery_issues = get_cart_delivery_issues(self._cart_items, state_id)
+                    if delivery_issues:
+                        self.add_error("delivery_state", format_cart_delivery_error(delivery_issues))
+
             return cleaned_data
- 
+
         except forms.ValidationError:
             raise
         except Exception:
             raise forms.ValidationError("An error occurred. Please try again.")
- 
-    def _validate_delivery_state(self, state_id, product_ids):
-        if not state_id:
-            self.add_error("delivery_state", "Please select your delivery state.")
-            return
-        from app.models import DeliveryState
-        from app.services.state_delivery_service import is_state_deliverable_for_product
-        try:
-            state = DeliveryState.objects.get(pk=state_id, is_active=True)
-        except DeliveryState.DoesNotExist:
-            self.add_error("delivery_state", "Invalid delivery state selected.")
-            return
-        for pid in product_ids:
-            if pid and not is_state_deliverable_for_product(int(pid), state_id):
-                self.add_error(
-                    "delivery_state",
-                    f"One or more items in your cart do not ship to {state.name}. "
-                    f"Please review your cart or choose a different state.",
-                )
-                return
- 
+
     def _validate_phone(self, phone):
         if not phone:
             self.add_error("phone", "Phone number is required.")
@@ -275,8 +293,29 @@ class AddressForm(forms.ModelForm):
 
     class Meta:
         model = Address
-        fields = ["full_name", "phone", "address_line", "city", "state", "pincode", "is_default"]
-        widgets = {"full_name": forms.TextInput(attrs={"class": "form-input", "placeholder": "Full Name"}), "phone": forms.TextInput(attrs={"class": "form-input", "placeholder": "Phone Number (10 digits)", "inputmode": "tel", "pattern": "[0-9+\\s\\-()]*", "maxlength": "15", "data-only-numbers": "true", "autocomplete": "tel"}), "address_line": forms.Textarea(attrs={"class": "form-input", "placeholder": "Street Address", "rows": 3}), "city": forms.TextInput(attrs={"class": "form-input", "placeholder": "City"}), "state": forms.TextInput(attrs={"class": "form-input", "placeholder": "State"}), "pincode": forms.TextInput(attrs={"class": "form-input", "placeholder": "PIN Code (6 digits)", "inputmode": "numeric", "pattern": "[0-9\\s\\-]*", "maxlength": "8", "data-only-numbers": "true"}), "is_default": forms.CheckboxInput(attrs={"class": "form-checkbox"})}
+        fields = ["full_name", "phone", "address_line", "city", "delivery_state", "pincode", "is_default"]
+        widgets = {
+            "full_name": forms.TextInput(attrs={"class": "form-input", "placeholder": "Full Name"}),
+            "phone": forms.TextInput(attrs={"class": "form-input", "placeholder": "Phone Number (10 digits)", "inputmode": "tel", "pattern": "[0-9+\\s\\-()]*", "maxlength": "15", "data-only-numbers": "true", "autocomplete": "tel"}),
+            "address_line": forms.Textarea(attrs={"class": "form-input", "placeholder": "Street Address", "rows": 3}),
+            "city": forms.TextInput(attrs={"class": "form-input", "placeholder": "City"}),
+            "delivery_state": forms.Select(attrs={"class": "form-input"}),
+            "pincode": forms.TextInput(attrs={"class": "form-input", "placeholder": "PIN Code (6 digits)", "inputmode": "numeric", "pattern": "[0-9\\s\\-]*", "maxlength": "8", "data-only-numbers": "true"}),
+            "is_default": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        configure_delivery_state_field(self.fields["delivery_state"])
+        self.fields["delivery_state"].required = True
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.delivery_state_id:
+            instance.state = instance.delivery_state.name
+        if commit:
+            instance.save()
+        return instance
 
     def clean_phone(self):
         phone = self.cleaned_data.get("phone", "").strip()

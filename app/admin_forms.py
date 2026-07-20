@@ -363,64 +363,129 @@ class ComboForm(forms.ModelForm):
 
 class ProductDeliveryStateForm(forms.Form):
     """
-    Multi-checkbox form: seller picks which states this product delivers to.
- 
-    Used in the product edit page (seller / admin dashboard).
-    Groups states by region (South first) to guide the seller logically:
-    "Start with Kerala, expand to nearby states before farther ones."
+    Multi-checkbox form: seller picks which states this product delivers to,
+    and sets a per-unit delivery charge for each selected state.
     """
- 
+
     states = forms.ModelMultipleChoiceField(
-        queryset=None,          # set in __init__
+        queryset=None,
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Deliverable States",
         help_text=(
             "Tick every state this product can be shipped to. "
             "Since the shop is in Kerala, start with South India. "
-            "Selling to Tamil Nadu should come before Jammu & Kashmir."
+            "Every selected state requires a non-negative delivery charge."
         ),
     )
- 
+
     def __init__(self, *args, product=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.product = product
- 
+        self.current_charges = {}
+
         from app.models import DeliveryState
         self.fields["states"].queryset = (
             DeliveryState.objects
             .filter(is_active=True)
             .order_by("display_order", "name")
         )
- 
-        # Pre-select currently assigned states
+
         if product:
             from app.models import ProductDeliveryState
-            current_ids = set(
+            rows = list(
                 ProductDeliveryState.objects
                 .filter(product=product)
-                .values_list("state_id", flat=True)
+                .values_list("state_id", "delivery_charge")
             )
-            self.fields["states"].initial = [int(pk) for pk in current_ids]
- 
+            current_ids = {int(state_id) for state_id, _ in rows}
+            self.current_charges = {
+                int(state_id): charge for state_id, charge in rows
+            }
+            self.fields["states"].initial = list(current_ids)
+
+    def clean(self):
+        cleaned = super().clean()
+        selected = list(cleaned.get("states") or [])
+        charges = {}
+        errors = []
+
+        for state in selected:
+            raw = (self.data.get(f"charge_{state.pk}") or "").strip()
+            if raw == "":
+                errors.append(
+                    f"Delivery charge is required for {state.name}."
+                )
+                continue
+            try:
+                from decimal import Decimal, InvalidOperation
+                value = Decimal(raw)
+            except (InvalidOperation, TypeError, ValueError):
+                errors.append(
+                    f"Invalid delivery charge for {state.name}."
+                )
+                continue
+            if value < 0:
+                errors.append(
+                    f"Delivery charge for {state.name} cannot be negative."
+                )
+                continue
+            charges[state.pk] = value
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        cleaned["state_charges"] = charges
+        return cleaned
+
     def save(self):
-        """Atomically replace the product's delivery state list."""
+        """Atomically replace the product's delivery states and charges."""
         if not self.product:
             return
         from app.services.state_delivery_service import set_product_delivery_states
         selected = self.cleaned_data.get("states", [])
+        charges = self.cleaned_data.get("state_charges", {})
         set_product_delivery_states(
             self.product.pk,
             [s.pk for s in selected],
+            charges=charges,
         )
- 
+
+    def charge_for(self, state_id):
+        """Current charge for template rendering (POST value wins)."""
+        raw = self.data.get(f"charge_{state_id}") if self.is_bound else None
+        if raw is not None and str(raw).strip() != "":
+            return str(raw).strip()
+        charge = self.current_charges.get(int(state_id))
+        if charge is None:
+            return ""
+        return str(charge)
+
+    def get_charge_rows(self):
+        """Flat list of {state, charge, selected} for the charge section."""
+        selected_ids = set(int(pk) for pk in (self.fields["states"].initial or []))
+        if self.is_bound:
+            try:
+                selected_ids = {int(pk) for pk in self.data.getlist("states")}
+            except (TypeError, ValueError):
+                pass
+        rows = []
+        for _region_label, states in self.get_states_by_region():
+            for state in states:
+                rows.append({
+                    "state": state,
+                    "charge": self.charge_for(state.pk),
+                    "selected": state.pk in selected_ids,
+                })
+        return rows
+
     def get_states_by_region(self):
         """
         Returns ordered list of (region_label, [DeliveryState, ...]) tuples.
         Used in templates for grouped rendering.
         """
         from app.services.state_delivery_service import get_states_by_region
- 
+
         REGION_LABELS = {
             "south":     "South India",
             "west":      "West India",

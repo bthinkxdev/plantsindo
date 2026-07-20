@@ -8869,6 +8869,32 @@ body.storefront .order-line .line-info {
   flex-shrink: 0;
 }
 
+.order-line--delivery-issue .order-line-delivery-warn {
+  color: #b91c1c !important;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.order-line-delivery-warn {
+  color: #b91c1c !important;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.order-line-stock-warn {
+  color: #b45309 !important;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+#placeOrderBtn:disabled,
+#placeOrderBtn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+  pointer-events: none;
+}
+
 .order-total-row {
   display: flex;
   justify-content: space-between;

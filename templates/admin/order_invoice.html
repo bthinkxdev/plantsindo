@@ -198,8 +198,9 @@
                 <div class="customer-details">
                     <div class="customer-name">{{ order.address.full_name }}</div>
                     {{ order.address.address_line }}<br>
-                    {{ order.address.city }}, {{ order.address.state }}<br>
+                    {{ order.address.city }}, {{ order.delivery_state|default:order.address.state }}<br>
                     PIN: {{ order.address.pincode }}
+                    {% if order.delivery_state %}<br>Delivery State: {{ order.delivery_state }}{% endif %}
                 </div>
             </div>
         </div>
@@ -207,10 +208,12 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Item Description</th>
-                    <th style="width: 12%; text-align: center;">Qty</th>
-                    <th style="width: 19%;">Unit Price</th>
-                    <th style="width: 19%;">Total</th>
+                    <th style="width: 28%;">Item</th>
+                    <th style="width: 8%; text-align: center;">Qty</th>
+                    <th style="width: 14%;">Unit Price</th>
+                    <th style="width: 14%;">Delivery / Unit</th>
+                    <th style="width: 14%;">Delivery Total</th>
+                    <th style="width: 22%;">Line Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -221,8 +224,13 @@
                         <div class="item-variant">{{ item.variant_snapshot }}</div>
                     </td>
                     <td style="text-align: center;">{{ item.quantity }}</td>
-                    <td>₹{{ item.unit_price }}</td>
-                    <td>₹{{ item.line_total }}</td>
+                    <td>
+                        ₹{{ item.unit_price }}
+                        {% if item.pot_unit_price %}<br><small>+ ₹{{ item.pot_unit_price }} pot</small>{% endif %}
+                    </td>
+                    <td>₹{{ item.delivery_charge_per_unit }}</td>
+                    <td>₹{{ item.total_delivery_charge }}</td>
+                    <td>₹{{ item.line_grand_total }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -231,7 +239,7 @@
         <div class="totals-section">
             <table class="totals-table">
                 <tr>
-                    <td>Subtotal:</td>
+                    <td>Product Subtotal:</td>
                     <td>₹{{ order.subtotal }}</td>
                 </tr>
                 {% if order.gst_total and order.gst_total > 0 %}
@@ -241,11 +249,11 @@
                 </tr>
                 {% endif %}
                 <tr>
-                    <td>Shipping:</td>
-                    <td>{% if order.shipping == 0 %}FREE{% else %}₹{{ order.shipping }}{% endif %}</td>
+                    <td>Delivery Charge{% if order.delivery_state %} ({{ order.delivery_state }}){% endif %}:</td>
+                    <td>{% if order.total_delivery_charge == 0 %}FREE{% else %}₹{{ order.total_delivery_charge }}{% endif %}</td>
                 </tr>
                 <tr class="total-row">
-                    <td>TOTAL:</td>
+                    <td>GRAND TOTAL:</td>
                     <td>₹{{ order.total }}</td>
                 </tr>
             </table>

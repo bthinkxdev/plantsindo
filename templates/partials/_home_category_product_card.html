@@ -1,5 +1,5 @@
 {% load static %}
-{# Hero carousel card: badge, image, title, delivery line, View product CTA #}
+{# Hero carousel card: badge, image, title, rating, View product CTA #}
 {% with v=product.primary_variant %}
 {% if v %}
 {% with imgs=v.images.all %}
@@ -24,7 +24,6 @@
     </span>
     <span class="hc-pcard__title">{{ product.name }}</span>
     <span class="hc-pcard__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</span>
-    <span class="hc-pcard__meta">Delivers in 48 hrs</span>
     <span class="hc-pcard__cta">View product</span>
 </a>
 {% endwith %}
@@ -50,7 +49,6 @@
     </span>
     <span class="hc-pcard__title">{{ product.name }}</span>
     <span class="hc-pcard__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</span>
-    <span class="hc-pcard__meta">Delivers in 48 hrs</span>
     <span class="hc-pcard__cta">View product</span>
 </a>
 {% endif %}

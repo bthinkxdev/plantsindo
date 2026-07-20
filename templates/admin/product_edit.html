@@ -320,10 +320,12 @@
     <p class="section-hint">
         Tick every state this product can be shipped to.
         South India is listed first since the shop is based in Kerala.
+        Then set a per-unit delivery charge for each selected state.
     </p>
 
     <form method="post"
-          action="{% url 'admin_panel:product_delivery_states_update' product.pk %}">
+          action="{% url 'admin_panel:product_delivery_states_update' product.pk %}"
+          id="delivery-states-form">
         {% csrf_token %}
 
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
@@ -347,9 +349,10 @@
             </p>
             <div style="display:flex; flex-wrap:wrap; gap:0.375rem;">
                 {% for state in states %}
-                {% with is_checked=state.pk|stringformat:"i" %}
-                <label class="ds-chip {% if state in delivery_form.fields.states.queryset and state.pk in delivery_form.fields.states.initial %}ds-chip-checked{% endif %}"
-                       data-state-id="{{ state.pk }}">
+                <label class="ds-chip {% if state.pk in delivery_form.fields.states.initial %}ds-chip-checked{% endif %}"
+                       data-state-id="{{ state.pk }}"
+                       data-state-name="{{ state.name }}"
+                       data-state-code="{{ state.code }}">
                     <input type="checkbox"
                            name="states"
                            value="{{ state.pk }}"
@@ -358,11 +361,28 @@
                     <span>{{ state.name }}</span>
                     <span class="ds-chip-code">{{ state.code }}</span>
                 </label>
-                {% endwith %}
                 {% endfor %}
             </div>
         </div>
         {% endfor %}
+
+        <div id="state-delivery-charges-section" style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #e5e7eb;">
+            <h5 style="font-size:0.9375rem; font-weight:600; margin:0 0 0.35rem;">State Delivery Charge</h5>
+            <p style="font-size:0.8125rem; color:#6b7280; margin:0 0 0.75rem;">
+                Only checked states appear here. Enter the delivery charge <strong>per unit</strong>
+                (e.g. Kerala ₹50). Required for every selected state. Cannot be negative.
+            </p>
+            <div id="ds-charge-list" class="ds-charge-list" aria-live="polite">
+                <p id="ds-charge-empty" class="ds-charge-empty">Select deliverable states above to configure charges.</p>
+            </div>
+            <script type="application/json" id="ds-charge-initial">
+                {
+                    {% for row in delivery_form.get_charge_rows %}
+                    "{{ row.state.pk }}": "{{ row.charge|default:''|escapejs }}"{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                }
+            </script>
+        </div>
 
         <div style="display:flex; align-items:center; gap:0.75rem;
                     margin-top:1rem; padding-top:1rem; border-top:1px solid #e5e7eb;">

@@ -96,6 +96,10 @@
                             <p style="margin:0 0 4px;">
                                 <strong>Total Amount:</strong> ₹{{ order.total }}
                             </p>
+                            <p style="margin:0 0 4px;">
+                                <strong>Delivery Charge:</strong> {% if order.total_delivery_charge == 0 %}Free{% else %}₹{{ order.total_delivery_charge }}{% endif %}
+                                {% if order.delivery_state %} ({{ order.delivery_state }}){% endif %}
+                            </p>
 
                             <p style="margin:0 0 16px;">
                                 <strong>Current Status:</strong> {{ order.get_status_display }}
@@ -106,7 +110,7 @@
                             <p style="margin:0 0 16px;white-space:pre-line;">
                                 {{ order.address.full_name }}
                                 {{ order.address.address_line }}
-                                {{ order.address.city }}, {{ order.address.state }} - {{ order.address.pincode }}
+                                {{ order.address.city }}, {{ order.delivery_state|default:order.address.state }} - {{ order.address.pincode }}
                             </p>
 
                             {% if status_key in "placed confirmed shipped" %}

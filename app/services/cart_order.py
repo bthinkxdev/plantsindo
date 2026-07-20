@@ -7,7 +7,46 @@ from django.db.models import F
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from ..models import Address, Cart, CartItem, Combo, Order, OrderItem, Payment, Product, Variant, Wishlist
-from django.template.loader import render_to_string
+
+
+def decrement_stock_for_order_item(order_item: OrderItem) -> None:
+    """Reduce inventory for a confirmed order line (COD or after online payment)."""
+    from ..models import ProductPotAddon
+
+    if order_item.combo_id and order_item.combo:
+        for row in order_item.combo.items.all():
+            dec = order_item.quantity * int(row.quantity or 1)
+            Product.objects.filter(pk=row.product_id).update(base_stock=F('base_stock') - dec)
+        return
+
+    product = order_item.product
+    if not product:
+        return
+
+    if getattr(product, 'is_combo_product', False):
+        for row in product.combo_components.select_related('component_product'):
+            dec = order_item.quantity * row.quantity
+            Product.objects.filter(pk=row.component_product_id).update(base_stock=F('base_stock') - dec)
+    elif order_item.selected_variant_id:
+        Variant.objects.filter(pk=order_item.selected_variant_id).update(
+            stock_quantity=F('stock_quantity') - order_item.quantity
+        )
+    else:
+        Product.objects.filter(pk=product.pk).update(base_stock=F('base_stock') - order_item.quantity)
+
+    if order_item.selected_pot_name and order_item.pot_unit_price and order_item.product_id:
+        pot_product_id = (
+            ProductPotAddon.objects.filter(
+                plant_product_id=order_item.product_id,
+                pot_product__name=order_item.selected_pot_name,
+            )
+            .values_list('pot_product_id', flat=True)
+            .first()
+        )
+        if pot_product_id:
+            Product.objects.filter(pk=pot_product_id).update(
+                base_stock=F('base_stock') - order_item.quantity
+            )
 
 def send_order_notification_email_async(order, request=None):
     thread = threading.Thread(target=send_order_notification_email, args=(order, request), daemon=True)
@@ -105,35 +144,243 @@ def send_order_confirmation_email_async(order):
     except Exception:
         return None
 
-def send_order_confirmation_email(order):
-    try:
-        customer_email = ''
-        try:
-            if getattr(order, 'address', None) and getattr(order.address, 'email', ''):
-                customer_email = (order.address.email or '').strip()
-        except Exception:
-            customer_email = ''
-        if not customer_email and getattr(order, 'user', None):
-            customer_email = (getattr(order.user, 'email', '') or '').strip()
-        if not customer_email:
-            return False
-        context = {'order': order, 'site_name': getattr(settings, 'SITE_BRAND', 'Plantsindo')}
-        try:
-            html_message = render_to_string('emails/order_confirmation.html', context)
-            plain_message = render_to_string('emails/order_confirmation.txt', context)
-        except Exception:
-            plain_message = f'Thank you for your order #{order.order_number}. We will notify you when it ships.'
-            html_message = None
-        send_mail(subject=f'Your order #{order.order_number} has been placed', message=plain_message, from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[customer_email], html_message=html_message, fail_silently=True)
-        return True
-    except Exception:
-        return False
-
 class CartError(Exception):
     pass
 
 class StockError(CartError):
     pass
+
+
+@dataclass
+class CartStockIssue:
+    item_id: int
+    name: str
+    issue: str
+    message: str
+    available_qty: int = 0
+    requested_qty: int = 0
+
+
+def inspect_cart_item_stock(item: CartItem) -> CartStockIssue | None:
+    """Return a stock issue for a cart line, or None if the line is purchasable as-is."""
+    from ..services.rental_catalog import combo_is_in_stock
+    from ..services.combo_catalog import combo_is_in_stock as combo_bundle_in_stock
+
+    if item.combo_id:
+        c = item.combo
+        name = c.name if c else 'Bundle'
+        if not c or not c.is_active or not c.purchase_enabled:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='unavailable',
+                message=f'{name} is no longer available.',
+                requested_qty=item.quantity,
+            )
+        if not combo_bundle_in_stock(c, multiplier=item.quantity):
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='out_of_stock',
+                message=f'{name} is out of stock. Please remove it from your cart.',
+                requested_qty=item.quantity,
+            )
+        return None
+
+    product = item.product
+    name = product.name if product else 'Product'
+    if not product or not getattr(product, 'is_active', True):
+        return CartStockIssue(
+            item_id=item.id,
+            name=name,
+            issue='unavailable',
+            message=f'{name} is no longer available.',
+            requested_qty=item.quantity,
+        )
+
+    v = item.selected_variant
+    if getattr(product, 'is_combo_product', False):
+        if not combo_is_in_stock(product, multiplier=item.quantity):
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='out_of_stock',
+                message=f'{name} is out of stock. Please remove it from your cart.',
+                requested_qty=item.quantity,
+            )
+    elif v:
+        avail = int(v.stock_quantity or 0)
+        if not getattr(v, 'is_active', True) or avail <= 0:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='out_of_stock',
+                message=f'{name} is out of stock. Please remove it from your cart.',
+                available_qty=0,
+                requested_qty=item.quantity,
+            )
+        if item.quantity > avail:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='insufficient',
+                message=f'Only {avail} left for {name}. Reduce quantity or remove the item.',
+                available_qty=avail,
+                requested_qty=item.quantity,
+            )
+    else:
+        if product.has_variants():
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='unavailable',
+                message=f'{name} needs a variant selection. Please remove it and add again.',
+                requested_qty=item.quantity,
+            )
+        avail = int(product.base_stock or 0)
+        if avail <= 0:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='out_of_stock',
+                message=f'{name} is out of stock. Please remove it from your cart.',
+                available_qty=0,
+                requested_qty=item.quantity,
+            )
+        if item.quantity > avail:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='insufficient',
+                message=f'Only {avail} left for {name}. Reduce quantity or remove the item.',
+                available_qty=avail,
+                requested_qty=item.quantity,
+            )
+
+    if item.line_type == CartItem.LineKind.PURCHASE and item.selected_pot_id and item.selected_pot:
+        pot = item.selected_pot
+        pot_stock = int(pot.base_stock or 0)
+        pot_name = pot.name
+        if pot_stock <= 0:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='pot_out_of_stock',
+                message=f'Pot "{pot_name}" for {name} is out of stock. Remove the pot or remove the item.',
+                requested_qty=item.quantity,
+            )
+        if item.quantity > pot_stock:
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='pot_insufficient',
+                message=f'Only {pot_stock} pots left for "{pot_name}". Reduce quantity or change pot.',
+                available_qty=pot_stock,
+                requested_qty=item.quantity,
+            )
+
+    if item.line_type == CartItem.LineKind.RENTAL and item.rental_start_date and item.rental_end_date:
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from ..services.rental_availability import assert_available_for_rent
+        try:
+            assert_available_for_rent(product=product, start=item.rental_start_date, end=item.rental_end_date)
+        except DjangoValidationError as exc:
+            msg = '; '.join(getattr(exc, 'messages', []) or [str(exc)]) or 'Rental dates are no longer available.'
+            return CartStockIssue(
+                item_id=item.id,
+                name=name,
+                issue='unavailable',
+                message=f'{name}: {msg}',
+                requested_qty=item.quantity,
+            )
+
+    return None
+
+
+def get_cart_stock_issues(items) -> list[CartStockIssue]:
+    issues = []
+    for item in items:
+        issue = inspect_cart_item_stock(item)
+        if issue:
+            issues.append(issue)
+    return issues
+
+
+def format_cart_stock_error(issues: list[CartStockIssue]) -> str:
+    if not issues:
+        return ''
+    if len(issues) == 1:
+        return issues[0].message
+    names = ', '.join(i.name for i in issues[:3])
+    suffix = f' and {len(issues) - 3} more' if len(issues) > 3 else ''
+    return (
+        f'{len(issues)} items in your cart need attention ({names}{suffix}). '
+        'Please remove or update unavailable items before checkout.'
+    )
+
+
+@dataclass
+class CartDeliveryIssue:
+    item_id: int
+    name: str
+    message: str
+    state_name: str = ''
+
+
+def get_cart_delivery_issues(items, state_id: int | None) -> list[CartDeliveryIssue]:
+    """Return cart lines that cannot ship to the given DeliveryState."""
+    if not state_id:
+        return []
+
+    from app.services.state_delivery_service import (
+        is_state_deliverable_for_combo,
+        is_state_deliverable_for_product,
+        resolve_delivery_state_id,
+    )
+    from app.models import DeliveryState
+
+    state_id = resolve_delivery_state_id(delivery_state=state_id)
+    if not state_id:
+        return []
+
+    try:
+        state_name = DeliveryState.objects.get(pk=state_id, is_active=True).name
+    except DeliveryState.DoesNotExist:
+        return []
+
+    issues: list[CartDeliveryIssue] = []
+    for item in items:
+        if item.combo_id:
+            name = item.combo.name if item.combo else 'Bundle'
+            if not is_state_deliverable_for_combo(item.combo_id, state_id):
+                issues.append(CartDeliveryIssue(
+                    item_id=item.id,
+                    name=name,
+                    state_name=state_name,
+                    message=f'Not deliverable in {state_name}',
+                ))
+            continue
+
+        product = item.product
+        if not product:
+            continue
+        if not is_state_deliverable_for_product(product.pk, state_id):
+            issues.append(CartDeliveryIssue(
+                item_id=item.id,
+                name=product.name,
+                state_name=state_name,
+                message=f'Not deliverable in {state_name}',
+            ))
+    return issues
+
+
+def format_cart_delivery_error(issues: list[CartDeliveryIssue]) -> str:
+    """Short checkout/API status for undeliverable selections."""
+    if not issues:
+        return ''
+    state_name = issues[0].state_name or 'this state'
+    return f'Not deliverable in {state_name}'
+
 
 @dataclass
 class CartTotals:
@@ -141,6 +388,176 @@ class CartTotals:
     gst_total: object
     shipping: object
     total: object
+    delivery_breakdown: object = None
+    used_flat_fallback: bool = False
+    state_missing: bool = False
+
+
+@dataclass
+class CheckoutTotalsResult:
+    """
+    Single checkout presentation of cart totals + delivery status.
+    Used by checkout SSR and /api/checkout/totals/.
+    """
+    subtotal: object
+    gst_total: object
+    shipping: object
+    total: object
+    status: str
+    shipping_label: str
+    delivery_issues: list
+    delivery_message: str
+    state_id: object = None
+    delivery_breakdown: object = None
+    used_flat_fallback: bool = False
+
+    @property
+    def state_missing(self) -> bool:
+        return self.status == 'state_required'
+
+    @property
+    def serviceable(self) -> bool:
+        return self.status == 'ok'
+
+    @property
+    def checkout_blocked(self) -> bool:
+        return self.status != 'ok'
+
+    def as_cart_totals(self) -> CartTotals:
+        return CartTotals(
+            subtotal=self.subtotal,
+            gst_total=self.gst_total,
+            shipping=self.shipping,
+            total=self.total,
+            delivery_breakdown=self.delivery_breakdown,
+            used_flat_fallback=self.used_flat_fallback,
+            state_missing=self.state_missing,
+        )
+
+    def line_payload(self, items) -> list[dict]:
+        breakdown = self.delivery_breakdown if self.serviceable else None
+        blocked_ids = {issue.item_id for issue in self.delivery_issues}
+        lines = []
+        for item in items:
+            line = breakdown.line_for(item.id) if breakdown else None
+            lines.append({
+                'item_id': item.id,
+                'delivery_charge_per_unit': str(line['delivery_charge_per_unit']) if line else '0',
+                'total_delivery_charge': str(line['total_delivery_charge']) if line else '0',
+                'deliverable': item.id not in blocked_ids,
+            })
+        return lines
+
+    def to_api_dict(self, items) -> dict:
+        return {
+            'success': True,
+            'state_id': self.state_id,
+            'state_selected': bool(self.state_id),
+            'state_missing': self.state_missing,
+            'serviceable': self.serviceable,
+            'status': self.status,
+            'delivery_issues': [
+                {
+                    'item_id': i.item_id,
+                    'name': i.name,
+                    'message': i.message,
+                    'state_name': i.state_name,
+                }
+                for i in self.delivery_issues
+            ],
+            'delivery_message': self.delivery_message,
+            'shipping_label': self.shipping_label,
+            'subtotal': str(self.subtotal),
+            'gst_total': str(self.gst_total or 0),
+            'shipping': str(self.shipping),
+            'total': str(self.total),
+            'checkout_blocked': self.checkout_blocked,
+            'used_flat_fallback': self.used_flat_fallback if self.serviceable else False,
+            'lines': self.line_payload(items),
+        }
+
+
+def shipping_label_for_amount(shipping) -> str:
+    from decimal import Decimal
+    amount = shipping if isinstance(shipping, Decimal) else Decimal(str(shipping or 0))
+    if amount == 0:
+        return 'Free'
+    # Trim trailing .00 for display consistency with checkout UI.
+    quantized = amount.quantize(Decimal('1')) if amount == amount.to_integral_value() else amount
+    return f'₹{quantized}'
+
+
+def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsResult:
+    """
+    Canonical checkout totals + delivery status.
+
+    Rules:
+    - No state → shipping excluded, status state_required
+    - State with undeliverable lines → shipping excluded, status unavailable
+    - Valid state → state charges (or flat fallback) included, status ok
+    """
+    from decimal import Decimal
+
+    if items is None:
+        items = list(
+            cart.items.select_related('product', 'combo', 'selected_variant', 'selected_pot')
+            .prefetch_related('combo__items__product')
+        )
+
+    delivery_issues = get_cart_delivery_issues(items, state_id) if state_id else []
+    delivery_message = format_cart_delivery_error(delivery_issues)
+
+    if not state_id:
+        base = CartService.compute_totals(cart, state_id=None)
+        subtotal = base.subtotal or 0
+        gst_total = base.gst_total or 0
+        return CheckoutTotalsResult(
+            subtotal=subtotal,
+            gst_total=gst_total,
+            shipping=Decimal('0'),
+            total=subtotal + gst_total,
+            status='state_required',
+            shipping_label='Please select the state',
+            delivery_issues=[],
+            delivery_message='',
+            state_id=None,
+            delivery_breakdown=getattr(base, 'delivery_breakdown', None),
+            used_flat_fallback=False,
+        )
+
+    if delivery_issues:
+        base = CartService.compute_totals(cart, state_id=None)
+        subtotal = base.subtotal or 0
+        gst_total = base.gst_total or 0
+        return CheckoutTotalsResult(
+            subtotal=subtotal,
+            gst_total=gst_total,
+            shipping=Decimal('0'),
+            total=subtotal + gst_total,
+            status='unavailable',
+            shipping_label=delivery_message or 'Not deliverable in this state',
+            delivery_issues=delivery_issues,
+            delivery_message=delivery_message,
+            state_id=state_id,
+            delivery_breakdown=getattr(base, 'delivery_breakdown', None),
+            used_flat_fallback=False,
+        )
+
+    totals = CartService.compute_totals(cart, state_id=state_id)
+    return CheckoutTotalsResult(
+        subtotal=totals.subtotal,
+        gst_total=totals.gst_total,
+        shipping=totals.shipping,
+        total=totals.total,
+        status='ok',
+        shipping_label=shipping_label_for_amount(totals.shipping),
+        delivery_issues=[],
+        delivery_message='',
+        state_id=state_id,
+        delivery_breakdown=getattr(totals, 'delivery_breakdown', None),
+        used_flat_fallback=bool(getattr(totals, 'used_flat_fallback', False)),
+    )
+
 
 class CartService:
 
@@ -231,19 +648,56 @@ class CartService:
         request.session.pop(GUEST_WISHLIST_PRODUCTS_KEY, None)
 
     @staticmethod
-    def compute_totals(cart):
+    def get_cart_stock_issues_for(cart):
+        items = cart.items.select_related(
+            'product', 'combo', 'selected_variant', 'selected_pot',
+        ).prefetch_related('combo__items__product').all()
+        return get_cart_stock_issues(items)
+
+    @staticmethod
+    def get_cart_delivery_issues_for(cart, state_id):
+        items = cart.items.select_related(
+            'product', 'combo', 'selected_variant', 'selected_pot',
+        ).prefetch_related('combo__items__product').all()
+        return get_cart_delivery_issues(items, state_id)
+
+    @staticmethod
+    def assert_cart_stock(cart):
+        issues = CartService.get_cart_stock_issues_for(cart)
+        if issues:
+            raise StockError(format_cart_stock_error(issues))
+        return issues
+
+    @staticmethod
+    def compute_totals(cart, state_id=None):
+        """
+        Cart totals. With no state_id, shipping is ₹0 (state must be selected
+        at checkout). With a state_id, shipping is state charges × qty, or the
+        flat fallback when no product charge rows exist for that state.
+        """
+        from .state_delivery_service import compute_cart_delivery_charges
+
         try:
-            subtotal = sum((item.line_total for item in cart.items.select_related('product', 'combo')))
+            items = list(
+                cart.items.select_related('product', 'combo')
+                .prefetch_related('combo__items')
+            )
+            subtotal = sum((item.line_total for item in items))
             gst_total = cart.gst_total
-            #No free shiping for now
-            # FREE_SHIPPING_THRESHOLD = getattr(settings, 'FREE_SHIPPING_ABOVE', 999)
-            delivery_charge = getattr(settings, 'FLAT_DELIVERY_CHARGE', 60)
-            # shipping = 0 if subtotal >= FREE_SHIPPING_THRESHOLD else delivery_charge
-            shipping = delivery_charge
+            breakdown = compute_cart_delivery_charges(items, state_id)
+            shipping = breakdown.total
             total = subtotal + gst_total + shipping
-            return CartTotals(subtotal=subtotal, gst_total=gst_total, shipping=shipping, total=total)
+            return CartTotals(
+                subtotal=subtotal,
+                gst_total=gst_total,
+                shipping=shipping,
+                total=total,
+                delivery_breakdown=breakdown,
+                used_flat_fallback=breakdown.used_flat_fallback,
+                state_missing=breakdown.state_missing,
+            )
         except Exception:
-            return CartTotals(subtotal=0, gst_total=0, shipping=0, total=0)
+            return CartTotals(subtotal=0, gst_total=0, shipping=0, total=0, state_missing=True)
 
     @staticmethod
     def add_item(
@@ -514,9 +968,28 @@ class CartService:
             if quantity > stock:
                 raise StockError('Requested quantity exceeds available stock.')
             unit_price = v.price
+        if item.line_type == CartItem.LineKind.PURCHASE and item.selected_pot_id:
+            pot = getattr(item, 'selected_pot', None)
+            if pot is None:
+                pot = CartItem.objects.select_related('selected_pot').filter(pk=item.pk).values_list(
+                    'selected_pot__base_stock', 'selected_pot__name'
+                ).first()
+                if pot:
+                    pot_stock, pot_name = int(pot[0] or 0), pot[1]
+                    if pot_stock <= 0:
+                        raise StockError(f'Pot "{pot_name}" is out of stock.')
+                    if quantity > pot_stock:
+                        raise StockError(f'Only {pot_stock} pots available for "{pot_name}".')
+            else:
+                pot_stock = int(pot.base_stock or 0)
+                if pot_stock <= 0:
+                    raise StockError(f'Pot "{pot.name}" is out of stock.')
+                if quantity > pot_stock:
+                    raise StockError(f'Only {pot_stock} pots available for "{pot.name}".')
         item.quantity = quantity
         item.unit_price = unit_price
         item.save(update_fields=['quantity', 'unit_price', 'updated_at'])
+
 
 class OrderService:
 
@@ -533,45 +1006,53 @@ class OrderService:
         if cart.status != Cart.Status.ACTIVE:
             raise CartError('This cart has already been used for an order.')
         items = (
-            cart.items.select_related('selected_variant', 'product', 'combo')
+            cart.items.select_related('selected_variant', 'product', 'combo', 'selected_pot')
             .prefetch_related('combo__items__product')
             .select_for_update(of=('self',))
             .all()
         )
         if not items:
             raise CartError('Cart is empty.')
-        from ..services.rental_catalog import combo_is_in_stock
-        from ..services.combo_catalog import combo_is_in_stock as combo_bundle_in_stock
-        for item in items:
-            if item.combo_id:
-                c = item.combo
-                if not c.is_active or not c.purchase_enabled:
-                    raise CartError(f'{c.name} is no longer available.')
-                if not combo_bundle_in_stock(c, multiplier=item.quantity):
-                    raise StockError(f'{c.name} is out of stock.')
-                continue
-            product = item.product
-            if not product or not getattr(product, 'is_active', True):
-                raise CartError(f'{getattr(product, "name", "Item")} is no longer available.')
-            v = item.selected_variant
-            if getattr(product, 'is_combo_product', False):
-                if not combo_is_in_stock(product, multiplier=item.quantity):
-                    raise StockError(f'{product.name} is out of stock.')
-            elif v:
-                if item.quantity > v.stock_quantity:
-                    raise StockError(f'{product.name} is out of stock.')
-            else:
-                if product.has_variants():
-                    raise CartError('Invalid cart item.')
-                base_stock = product.base_stock or 0
-                if item.quantity > base_stock:
-                    raise StockError(f'{product.name} is out of stock.')
+        issues = get_cart_stock_issues(items)
+        if issues:
+            raise StockError(format_cart_stock_error(issues))
+
+        from .state_delivery_service import resolve_delivery_state_id
+
         selected_address_id = form_data.get('selected_address')
         use_new_address = form_data.get('use_new_address', False)
+        state_id = resolve_delivery_state_id(
+            delivery_state=form_data.get('delivery_state'),
+            state_text=form_data.get('state', ''),
+        )
+        if selected_address_id and (not use_new_address) and user and not state_id:
+            try:
+                existing_address = Address.objects.get(pk=selected_address_id, user=user, is_snapshot=False)
+                state_id = resolve_delivery_state_id(
+                    delivery_state=existing_address.delivery_state,
+                    state_text=existing_address.state,
+                )
+            except Address.DoesNotExist:
+                pass
+        delivery_issues = get_cart_delivery_issues(items, state_id)
+        if delivery_issues:
+            raise CartError(format_cart_delivery_error(delivery_issues))
+
         if selected_address_id and (not use_new_address) and user:
             try:
                 existing_address = Address.objects.get(pk=selected_address_id, user=user, is_snapshot=False)
-                address = Address.objects.create(user=user, full_name=existing_address.full_name, phone=existing_address.phone, email=existing_address.email, address_line=existing_address.address_line, city=existing_address.city, state=existing_address.state, pincode=existing_address.pincode, is_snapshot=True)
+                address = Address.objects.create(
+                    user=user,
+                    full_name=existing_address.full_name,
+                    phone=existing_address.phone,
+                    email=existing_address.email,
+                    address_line=existing_address.address_line,
+                    city=existing_address.city,
+                    state=existing_address.state,
+                    pincode=existing_address.pincode,
+                    delivery_state=existing_address.delivery_state,
+                    is_snapshot=True,
+                )
             except Address.DoesNotExist:
                 raise CartError('Selected address not found.')
         else:
@@ -583,22 +1064,62 @@ class OrderService:
             city = form_data['city']
             state = form_data['state']
             pincode = form_data['pincode']
+            delivery_state = form_data.get('delivery_state')
+            delivery_state_id = delivery_state.pk if hasattr(delivery_state, 'pk') else delivery_state
+            address_kwargs = dict(
+                full_name=full_name,
+                phone=phone,
+                email=email,
+                address_line=address_line,
+                city=city,
+                state=state,
+                pincode=pincode,
+            )
+            if delivery_state_id:
+                address_kwargs['delivery_state_id'] = delivery_state_id
             if user_obj:
                 has_any_saved = Address.objects.filter(user=user_obj, is_snapshot=False).exists()
-                saved_address = Address.objects.create(user=user_obj, full_name=full_name, phone=phone, email=email, address_line=address_line, city=city, state=state, pincode=pincode, is_default=not has_any_saved, is_snapshot=False)
-                address = Address.objects.create(user=user_obj, full_name=saved_address.full_name, phone=saved_address.phone, email=saved_address.email, address_line=saved_address.address_line, city=saved_address.city, state=saved_address.state, pincode=saved_address.pincode, is_snapshot=True)
+                saved_address = Address.objects.create(
+                    user=user_obj,
+                    is_default=not has_any_saved,
+                    is_snapshot=False,
+                    **address_kwargs,
+                )
+                address = Address.objects.create(
+                    user=user_obj,
+                    full_name=saved_address.full_name,
+                    phone=saved_address.phone,
+                    email=saved_address.email,
+                    address_line=saved_address.address_line,
+                    city=saved_address.city,
+                    state=saved_address.state,
+                    pincode=saved_address.pincode,
+                    delivery_state=saved_address.delivery_state,
+                    is_snapshot=True,
+                )
             else:
-                address = Address.objects.create(user=None, full_name=full_name, phone=phone, email=email, address_line=address_line, city=city, state=state, pincode=pincode, is_snapshot=True)
+                address = Address.objects.create(user=None, is_snapshot=True, **address_kwargs)
         # Rental bookings require dates; prevent checkout if rental lines missing dates.
         for it in items:
             if it.line_type == CartItem.LineKind.RENTAL and (not it.rental_start_date or not it.rental_end_date):
                 raise CartError('Please select rental start and end dates for rental items in your cart.')
 
-        totals = CartService.compute_totals(cart)
+        delivery_state_id = resolve_delivery_state_id(
+            delivery_state=address.delivery_state,
+            state_text=address.state,
+        )
+        delivery_state_name = ''
+        if address.delivery_state_id and address.delivery_state:
+            delivery_state_name = address.delivery_state.name
+        elif address.state:
+            delivery_state_name = address.state
+
+        totals = CartService.compute_totals(cart, state_id=delivery_state_id)
+        breakdown = getattr(totals, 'delivery_breakdown', None)
         order_number = cls._generate_order_number()
         gst_total = getattr(totals, 'gst_total', 0) or 0
         state = (address.state or '').strip()
-        if state and state.lower() == 'kerala':
+        if (delivery_state_name or state).lower() == 'kerala':
             cgst = gst_total / 2
             sgst = gst_total / 2
             igst = 0
@@ -606,9 +1127,30 @@ class OrderService:
             cgst = 0
             sgst = 0
             igst = gst_total
-        order = Order.objects.create(user=cart.user if cart.user else None, order_number=order_number, subtotal=totals.subtotal, shipping=totals.shipping, gst_total=gst_total, cgst=cgst, sgst=sgst, igst=igst, total=totals.total, address=address)
+        order = Order.objects.create(
+            user=cart.user if cart.user else None,
+            order_number=order_number,
+            subtotal=totals.subtotal,
+            shipping=totals.shipping,
+            delivery_state_name=delivery_state_name,
+            gst_total=gst_total,
+            cgst=cgst,
+            sgst=sgst,
+            igst=igst,
+            total=totals.total,
+            address=address,
+        )
         from decimal import Decimal
+
+        def _line_delivery(item):
+            if breakdown and not breakdown.used_flat_fallback:
+                line = breakdown.line_for(item.id)
+                return line['delivery_charge_per_unit'], line['total_delivery_charge']
+            # Flat order-level fallback: keep line charges at 0; order.shipping holds the total.
+            return Decimal('0'), Decimal('0')
+
         for item in items:
+            per_unit, line_delivery = _line_delivery(item)
             if item.combo_id:
                 c = item.combo
                 comp_parts = []
@@ -626,8 +1168,6 @@ class OrderService:
                     hsn_code = getattr(c, 'hsn_code', None) or None
                     gst_percentage = c.gst_percentage
                 snap = snapshot or c.name
-                # if item.is_gift and snap:
-                #     snap = f'{snap} · Gift'
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=None,
@@ -651,11 +1191,11 @@ class OrderService:
                     is_gift=item.is_gift,
                     selected_pot_name=(item.selected_pot.name if item.selected_pot_id and item.selected_pot else ''),
                     pot_unit_price=item.pot_unit_price,
+                    delivery_charge_per_unit=per_unit,
+                    total_delivery_charge=line_delivery,
                 )
                 if form_data.get('payment') != Payment.Method.RAZORPAY:
-                    for row in c.items.all():
-                        dec = item.quantity * int(row.quantity or 1)
-                        Product.objects.filter(pk=row.product_id).update(base_stock=F('base_stock') - dec)
+                    decrement_stock_for_order_item(order_item)
                 continue
 
             v = item.selected_variant
@@ -672,11 +1212,11 @@ class OrderService:
                 line_base = item.unit_price + (item.pot_unit_price or 0)
                 taxable_value = line_base * item.quantity
                 gst_amount = taxable_value * (product.gst_percentage / Decimal('100'))
+                hsn_code = getattr(product, 'hsn_code', None) or None
+                gst_percentage = product.gst_percentage
             snap = snapshot or product.name
             if item.selected_pot_id and item.selected_pot:
                 snap = f'{snap} + {item.selected_pot.name}'
-            # if item.is_gift and snap:
-            #     snap = f'{snap} · Gift'
             order_item = OrderItem.objects.create(
                 order=order,
                 product=product,
@@ -700,6 +1240,8 @@ class OrderService:
                 is_gift=item.is_gift,
                 selected_pot_name=item.selected_pot.name if item.selected_pot_id else '',
                 pot_unit_price=item.pot_unit_price,
+                delivery_charge_per_unit=per_unit,
+                total_delivery_charge=line_delivery,
             )
             # Create rental booking for lifecycle management
             if item.line_type == CartItem.LineKind.RENTAL:
@@ -707,7 +1249,6 @@ class OrderService:
                 from ..services.rental_availability import assert_available_for_rent
                 if not item.rental_start_date or not item.rental_end_date:
                     raise CartError('Rental dates are required for rental bookings.')
-                # Enforce availability at checkout-time (race-safe after select_for_update on cart items)
                 assert_available_for_rent(product=product, start=item.rental_start_date, end=item.rental_end_date)
                 cfg = getattr(product, 'rental_config', None)
                 price_per_day = getattr(cfg, 'rent_price_per_day', None) if cfg else None
@@ -727,18 +1268,7 @@ class OrderService:
                     status=RentalBooking.Status.PENDING,
                 )
             if form_data.get('payment') != Payment.Method.RAZORPAY:
-                if getattr(product, 'is_combo_product', False):
-                    for row in product.combo_components.select_related('component_product'):
-                        dec = item.quantity * row.quantity
-                        Product.objects.filter(pk=row.component_product_id).update(base_stock=F('base_stock') - dec)
-                elif v:
-                    Variant.objects.filter(pk=item.selected_variant_id).update(stock_quantity=F('stock_quantity') - item.quantity)
-                else:
-                    Product.objects.filter(pk=product.pk).update(base_stock=F('base_stock') - item.quantity)
-                if item.selected_pot_id:
-                    Product.objects.filter(pk=item.selected_pot_id).update(
-                        base_stock=F('base_stock') - item.quantity
-                    )
+                decrement_stock_for_order_item(order_item)
         Payment.objects.create(order=order, method=form_data.get('payment', Payment.Method.COD), amount=totals.total)
         if clear_cart:
             cart.status = Cart.Status.ORDERED

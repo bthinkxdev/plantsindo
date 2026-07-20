@@ -53,7 +53,18 @@ class Order(TimeStampedModel):
     order_number = models.CharField(max_length=20, unique=True, db_index=True)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PLACED, db_index=True)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
-    shipping = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    shipping = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text='Total delivery charge for the order (persisted at checkout).',
+    )
+    delivery_state_name = models.CharField(
+        max_length=80,
+        blank=True,
+        default='',
+        help_text='Snapshot of selected delivery state name at order time.',
+    )
     gst_total = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     cgst = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     sgst = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
@@ -63,6 +74,23 @@ class Order(TimeStampedModel):
 
     class Meta:
         ordering = ['-created_at']
+
+    @property
+    def total_delivery_charge(self):
+        """Alias for shipping — order-level delivery total persisted at checkout."""
+        return self.shipping
+
+    @property
+    def delivery_state(self):
+        """Display name for selected delivery state (snapshot, then address FK/text)."""
+        if self.delivery_state_name:
+            return self.delivery_state_name
+        addr = self.address
+        if addr is None:
+            return ''
+        if addr.delivery_state_id and addr.delivery_state:
+            return addr.delivery_state.name
+        return addr.state or ''
 
     def __str__(self):
         return self.order_number
@@ -108,10 +136,30 @@ class OrderItem(TimeStampedModel):
         validators=[MinValueValidator(0)],
         help_text='Snapshot of pot price at time of order.',
     )
+    delivery_charge_per_unit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='State delivery charge per unit at time of order.',
+    )
+    total_delivery_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='delivery_charge_per_unit × quantity (persisted).',
+    )
 
     @property
     def line_total(self):
-        return self.unit_price * self.quantity
+        pot_price = (self.pot_unit_price or 0) * self.quantity
+        return (self.unit_price * self.quantity) + pot_price
+
+    @property
+    def line_grand_total(self):
+        """Product line total plus this line's delivery charge."""
+        return self.line_total + (self.total_delivery_charge or 0)
 
     class Meta:
         constraints = [
