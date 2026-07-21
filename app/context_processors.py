@@ -141,4 +141,11 @@ def storefront_brand(request):
         children = [tree.by_id[cid] for cid in child_ids if cid in tree.by_id]
         children.sort(key=lambda c: (c.name.lower(), c.pk))
         nav_category_menu.append({'parent': parent, 'children': children})
-    return {'site_brand': getattr(settings, 'SITE_BRAND', 'Plantsindo'), 'site_tagline': getattr(settings, 'SITE_TAGLINE', 'Calm corners, lush leaves'), 'nav_categories': nav, 'nav_category_menu': nav_category_menu}
+    return {
+        'site_brand': getattr(settings, 'SITE_BRAND', 'Plantsindo'),
+        'site_brand_part1': getattr(settings, 'SITE_BRAND_PART1', 'Plants'),
+        'site_brand_part2': getattr(settings, 'SITE_BRAND_PART2', 'indo'),
+        'site_tagline': getattr(settings, 'SITE_TAGLINE', 'Calm corners, lush leaves'),
+        'nav_categories': nav,
+        'nav_category_menu': nav_category_menu,
+    }

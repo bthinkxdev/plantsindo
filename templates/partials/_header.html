@@ -14,8 +14,8 @@
     <div class="site-header__inner">
         <div class="site-header__row1">
             <a href="{% url 'store:home' %}" class="site-brand" aria-label="{{ site_brand }} home">
-                <img src="{% static 'images/logo.png' %}" alt="{{ site_brand }}" style="height: 32px; width: 32px; object-fit: contain;">
-                <span class="site-brand__name ms-2 d-none d-lg-inline">{{ site_brand }}</span>
+                <img src="{% static 'images/logo.png' %}" alt="{{ site_brand }}" class="site-brand__logo">
+                <span class="site-brand-text ms-2 d-none d-lg-inline">{{ site_brand_part1 }}<span class="site-brand-text__tld">{{ site_brand_part2 }}.com</span></span>
             </a>
             <div class="site-header__search-slot">
                 <form class="site-search-pill" action="{% url 'store:product_list' %}" method="get" role="search">
@@ -32,12 +32,12 @@
             <div class="site-header__actions">
                 <a href="#" class="site-icon-btn d-none d-lg-inline-flex js-open-cart-drawer" title="Cart" aria-label="Shopping cart">
                     <i class="fas fa-shopping-bag"></i>
-                    {% if cart_count %}<span class="site-count-badge js-cart-count">{{ cart_count }}</span>{% endif %}
+                    <span class="site-count-badge js-cart-count" style="display:{% if cart_count %}inline-flex{% else %}none{% endif %};">{{ cart_count|default:0 }}</span>
                 </a>
                 {% if WISHLIST_ENABLED %}
                 <a href="{% url 'store:wishlist' %}" class="site-icon-btn d-none d-lg-inline-flex {% if not user.is_authenticated %}js-wishlist-guest{% endif %}" title="Wishlist" aria-label="Wishlist">
                     <i class="far fa-heart"></i>
-                    {% if wishlist_count %}<span class="site-count-badge js-wishlist-count">{{ wishlist_count }}</span>{% endif %}
+                    <span class="site-count-badge js-wishlist-count" style="display:{% if wishlist_count %}inline-flex{% else %}none{% endif %};">{{ wishlist_count|default:0 }}</span>
                 </a>
                 {% endif %}
                 {% if user.is_authenticated %}

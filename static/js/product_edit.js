@@ -946,7 +946,7 @@
                         )
                         .join("");
                     addVariantPrice.value = "";
-                    addVariantStock.value = "0";
+                    addVariantStock.value = "";
                     if (addVariantSku) addVariantSku.value = "";
                     if (addVariantImage) addVariantImage.value = "";
 

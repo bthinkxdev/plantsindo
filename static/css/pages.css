@@ -7528,9 +7528,13 @@ body.storefront:has(.storefront--ios-home) {
 }
 
 .storefront.storefront--ios-home .p99-rich-band--footer {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  border-radius: 0 !important;
+  border-radius: var(--ios-radius-xl);
+  margin-left: auto;
+  margin-right: auto;
+  max-width: calc(100% - 2 * var(--ios-section-gap, 20px));
+  padding-left: max(var(--ios-section-gap, 20px), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--ios-section-gap, 20px), env(safe-area-inset-right, 0px));
+  box-shadow: var(--ios-shadow-md);
 }
 
 .storefront.storefront--ios-home .p99-reels-section__badge {

@@ -31,8 +31,10 @@
         <div class="row g-5 pb-2 align-items-start">
             <div class="col-md-6 col-lg-4">
                 <div class="d-flex align-items-center gap-3 mb-3">
-                    <span class="site-brand__leaf site-brand__leaf--footer" aria-hidden="true"><i class="fas fa-leaf"></i></span>
-                    <span class="pi-footer__brand text-white">{{ site_brand }}</span>
+                    <span class="site-brand__leaf site-brand__leaf--footer" aria-hidden="true">
+                        <img src="{% static 'images/logo.png' %}" alt="{{ site_brand }}" class="site-brand__logo--footer">
+                    </span>
+                    <span class="site-brand-text">{{ site_brand_part1 }}<span class="site-brand-text__tld">{{ site_brand_part2 }}.com</span></span>
                 </div>
                 <p class="mt-2 footer-lead">
                     {{ site_tagline }} — curated tropicals, calming greens and ceramics for calmer rooms.

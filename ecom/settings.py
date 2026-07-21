@@ -29,6 +29,7 @@ DATABASES = {
             "PORT": os.getenv("DB_PORT"),
         }
 }
+
 AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'}, {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'}, {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'}, {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'}]
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
@@ -96,6 +97,8 @@ SITE_FACEBOOK_URL = config(
     default='https://www.facebook.com/profile.php?id=61587089061711',
 )
 SITE_BRAND = config('SITE_BRAND', default='Plantsindo')
+SITE_BRAND_PART1 = config('SITE_BRAND_PART1', default='Plants')
+SITE_BRAND_PART2 = config('SITE_BRAND_PART2', default='indo')
 SITE_TAGLINE = config('SITE_TAGLINE', default='Calm corners, lush leaves')
 RZP_CLIENT_ID = config('RZP_CLIENT_ID')
 RZP_CLIENT_SECRET = config('RZP_CLIENT_SECRET')
