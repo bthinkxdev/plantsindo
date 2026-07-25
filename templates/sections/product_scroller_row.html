@@ -38,8 +38,10 @@
             </div>
         </div>
         {% elif row_title %}
-        <div class="p99-reels-head">
-            <h2 class="p99-reels-title">{{ row_title }}</h2>
+        <div class="p99-reels-head storefront-section-heading-wrap">
+            <header class="storefront-section-heading">
+                <h2 class="storefront-section-heading__title">{{ row_title }}</h2>
+            </header>
             {% if view_all_url %}
             <a href="{{ view_all_url }}" class="link-view-all">View all</a>
             {% endif %}

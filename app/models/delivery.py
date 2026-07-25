@@ -3,7 +3,8 @@ Delivery state models.
 
 DeliveryState          — master list of all 28 Indian states + 8 UTs.
 ProductDeliveryState   — bridge: which states a product ships to,
-                         plus per-state delivery charge (per unit).
+                         plus per-state delivery charge (per pack of up to
+                         DELIVERY_PACK_SIZE pieces, default 2).
 """
 
 from django.core.validators import MinValueValidator
@@ -69,7 +70,8 @@ class ProductDeliveryState(models.Model):
     """
     One row = this product can be delivered to this state at a given charge.
 
-    delivery_charge is per unit (quantity 1). Checkout multiplies by qty.
+    delivery_charge is per pack (up to DELIVERY_PACK_SIZE pieces, default 2).
+    Checkout bills ceil(qty / pack_size) packs per cart line.
     """
 
     product = models.ForeignKey(
@@ -87,7 +89,10 @@ class ProductDeliveryState(models.Model):
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Delivery charge for this product to this state (per unit).",
+        help_text=(
+            "Delivery charge for this product to this state "
+            "(per pack of up to 2 pieces / ~1kg)."
+        ),
     )
     added_at = models.DateTimeField(auto_now_add=True)
 

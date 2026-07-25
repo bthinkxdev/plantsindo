@@ -2,7 +2,8 @@ Dear {{ order.address.full_name|default:order.user.get_full_name|default:"Custom
 
 Order Number: {{ order.order_number }}
 Total Amount: ₹{{ order.total }}
-Current Status: {{ order.get_status_display }}
+{% if order.discount_amount and order.discount_amount > 0 %}Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}: −₹{{ order.discount_amount }}
+{% endif %}Current Status: {{ order.get_status_display }}
 
 {% if status_key == "placed" %}
 Thank you for shopping with {{ site_name }}. We have successfully received your order and our team is currently reviewing it. You will receive another notification shortly once your order has been confirmed.

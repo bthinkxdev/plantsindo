@@ -1,0 +1,105 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}Coupons{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="page-title">Coupons</h1>
+    <p class="text-muted mb-0">Create and manage promotional codes for checkout.</p>
+  </div>
+  <a href="{% url 'admin_panel:coupon_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus me-1"></i> Create coupon
+  </a>
+</div>
+
+<form method="get" class="mb-3 d-flex gap-2 align-items-center flex-wrap">
+  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" style="width:12rem;"
+         placeholder="Search code…">
+  <select name="status" class="form-control form-control-sm" style="width:auto;"
+          onchange="this.form.submit()">
+    <option value="">All</option>
+    <option value="active" {% if filter_status == 'active' %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+  </select>
+  <button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button>
+  <small class="text-muted">{{ paginator.count }} coupon{{ paginator.count|pluralize }}</small>
+</form>
+
+{% if coupons %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Code</th>
+          <th>Discount</th>
+          <th>Validity</th>
+          <th>Uses</th>
+          <th>Status</th>
+          <th style="width:220px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in coupons %}
+        <tr>
+          <td>
+            <strong>{{ c.code }}</strong>
+            {% if c.description %}<div class="small text-muted">{{ c.description|truncatechars:48 }}</div>{% endif %}
+          </td>
+          <td>
+            {% if c.discount_type == 'percent' %}
+              {{ c.value|floatformat:0 }}%
+              {% if c.max_discount_amount %} <span class="text-muted small">(max ₹{{ c.max_discount_amount|floatformat:0 }})</span>{% endif %}
+            {% else %}
+              ₹{{ c.value|floatformat:0 }} off
+            {% endif %}
+            {% if c.min_order_amount %}
+              <div class="small text-muted">Min ₹{{ c.min_order_amount|floatformat:0 }}</div>
+            {% endif %}
+          </td>
+          <td class="small">
+            {% if c.starts_at %}From {{ c.starts_at|date:"d M Y H:i" }}<br>{% endif %}
+            {% if c.ends_at %}Until {{ c.ends_at|date:"d M Y H:i" }}{% else %}No expiry{% endif %}
+          </td>
+          <td>
+            {{ c.times_redeemed }}{% if c.max_uses %}/{{ c.max_uses }}{% else %}∞{% endif %}
+            {% if c.max_uses_per_customer %}
+              <div class="small text-muted">{{ c.max_uses_per_customer }}/customer</div>
+            {% endif %}
+          </td>
+          <td>
+            <form method="post" action="{% url 'admin_panel:coupon_toggle_active' c.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="btn btn-sm {% if c.is_active %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                {% if c.is_active %}Active{% else %}Disabled{% endif %}
+              </button>
+            </form>
+          </td>
+          <td class="d-flex gap-1 flex-wrap">
+            <a href="{% url 'admin_panel:coupon_edit' c.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+            <a href="{% url 'admin_panel:coupon_redemptions' c.pk %}" class="btn btn-sm btn-outline-secondary">History</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm">
+    {% if page_obj.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ filter_status }}&q={{ q }}">Prev</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ filter_status }}&q={{ q }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% else %}
+<div class="alert alert-light border">No coupons yet. Create your first campaign code.</div>
+{% endif %}
+{% endblock %}

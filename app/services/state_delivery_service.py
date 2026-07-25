@@ -10,8 +10,10 @@ get_all_active_states()  → QuerySet[DeliveryState]
 set_product_delivery_states(product_id, state_ids, charges=None)  → None
 get_product_delivery_charge(product_id, state_id) → Decimal | None
 get_combo_delivery_charge(combo_id, state_id) → Decimal | None
-resolve_item_delivery_charge(item, state_id) → (per_unit, line_total, has_row)
+resolve_item_delivery_charge(item, state_id) → (per_pack, line_total, has_row)
 compute_cart_delivery_charges(items, state_id) → CartDeliveryBreakdown
+  line_total = state_charge × ceil(qty / DELIVERY_PACK_SIZE)  # Approach A, per line
+delivery_pack_upsell_message(quantity) → str
 serviceability_payload(*, product_id, state_id)  → dict
 get_deliverable_states_payload(product_id) → list[dict]
 """
@@ -32,6 +34,51 @@ ZERO = Decimal('0')
 
 def _flat_fallback() -> Decimal:
     return Decimal(str(getattr(settings, 'FLAT_DELIVERY_CHARGE', 60)))
+
+
+def _pack_size() -> int:
+    """Pieces that share one state delivery charge (Approach A: per cart line)."""
+    try:
+        size = int(getattr(settings, 'DELIVERY_PACK_SIZE', 2) or 1)
+    except (TypeError, ValueError):
+        size = 2
+    return max(1, size)
+
+
+def delivery_packs_for_quantity(quantity: int) -> int:
+    """ceil(qty / DELIVERY_PACK_SIZE) — packs billed for a single cart line."""
+    qty = int(quantity or 0)
+    if qty <= 0:
+        return 0
+    size = _pack_size()
+    return (qty + size - 1) // size
+
+
+def delivery_pack_free_slots(quantity) -> int:
+    """Pieces that can still be added without starting a new delivery pack."""
+    size = _pack_size()
+    qty = int(quantity or 0)
+    if qty <= 0 or size <= 1:
+        return 0
+    rem = qty % size
+    return 0 if rem == 0 else size - rem
+
+
+def delivery_pack_upsell_message(quantity, max_quantity=None) -> str:
+    """Short checkout tip when another piece fits the current pack for free."""
+    qty = int(quantity or 0)
+    if max_quantity is not None:
+        try:
+            if qty >= int(max_quantity):
+                return ''
+        except (TypeError, ValueError):
+            pass
+    slots = delivery_pack_free_slots(qty)
+    if slots == 1:
+        return 'Add 1 more - no extra delivery'
+    if slots > 1:
+        return f'Add {slots} more - no extra delivery'
+    return ''
 
 
 def _as_decimal(value) -> Decimal:
@@ -165,8 +212,9 @@ def get_states_by_region() -> Dict[str, List]:
 
 def get_product_delivery_charge(product_id: int, state_id: int) -> Optional[Decimal]:
     """
-    Per-unit delivery charge for product × state.
+    Per-pack delivery charge for product × state.
 
+    One pack covers up to DELIVERY_PACK_SIZE pieces (default 2).
     Returns Decimal when a ProductDeliveryState row exists.
     Returns None when the product has no row for this state
     (unrestricted, or not deliverable — caller must check serviceability).
@@ -186,10 +234,12 @@ def get_product_delivery_charge(product_id: int, state_id: int) -> Optional[Deci
 
 def get_combo_delivery_charge(combo_id: int, state_id: int) -> Optional[Decimal]:
     """
-    Per-unit combo delivery charge = sum of component product charges for the state.
+    Per-pack combo delivery charge = sum of component product charges for the state.
 
     Returns None only when no component has a configured charge row for the state.
-    Component quantities in the combo multiply that component's per-unit charge.
+    Component quantities in the combo multiply that component's per-pack charge
+    when building one combo unit's ship fee; cart-line pack math still applies
+    to combo quantity via resolve_item_delivery_charge.
     """
     from app.models import ComboItem
 
@@ -212,7 +262,9 @@ def get_combo_delivery_charge(combo_id: int, state_id: int) -> Optional[Decimal]
 
 def resolve_item_delivery_charge(item, state_id: Optional[int]) -> Tuple[Decimal, Decimal, bool]:
     """
-    Resolve (per_unit, line_total, has_configured_row) for a cart/order line.
+    Resolve (per_pack, line_total, has_configured_row) for a cart/order line.
+
+    line_total = per_pack × ceil(quantity / DELIVERY_PACK_SIZE).
 
     has_configured_row is True when the product/combo has a ProductDeliveryState
     row for the selected state (charge may still be zero).
@@ -220,19 +272,19 @@ def resolve_item_delivery_charge(item, state_id: Optional[int]) -> Tuple[Decimal
     if not state_id:
         return ZERO, ZERO, False
 
-    per_unit: Optional[Decimal]
+    per_pack: Optional[Decimal]
     if getattr(item, 'combo_id', None):
-        per_unit = get_combo_delivery_charge(item.combo_id, state_id)
+        per_pack = get_combo_delivery_charge(item.combo_id, state_id)
     elif getattr(item, 'product_id', None):
-        per_unit = get_product_delivery_charge(item.product_id, state_id)
+        per_pack = get_product_delivery_charge(item.product_id, state_id)
     else:
-        per_unit = None
+        per_pack = None
 
-    if per_unit is None:
+    if per_pack is None:
         return ZERO, ZERO, False
 
-    qty = Decimal(int(getattr(item, 'quantity', 1) or 1))
-    return per_unit, per_unit * qty, True
+    packs = Decimal(delivery_packs_for_quantity(getattr(item, 'quantity', 1)))
+    return per_pack, per_pack * packs, True
 
 
 @dataclass
@@ -256,8 +308,9 @@ def compute_cart_delivery_charges(items, state_id: Optional[int] = None) -> Cart
     Rules:
     - No state selected → ₹0 (checkout must prompt to select a state).
     - State selected + at least one line has a configured charge row →
-      sum(state_charge × qty) across lines (missing rows contribute 0).
-    - State selected + no lines have a charge row → flat fallback
+      sum(state_charge × ceil(qty / DELIVERY_PACK_SIZE)) across lines
+      (missing rows contribute 0). Pack size is per line (Approach A).
+    - State selected + no lines have a charge row → flat fallback once per order
       (preserves behaviour for unrestricted catalogues).
     """
     if not state_id:

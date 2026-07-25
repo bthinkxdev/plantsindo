@@ -1,0 +1,22 @@
+{% comment %}Expects: item, max_quantity, pack_upsell_message{% endcomment %}
+<div class="order-line-qty-block">
+    <div class="order-line-qty cd-qty"
+         data-checkout-qty
+         data-item-id="{{ item.id }}"
+         data-max="{{ max_quantity }}">
+        <button type="button"
+                class="cd-qty__btn js-checkout-qty-dec"
+                data-item-id="{{ item.id }}"
+                aria-label="Decrease quantity"
+                {% if item.quantity <= 1 %}disabled{% endif %}>&minus;</button>
+        <span class="cd-qty__val" data-checkout-qty-val>{{ item.quantity }}</span>
+        <button type="button"
+                class="cd-qty__btn js-checkout-qty-inc"
+                data-item-id="{{ item.id }}"
+                aria-label="Increase quantity"
+                {% if item.quantity >= max_quantity %}disabled{% endif %}>+</button>
+    </div>
+    <p class="order-line-pack-tip"
+       data-checkout-pack-tip
+       {% if not pack_upsell_message %}hidden{% endif %}>{{ pack_upsell_message }}</p>
+</div>

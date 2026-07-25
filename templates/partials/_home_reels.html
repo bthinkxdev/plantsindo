@@ -1,11 +1,10 @@
 {# partials/_home_reels.html #}
-{% load static %}
 {% if reels %}
-<section class="p99-reels-section p99-reels-section--banner-top" id="section-reels" aria-label="Video reels">
+<section class="p99-reels-section" id="section-reels" aria-label="Video reels">
   <div class="section-container">
-    <a href="{% url 'store:product_list' %}" class="product-section-banner-link p99-reels-section__banner-link" aria-label="Video reels — shop featured plants">
-      <img src="{% static 'img/reel.png' %}" alt="" class="product-section-banner-img" width="1200" height="320" loading="lazy" decoding="async">
-    </a>
+    <header class="storefront-section-heading">
+      <h2 class="storefront-section-heading__title">Reels</h2>
+    </header>
     <div class="p99-reels-scroll">
       {% for reel in reels %}
         {% with product=reel.product %}

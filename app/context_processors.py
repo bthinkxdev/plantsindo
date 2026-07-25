@@ -89,7 +89,10 @@ def admin_message_badge(request):
     return {'admin_unresolved_messages': count}
 
 def delivery_settings(request):
-    return {'DELIVERY_INTEGRATED': delivery_enabled()}
+    return {
+        'DELIVERY_INTEGRATED': delivery_enabled(),
+        'DELIVERY_PACK_SIZE': int(getattr(settings, 'DELIVERY_PACK_SIZE', 2) or 2),
+    }
 
 def home_section_flags(request):
     return {'HOME_DEAL_OF_DAY_ENABLED': getattr(settings, 'HOME_DEAL_OF_DAY_ENABLED', True), 'HOME_FEATURED_ENABLED': getattr(settings, 'HOME_FEATURED_ENABLED', True), 'HOME_BESTSELLER_ENABLED': getattr(settings, 'HOME_BESTSELLER_ENABLED', True), 'HOME_RECENTLY_ADDED_ENABLED': getattr(settings, 'HOME_RECENTLY_ADDED_ENABLED', True), 'REVIEW_ENABLED': getattr(settings, 'REVIEW_ENABLED', True)}

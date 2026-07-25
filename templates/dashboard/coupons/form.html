@@ -1,0 +1,104 @@
+{% extends "admin_panel/base.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'admin_panel:coupon_list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+  <h1 class="page-title mb-0">{{ form_title }}</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <div class="card p-4">
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.code.id_for_label }}">Code <span class="text-danger">*</span></label>
+          {{ form.code }}
+          {% if form.code.errors %}<div class="invalid-feedback d-block">{{ form.code.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.discount_type.id_for_label }}">Type</label>
+            {{ form.discount_type }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.value.id_for_label }}">Value <span class="text-danger">*</span></label>
+            {{ form.value }}
+            {% if form.value.errors %}<div class="invalid-feedback d-block">{{ form.value.errors.0 }}</div>{% endif %}
+            <div class="form-text">Percent 0–100, or fixed ₹ amount.</div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.min_order_amount.id_for_label }}">Min order (₹)</label>
+            {{ form.min_order_amount }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.max_discount_amount.id_for_label }}">Max discount (₹)</label>
+            {{ form.max_discount_amount }}
+            <div class="form-text">Optional cap for % coupons.</div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.starts_at.id_for_label }}">Starts at</label>
+            {{ form.starts_at }}
+            {% if form.starts_at.errors %}<div class="invalid-feedback d-block">{{ form.starts_at.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.ends_at.id_for_label }}">Expires at</label>
+            {{ form.ends_at }}
+            {% if form.ends_at.errors %}<div class="invalid-feedback d-block">{{ form.ends_at.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.max_uses.id_for_label }}">Global max uses</label>
+            {{ form.max_uses }}
+            <div class="form-text">Blank = unlimited.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="{{ form.max_uses_per_customer.id_for_label }}">Per customer</label>
+            {{ form.max_uses_per_customer }}
+            <div class="form-text">Use 1 for one-time. Blank = unlimited.</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.description.id_for_label }}">Description</label>
+          {{ form.description }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" for="{{ form.internal_note.id_for_label }}">Internal note</label>
+          {{ form.internal_note }}
+        </div>
+
+        <div class="form-check mb-4">
+          {{ form.is_active }}
+          <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save coupon</button>
+          <a href="{% url 'admin_panel:coupon_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

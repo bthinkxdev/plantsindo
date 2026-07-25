@@ -9,16 +9,9 @@
 {% endif %}
 
 {% if not product.is_legacy_combo %}
-<div class="pdp-state-check mb-3 pdp-card p-3 border rounded-2" id="pdpStateModule">
-    <label class="form-label small fw-bold mb-1">Check delivery availability</label>
-    <div class="d-flex flex-wrap gap-2 align-items-center">
-        <select class="form-select form-select-sm" style="max-width:16rem;"
-                id="pdpStateSelect" aria-label="Select your state">
-            <option value="">Select your state…</option>
-        </select>
-        <span class="small fw-semibold" id="pdpStateResult" aria-live="polite"></span>
-    </div>
-    <p class="text-muted small mt-1 mb-0" id="pdpStateHint" style="display:none;"></p>
+<div class="pdp-delivery-tip mb-2" id="pdpStateModule" hidden>
+    <span class="pdp-delivery-tip__label">Deliverable:</span>
+    <div class="pdp-delivery-tip__list" id="pdpStateHint" aria-live="polite"></div>
 </div>
 {% endif %}
 

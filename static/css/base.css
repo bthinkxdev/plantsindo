@@ -790,6 +790,14 @@ body.storefront {
   color: #fff !important;
   border-bottom-color: rgba(255, 255, 255, 0.25);
 }
+.storefront .footer-address__text a {
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.storefront .footer-address__text a:hover {
+  color: #fff;
+}
 .storefront .social-links {
   display: flex;
   flex-wrap: wrap;

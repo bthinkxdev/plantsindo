@@ -99,6 +99,10 @@
                     <i class="fas fa-quote-left"></i>
                     <span>Testimonials</span>
                 </a>
+                <a href="{% url 'admin_panel:coupon_list' %}" class="nav-item {% if active_menu == 'coupons' %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Coupons</span>
+                </a>
                 <a href="{% url 'admin_panel:message_list' %}" class="nav-item {% if active_menu == 'messages' %}active{% endif %}">
                     <i class="fas fa-envelope"></i>
                     <span class="nav-item-label">

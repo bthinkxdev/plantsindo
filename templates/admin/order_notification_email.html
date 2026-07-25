@@ -61,6 +61,16 @@
                                                     <span style="color: #27ae60; font-weight: 600; font-size: 18px;">₹{{ order.total }}</span>
                                                 </td>
                                             </tr>
+                                            {% if order.discount_amount and order.discount_amount > 0 %}
+                                            <tr>
+                                                <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
+                                                    <strong style="color: #666;">Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}:</strong>
+                                                </td>
+                                                <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">
+                                                    −₹{{ order.discount_amount }}
+                                                </td>
+                                            </tr>
+                                            {% endif %}
                                             <tr>
                                                 <td style="padding: 8px 0; border-bottom: 1px solid #eee;">
                                                     <strong style="color: #666;">Delivery Charge:</strong>

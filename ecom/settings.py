@@ -30,6 +30,13 @@ DATABASES = {
         }
 }
 
+
+# DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.sqlite3",
+#             "NAME": BASE_DIR / "db.sqlite3",
+#         }
+# }
 AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'}, {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'}, {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'}, {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'}]
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
@@ -53,6 +60,7 @@ HOME_RECENTLY_ADDED_ENABLED = True
 ALLOW_ATTRIBUTES_AND_VARIANTS = True
 REVIEW_ENABLED = True
 FLAT_DELIVERY_CHARGE = 60
+DELIVERY_PACK_SIZE = 2  # pieces sharing one state delivery charge (~500g–1kg)
 MAX_CART_QTY = 10
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
@@ -84,9 +92,9 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ADMIN_NOTIFICATION_EMAILS = ['adithyamc@bthinkx.com']
-SITE_PHONE = config('SITE_PHONE', default='+91 7559947750')
-SITE_WHATSAPP = config('SITE_WHATSAPP', default='917559947750')
-SITE_EMAIL = config('SITE_EMAIL', default='hello@plantsindo.com')
+SITE_PHONE = config('SITE_PHONE', default='+91 88485 99575')
+SITE_WHATSAPP = config('SITE_WHATSAPP', default='918848599575')
+SITE_EMAIL = config('SITE_EMAIL', default='supportplantsindo@gmail.com')
 SITE_INSTAGRAM = config('SITE_INSTAGRAM', default='plantsindo.co')
 SITE_INSTAGRAM_URL = config(
     'SITE_INSTAGRAM_URL',
@@ -99,7 +107,7 @@ SITE_FACEBOOK_URL = config(
 SITE_BRAND = config('SITE_BRAND', default='Plantsindo')
 SITE_BRAND_PART1 = config('SITE_BRAND_PART1', default='Plants')
 SITE_BRAND_PART2 = config('SITE_BRAND_PART2', default='indo')
-SITE_TAGLINE = config('SITE_TAGLINE', default='Calm corners, lush leaves')
+SITE_TAGLINE = config('SITE_TAGLINE', default='Bring Nature Home, Beautifully.')
 RZP_CLIENT_ID = config('RZP_CLIENT_ID')
 RZP_CLIENT_SECRET = config('RZP_CLIENT_SECRET')
 SHIPROCKET_EMAIL = config('SHIPROCKET_EMAIL')

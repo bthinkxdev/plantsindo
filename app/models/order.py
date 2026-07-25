@@ -69,6 +69,21 @@ class Order(TimeStampedModel):
     cgst = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     sgst = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     igst = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    coupon = models.ForeignKey(
+        'Coupon',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders',
+    )
+    coupon_code = models.CharField(max_length=40, blank=True, default='')
+    discount_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Coupon discount applied to merchandise (capped at subtotal).',
+    )
     total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     address = models.ForeignKey(Address, on_delete=models.PROTECT, related_name='orders')
 
@@ -141,14 +156,14 @@ class OrderItem(TimeStampedModel):
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text='State delivery charge per unit at time of order.',
+        help_text='State delivery charge per pack at time of order.',
     )
     total_delivery_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text='delivery_charge_per_unit × quantity (persisted).',
+        help_text='per-pack charge × ceil(qty / DELIVERY_PACK_SIZE) (persisted).',
     )
 
     @property

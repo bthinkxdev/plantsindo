@@ -242,6 +242,12 @@
                     <td>Product Subtotal:</td>
                     <td>₹{{ order.subtotal }}</td>
                 </tr>
+                {% if order.discount_amount and order.discount_amount > 0 %}
+                <tr>
+                    <td>Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}:</td>
+                    <td>−₹{{ order.discount_amount }}</td>
+                </tr>
+                {% endif %}
                 {% if order.gst_total and order.gst_total > 0 %}
                 <tr>
                     <td>GST:</td>

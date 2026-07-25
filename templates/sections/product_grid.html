@@ -20,11 +20,11 @@
                 decoding="async">
         </a>
         {% else %}
-        <div class="product-section-head">
-            <div>
+        <div class="product-section-head product-section-head--text-title">
+            <header class="storefront-section-heading">
                 {% if section_kicker %}<p class="section-kicker">{{ section_kicker }}</p>{% endif %}
-                <h2 class="product-section-title">{{ section_title }}</h2>
-            </div>
+                <h2 class="storefront-section-heading__title">{{ section_title }}</h2>
+            </header>
             {% if view_all_url %}
             <a href="{{ view_all_url }}" class="link-view-all">View all</a>
             {% endif %}

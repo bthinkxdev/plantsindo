@@ -391,6 +391,8 @@ class CartTotals:
     delivery_breakdown: object = None
     used_flat_fallback: bool = False
     state_missing: bool = False
+    discount_amount: object = None
+    coupon_code: str = ''
 
 
 @dataclass
@@ -410,6 +412,10 @@ class CheckoutTotalsResult:
     state_id: object = None
     delivery_breakdown: object = None
     used_flat_fallback: bool = False
+    discount_amount: object = None
+    coupon_code: str = ''
+    coupon_message: str = ''
+    coupon_error: str = ''
 
     @property
     def state_missing(self) -> bool:
@@ -424,6 +430,7 @@ class CheckoutTotalsResult:
         return self.status != 'ok'
 
     def as_cart_totals(self) -> CartTotals:
+        from decimal import Decimal
         return CartTotals(
             subtotal=self.subtotal,
             gst_total=self.gst_total,
@@ -432,6 +439,8 @@ class CheckoutTotalsResult:
             delivery_breakdown=self.delivery_breakdown,
             used_flat_fallback=self.used_flat_fallback,
             state_missing=self.state_missing,
+            discount_amount=self.discount_amount if self.discount_amount is not None else Decimal('0'),
+            coupon_code=self.coupon_code or '',
         )
 
     def line_payload(self, items) -> list[dict]:
@@ -449,6 +458,8 @@ class CheckoutTotalsResult:
         return lines
 
     def to_api_dict(self, items) -> dict:
+        from decimal import Decimal
+        discount = self.discount_amount if self.discount_amount is not None else Decimal('0')
         return {
             'success': True,
             'state_id': self.state_id,
@@ -470,6 +481,10 @@ class CheckoutTotalsResult:
             'subtotal': str(self.subtotal),
             'gst_total': str(self.gst_total or 0),
             'shipping': str(self.shipping),
+            'discount_amount': str(discount),
+            'coupon_code': self.coupon_code or '',
+            'coupon_message': self.coupon_message or '',
+            'coupon_error': self.coupon_error or '',
             'total': str(self.total),
             'checkout_blocked': self.checkout_blocked,
             'used_flat_fallback': self.used_flat_fallback if self.serviceable else False,
@@ -487,7 +502,60 @@ def shipping_label_for_amount(shipping) -> str:
     return f'₹{quantized}'
 
 
-def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsResult:
+def _apply_coupon_to_checkout_result(
+    result: CheckoutTotalsResult,
+    *,
+    coupon_code=None,
+    user=None,
+    email=None,
+    phone=None,
+) -> CheckoutTotalsResult:
+    """Attach coupon discount to an existing CheckoutTotalsResult (mutates totals)."""
+    from decimal import Decimal
+
+    from .coupon_service import CouponError, validate_for_checkout
+
+    code = (coupon_code or '').strip()
+    if not code:
+        result.discount_amount = Decimal('0')
+        result.coupon_code = ''
+        result.coupon_message = ''
+        result.coupon_error = ''
+        return result
+
+    try:
+        validated = validate_for_checkout(
+            code,
+            subtotal=result.subtotal,
+            user=user,
+            email=email or '',
+            phone=phone or '',
+        )
+    except CouponError as exc:
+        result.discount_amount = Decimal('0')
+        result.coupon_code = ''
+        result.coupon_message = ''
+        result.coupon_error = exc.message
+        return result
+
+    discount = validated.discount_amount
+    result.discount_amount = discount
+    result.coupon_code = validated.code
+    result.coupon_message = validated.message
+    result.coupon_error = ''
+    result.total = (result.subtotal or 0) + (result.gst_total or 0) + (result.shipping or 0) - discount
+    return result
+
+
+def resolve_checkout_totals(
+    cart,
+    state_id=None,
+    items=None,
+    coupon_code=None,
+    user=None,
+    email=None,
+    phone=None,
+) -> CheckoutTotalsResult:
     """
     Canonical checkout totals + delivery status.
 
@@ -495,6 +563,7 @@ def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsRe
     - No state → shipping excluded, status state_required
     - State with undeliverable lines → shipping excluded, status unavailable
     - Valid state → state charges (or flat fallback) included, status ok
+    - Optional coupon_code → discount off subtotal (never shipping); GST unchanged
     """
     from decimal import Decimal
 
@@ -511,7 +580,7 @@ def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsRe
         base = CartService.compute_totals(cart, state_id=None)
         subtotal = base.subtotal or 0
         gst_total = base.gst_total or 0
-        return CheckoutTotalsResult(
+        result = CheckoutTotalsResult(
             subtotal=subtotal,
             gst_total=gst_total,
             shipping=Decimal('0'),
@@ -523,13 +592,17 @@ def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsRe
             state_id=None,
             delivery_breakdown=getattr(base, 'delivery_breakdown', None),
             used_flat_fallback=False,
+            discount_amount=Decimal('0'),
+        )
+        return _apply_coupon_to_checkout_result(
+            result, coupon_code=coupon_code, user=user, email=email, phone=phone
         )
 
     if delivery_issues:
         base = CartService.compute_totals(cart, state_id=None)
         subtotal = base.subtotal or 0
         gst_total = base.gst_total or 0
-        return CheckoutTotalsResult(
+        result = CheckoutTotalsResult(
             subtotal=subtotal,
             gst_total=gst_total,
             shipping=Decimal('0'),
@@ -541,10 +614,14 @@ def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsRe
             state_id=state_id,
             delivery_breakdown=getattr(base, 'delivery_breakdown', None),
             used_flat_fallback=False,
+            discount_amount=Decimal('0'),
+        )
+        return _apply_coupon_to_checkout_result(
+            result, coupon_code=coupon_code, user=user, email=email, phone=phone
         )
 
     totals = CartService.compute_totals(cart, state_id=state_id)
-    return CheckoutTotalsResult(
+    result = CheckoutTotalsResult(
         subtotal=totals.subtotal,
         gst_total=totals.gst_total,
         shipping=totals.shipping,
@@ -556,6 +633,10 @@ def resolve_checkout_totals(cart, state_id=None, items=None) -> CheckoutTotalsRe
         state_id=state_id,
         delivery_breakdown=getattr(totals, 'delivery_breakdown', None),
         used_flat_fallback=bool(getattr(totals, 'used_flat_fallback', False)),
+        discount_amount=Decimal('0'),
+    )
+    return _apply_coupon_to_checkout_result(
+        result, coupon_code=coupon_code, user=user, email=email, phone=phone
     )
 
 
@@ -1127,6 +1208,37 @@ class OrderService:
             cgst = 0
             sgst = 0
             igst = gst_total
+
+        from decimal import Decimal
+
+        from .coupon_service import CouponError, record_redemption, validate_for_checkout
+
+        discount_amount = Decimal('0')
+        coupon_obj = None
+        coupon_code_snap = ''
+        raw_coupon = (form_data.get('coupon_code') or '').strip()
+        if raw_coupon:
+            try:
+                validated = validate_for_checkout(
+                    raw_coupon,
+                    subtotal=totals.subtotal,
+                    user=user or cart.user,
+                    email=address.email or form_data.get('email', ''),
+                    phone=address.phone or form_data.get('phone', ''),
+                )
+            except CouponError as exc:
+                raise CartError(exc.message) from exc
+            discount_amount = validated.discount_amount
+            coupon_obj = validated.coupon
+            coupon_code_snap = validated.code
+
+        payable = (
+            (totals.subtotal or 0)
+            + (gst_total or 0)
+            + (totals.shipping or 0)
+            - discount_amount
+        )
+
         order = Order.objects.create(
             user=cart.user if cart.user else None,
             order_number=order_number,
@@ -1137,10 +1249,22 @@ class OrderService:
             cgst=cgst,
             sgst=sgst,
             igst=igst,
-            total=totals.total,
+            coupon=coupon_obj,
+            coupon_code=coupon_code_snap,
+            discount_amount=discount_amount,
+            total=payable,
             address=address,
         )
-        from decimal import Decimal
+
+        if coupon_obj:
+            record_redemption(
+                order,
+                coupon_obj,
+                discount_amount,
+                user=order.user,
+                email=address.email or '',
+                phone=address.phone or '',
+            )
 
         def _line_delivery(item):
             if breakdown and not breakdown.used_flat_fallback:
@@ -1269,7 +1393,7 @@ class OrderService:
                 )
             if form_data.get('payment') != Payment.Method.RAZORPAY:
                 decrement_stock_for_order_item(order_item)
-        Payment.objects.create(order=order, method=form_data.get('payment', Payment.Method.COD), amount=totals.total)
+        Payment.objects.create(order=order, method=form_data.get('payment', Payment.Method.COD), amount=order.total)
         if clear_cart:
             cart.status = Cart.Status.ORDERED
             cart.save(update_fields=['status'])

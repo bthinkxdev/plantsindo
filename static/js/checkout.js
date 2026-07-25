@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initPaymentSelection();
     initPaymentButtonText();
     initAddressToggle();
-    initCheckoutRemoveItems();
+    initCheckoutLineControls();
+    initCheckoutPackTips();
+    initCheckoutCoupon();
     initCheckoutSubmit();
     initCheckoutDeliveryGuard();
     initCheckoutDeliveryTotals();
@@ -235,15 +237,25 @@ function cancelPayment(orderNumber, cancelUrl, csrf) {
 }
 
 
-function initCheckoutRemoveItems() {
+function initCheckoutLineControls() {
     var root = document.getElementById('checkout-order-lines') || document;
     root.addEventListener('click', function(e) {
-        var btn = e.target.closest('.js-checkout-remove');
-        if (!btn) return;
+        var removeBtn = e.target.closest('.js-checkout-remove');
+        if (removeBtn) {
+            e.preventDefault();
+            var removeId = removeBtn.getAttribute('data-item-id');
+            if (removeId) removeCheckoutItem(removeId, removeBtn);
+            return;
+        }
+
+        var decBtn = e.target.closest('.js-checkout-qty-dec');
+        var incBtn = e.target.closest('.js-checkout-qty-inc');
+        if (!decBtn && !incBtn) return;
         e.preventDefault();
-        var itemId = btn.getAttribute('data-item-id');
-        if (!itemId) return;
-        removeCheckoutItem(itemId, btn);
+        var qtyBtn = decBtn || incBtn;
+        var itemId = qtyBtn.getAttribute('data-item-id');
+        if (!itemId || qtyBtn.disabled) return;
+        adjustCheckoutQty(itemId, decBtn ? -1 : 1);
     });
 }
 
@@ -251,6 +263,163 @@ function initCheckoutRemoveItems() {
 function getCheckoutCsrfToken() {
     var input = document.querySelector('#checkoutForm [name=csrfmiddlewaretoken]');
     return input ? input.value : '';
+}
+
+
+function syncCheckoutQtyButtons(line, qty) {
+    var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var decBtn = line.querySelector('.js-checkout-qty-dec');
+    var incBtn = line.querySelector('.js-checkout-qty-inc');
+    if (decBtn) decBtn.disabled = qty <= 1;
+    if (incBtn) incBtn.disabled = qty >= maxQty;
+}
+
+
+function checkoutPackUpsellMessage(quantity) {
+    var packSize = parseInt(window.DELIVERY_PACK_SIZE, 10);
+    if (isNaN(packSize) || packSize < 1) packSize = 2;
+    var qty = parseInt(quantity, 10) || 0;
+    var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    if (qty <= 0 || packSize <= 1 || qty >= maxQty) return '';
+    var rem = qty % packSize;
+    if (rem === 0) return '';
+    var slots = packSize - rem;
+    if (slots === 1) return 'Add 1 more - no extra delivery';
+    return 'Add ' + slots + ' more - no extra delivery';
+}
+
+
+function syncCheckoutPackUpsell(lineOrWrap, message) {
+    var root = lineOrWrap && lineOrWrap.nodeType === 1
+        ? (lineOrWrap.closest('[data-checkout-line]') || lineOrWrap)
+        : null;
+    if (!root) return;
+    var tip = root.querySelector('[data-checkout-pack-tip]');
+    if (!tip) return;
+
+    var text;
+    if (message == null) {
+        // Optimistic / init: mirror server formula from current qty
+        var valEl = root.querySelector('[data-checkout-qty-val]');
+        text = checkoutPackUpsellMessage(valEl ? valEl.textContent : 0);
+    } else {
+        // Server authority from cart_update / SSR
+        text = String(message).trim();
+    }
+
+    tip.textContent = text;
+    if (text) tip.removeAttribute('hidden');
+    else tip.setAttribute('hidden', '');
+}
+
+
+function initCheckoutPackTips() {
+    document.querySelectorAll('[data-checkout-line]').forEach(function(line) {
+        syncCheckoutPackUpsell(line, null);
+    });
+}
+
+
+function syncCheckoutCartBadges(count) {
+    var n = parseInt(count, 10);
+    if (isNaN(n)) return;
+    document.querySelectorAll('.js-cart-count').forEach(function(el) {
+        el.textContent = n;
+        el.classList.toggle('bottom-bar-badge--hidden', n <= 0);
+        el.classList.toggle('bottom-bar-badge--visible', n > 0);
+        if (el.style) {
+            el.style.display = n > 0 ? '' : 'none';
+        }
+    });
+}
+
+
+function setCheckoutLineBusy(line, busy) {
+    if (!line) return;
+    line.classList.toggle('order-line--busy', !!busy);
+    line.querySelectorAll('.js-checkout-qty-dec, .js-checkout-qty-inc, .js-checkout-remove').forEach(function(btn) {
+        btn.disabled = !!busy;
+    });
+}
+
+
+function adjustCheckoutQty(itemId, delta) {
+    var line = document.querySelector('[data-checkout-line][data-item-id="' + itemId + '"]');
+    if (!line) return;
+
+    var valEl = line.querySelector('[data-checkout-qty-val]');
+    if (!valEl) return;
+
+    var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var current = parseInt(valEl.textContent, 10) || 1;
+    var next = current + delta;
+    if (next < 1 || next > maxQty) return;
+
+    var url = window.CHECKOUT_UPDATE_URL || '/cart/update/';
+    var previousQty = current;
+    valEl.textContent = String(next);
+    syncCheckoutQtyButtons(line, next);
+    syncCheckoutPackUpsell(line, null);
+    setCheckoutLineBusy(line, true);
+
+    fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCheckoutCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+        body: 'item_id=' + encodeURIComponent(itemId) + '&quantity=' + encodeURIComponent(next),
+    })
+    .then(function(res) {
+        return res.json().then(function(data) {
+            return { ok: res.ok, data: data || {} };
+        });
+    })
+    .then(function(result) {
+        setCheckoutLineBusy(line, false);
+        if (!result.ok || !result.data.success) {
+            valEl.textContent = String(previousQty);
+            syncCheckoutQtyButtons(line, previousQty);
+            syncCheckoutPackUpsell(line, null);
+            showCheckoutError(
+                (result.data && result.data.error) || 'Could not update quantity.'
+            );
+            return;
+        }
+
+        var qty = parseInt(result.data.quantity, 10);
+        if (isNaN(qty) || qty < 1) {
+            window.location.href = '/?open_cart=1';
+            return;
+        }
+
+        valEl.textContent = String(qty);
+        syncCheckoutQtyButtons(line, qty);
+        syncCheckoutPackUpsell(line, result.data.pack_upsell_message);
+
+        if (result.data.line_total != null) {
+            var priceEl = line.querySelector('[data-line-price]');
+            if (priceEl) {
+                priceEl.textContent = '₹' + Math.round(parseFloat(result.data.line_total) || 0);
+            }
+        }
+
+        if (result.data.cart_count !== undefined) {
+            syncCheckoutCartBadges(result.data.cart_count);
+        }
+
+        refreshCheckoutDeliveryTotals(resolveCheckoutStateId());
+    })
+    .catch(function() {
+        setCheckoutLineBusy(line, false);
+        valEl.textContent = String(previousQty);
+        syncCheckoutQtyButtons(line, previousQty);
+        syncCheckoutPackUpsell(line, null);
+        showCheckoutError('Network error. Please try again.');
+    });
 }
 
 
@@ -280,6 +449,9 @@ function removeCheckoutItem(itemId, btn) {
         }
         var line = document.querySelector('[data-checkout-line][data-item-id="' + itemId + '"]');
         if (line) line.remove();
+        if (result.data.cart_count !== undefined) {
+            syncCheckoutCartBadges(result.data.cart_count);
+        }
         refreshCheckoutDeliveryTotals(resolveCheckoutStateId());
     })
     .catch(function() {
@@ -340,6 +512,7 @@ function applyCheckoutTotalsPayload(data) {
     var shipping = parseFloat(data.shipping || 0);
     var subtotal = parseFloat(data.subtotal || 0);
     var gst = parseFloat(data.gst_total || 0);
+    var discount = parseFloat(data.discount_amount || 0);
     var total = parseFloat(data.total || 0);
     var status = data.status || 'state_required';
     var label = data.shipping_label || '';
@@ -349,6 +522,12 @@ function applyCheckoutTotalsPayload(data) {
     var subtotalEl = document.getElementById('subtotal-value');
     var totalEl = document.getElementById('total-value');
     var placeOrderTotal = document.getElementById('placeOrderTotal');
+    var discountRow = document.getElementById('discountRow');
+    var discountEl = document.getElementById('discount-value');
+    var couponHidden = document.getElementById('id_coupon_code');
+    var couponInput = document.getElementById('checkoutCouponInput');
+    var couponBtn = document.getElementById('checkoutCouponApply');
+    var couponMsg = document.getElementById('checkoutCouponMsg');
 
     if (shippingEl) {
         shippingEl.dataset.value = (status === 'ok') ? String(shipping) : '';
@@ -358,6 +537,38 @@ function applyCheckoutTotalsPayload(data) {
     if (subtotalEl) {
         subtotalEl.dataset.value = String(subtotal);
         subtotalEl.textContent = '\u20B9' + subtotal.toFixed(0);
+    }
+    if (discountRow && discountEl) {
+        if (discount > 0 && data.coupon_code) {
+            discountRow.hidden = false;
+            discountEl.dataset.value = String(discount);
+            discountEl.textContent = '\u2212\u20B9' + discount.toFixed(0);
+            var labelSpan = discountRow.querySelector('span');
+            if (labelSpan) labelSpan.textContent = 'Discount (' + data.coupon_code + ')';
+        } else {
+            discountRow.hidden = true;
+            discountEl.dataset.value = '0';
+        }
+    }
+    if (couponHidden) couponHidden.value = data.coupon_code || '';
+    if (couponInput) {
+        if (data.coupon_code) {
+            couponInput.value = data.coupon_code;
+            couponInput.readOnly = true;
+        } else {
+            couponInput.readOnly = false;
+        }
+    }
+    if (couponBtn) {
+        couponBtn.textContent = data.coupon_code ? 'Remove' : 'Apply';
+    }
+    if (couponMsg) {
+        var msg = data.coupon_error || data.coupon_message || '';
+        couponMsg.textContent = msg;
+        couponMsg.classList.toggle('text-danger', !!data.coupon_error);
+        couponMsg.classList.toggle('text-success', !data.coupon_error && !!data.coupon_message);
+        if (msg) couponMsg.removeAttribute('hidden');
+        else couponMsg.setAttribute('hidden', '');
     }
     if (totalEl) {
         totalEl.dataset.value = String(total);
@@ -387,11 +598,67 @@ function applyCheckoutTotalsPayload(data) {
             shipping: shipping,
             subtotal: subtotal,
             gst_total: gst,
+            discount_amount: discount,
+            coupon_code: data.coupon_code || '',
             total: total,
             status: status,
             delivery_message: data.delivery_message || '',
         }
     }));
+}
+
+
+function getAppliedCheckoutCoupon() {
+    var hidden = document.getElementById('id_coupon_code');
+    return hidden && hidden.value ? String(hidden.value).trim() : '';
+}
+
+
+function refreshCheckoutDeliveryTotals(stateId) {
+    var url = window.CHECKOUT_TOTALS_URL || '/api/checkout/totals/';
+    var params = [];
+    if (stateId) params.push('state_id=' + encodeURIComponent(stateId));
+    var coupon = getAppliedCheckoutCoupon();
+    if (coupon) params.push('coupon=' + encodeURIComponent(coupon));
+    var emailEl = document.getElementById('id_email');
+    var phoneEl = document.getElementById('id_phone');
+    if (emailEl && emailEl.value) params.push('email=' + encodeURIComponent(emailEl.value.trim()));
+    if (phoneEl && phoneEl.value) params.push('phone=' + encodeURIComponent(phoneEl.value.trim()));
+    var qs = params.length ? ('?' + params.join('&')) : '';
+    fetch(url + qs, { headers: { 'Accept': 'application/json' } })
+        .then(function(res) { return res.json(); })
+        .then(applyCheckoutTotalsPayload)
+        .catch(function() { /* keep current totals */ });
+}
+
+
+function initCheckoutCoupon() {
+    var input = document.getElementById('checkoutCouponInput');
+    var btn = document.getElementById('checkoutCouponApply');
+    var hidden = document.getElementById('id_coupon_code');
+    if (!input || !btn || !hidden) return;
+
+    btn.addEventListener('click', function() {
+        if (hidden.value) {
+            hidden.value = '';
+            input.value = '';
+            input.readOnly = false;
+            btn.textContent = 'Apply';
+            refreshCheckoutDeliveryTotals(resolveCheckoutStateId());
+            return;
+        }
+        var code = (input.value || '').trim();
+        if (!code) return;
+        hidden.value = code.toUpperCase();
+        refreshCheckoutDeliveryTotals(resolveCheckoutStateId());
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            btn.click();
+        }
+    });
 }
 
 
@@ -512,16 +779,6 @@ function resolveCheckoutStateId() {
 
     var stateSelect = document.getElementById('id_delivery_state');
     return stateSelect && stateSelect.value ? stateSelect.value : '';
-}
-
-
-function refreshCheckoutDeliveryTotals(stateId) {
-    var url = window.CHECKOUT_TOTALS_URL || '/api/checkout/totals/';
-    var qs = stateId ? ('?state_id=' + encodeURIComponent(stateId)) : '';
-    fetch(url + qs, { headers: { 'Accept': 'application/json' } })
-        .then(function(res) { return res.json(); })
-        .then(applyCheckoutTotalsPayload)
-        .catch(function() { /* keep current totals */ });
 }
 
 

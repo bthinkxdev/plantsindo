@@ -113,6 +113,13 @@ urlpatterns = [
     path('testimonials/<int:pk>/update/', admin_views.TestimonialUpdateView.as_view(), name='testimonial_update'),
     path('testimonials/<int:pk>/delete/', admin_views.TestimonialDeleteView.as_view(), name='testimonial_delete'),
     path('testimonials/<int:pk>/toggle-active/', admin_views.TestimonialToggleActiveView.as_view(), name='testimonial_toggle_active'),
+
+    path('coupons/', admin_views.CouponListView.as_view(), name='coupon_list'),
+    path('coupons/create/', admin_views.CouponCreateView.as_view(), name='coupon_create'),
+    path('coupons/<int:pk>/edit/', admin_views.CouponUpdateView.as_view(), name='coupon_edit'),
+    path('coupons/<int:pk>/toggle-active/', admin_views.CouponToggleActiveView.as_view(), name='coupon_toggle_active'),
+    path('coupons/<int:pk>/redemptions/', admin_views.CouponRedemptionListView.as_view(), name='coupon_redemptions'),
+
     #Pot addons
     path('products/<int:pk>/pot-addons/', admin_pot_addon_views.ProductPotAddonsListApiView.as_view(), name='product_pot_addons_list'),
     path('products/<int:pk>/pot-addons/add/', admin_pot_addon_views.ProductPotAddonAddApiView.as_view(), name='product_pot_addon_add'),

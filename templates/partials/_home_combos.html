@@ -1,19 +1,11 @@
 {# partials/_home_combos.html #}
 
-{% load static %}
 <section class="combo-hub-section product-section product-section--tight" aria-label="Bundles, combos, and why {{ site_brand }}">
     <div class="container section-container">
         {% if combo_products %}
-        <a href="{% url 'store:product_list' %}?combo=1" class="combo-hub-section__banner-link featured-pick-rail__banner-link" aria-label="Shop all combos">
-            <img
-                src="{% static 'img/best_combo.png' %}"
-                alt=""
-                class="featured-pick-rail__banner-img"
-                width="1200"
-                height="320"
-                loading="lazy"
-                decoding="async">
-        </a>
+        <header class="storefront-section-heading">
+            <h2 class="storefront-section-heading__title">Best combos</h2>
+        </header>
         <div class="combo-hub-section__rail-wrap featured-pick-rail featured-pick-rail--hub">
             <div class="featured-pick-rail__shell">
                 <div class="featured-pick-rail__rail">

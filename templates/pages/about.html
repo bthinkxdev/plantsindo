@@ -1,74 +1,81 @@
 ﻿{% extends "base.html" %}
 {% block title %}Our Story - {{ site_brand }}{% endblock %}
-{% block meta_description %}Discover {{ site_brand }} — {{ site_tagline }}.{% endblock %}
+{% block meta_description %}About the founder of {{ site_brand }} — from government school teacher to plant entrepreneur in Wandoor, Kerala.{% endblock %}
 {% block content %}
     <section class="static-page">
         <div class="container">
             <div class="static-content" style="max-width: 900px; margin: 0 auto; padding: 0 15px;">
-                
-                <div style="text-align: center; margin-bottom: clamp(2rem, 8vw, 4rem);">
+
+                <div style="text-align: center; margin-bottom: clamp(2rem, 8vw, 3rem);">
                     <span class="section-label" style="color: var(--clr-beige-dark); font-size: clamp(0.7rem, 2vw, 0.8125rem);">Our Story</span>
-                    <h1 style="font-family: var(--font-display); font-size: clamp(2rem, 6vw, 2.75rem); font-weight: 300; color: var(--clr-navy); letter-spacing: 0.04em; margin-bottom: 1rem; line-height: 1.2;">{{ site_brand }}</h1>
+                    <h1 style="font-family: var(--font-display); font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 500; color: var(--clr-navy); letter-spacing: 0.02em; margin-bottom: 0.75rem; line-height: 1.2;">About the Founder</h1>
+                    <p style="font-family: var(--font-display); font-size: clamp(1.05rem, 3vw, 1.25rem); color: var(--clr-grey-5); margin: 0 auto 1rem; max-width: 36rem; line-height: 1.45;">From Government School Teacher to Plant Entrepreneur</p>
                     <div class="section-divider mx-auto" style="background: var(--clr-beige); width: clamp(30px, 8vw, 36px);"></div>
                 </div>
 
-                <!-- Brand tagline: minimal, plant-focused, gender neutral -->
-                <p style="font-size: clamp(1rem, 3vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); text-align: center; max-width: 800px; margin: 0 auto clamp(2rem, 6vw, 3rem); padding: 0 10px;">
-                    A brand with a simple vision — healthy plants, delivered with care.
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Hello, I'm Anwar, from Cherucode, Wandoor, Malappuram District, Kerala.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    For over 23 years, I proudly served as a Government School Teacher, dedicating my life to educating and inspiring young minds. Teaching gave me purpose, discipline, and the opportunity to make a difference in people's lives.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Today, I have chosen a new journey—one that has always been close to my heart.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Plants are no longer just my hobby; they are my passion, my profession, and my mission.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 2rem;">
+                    At Plantsindo, we believe that every home, office, and workplace deserves the beauty, freshness, and positive energy that plants bring. Our goal is not simply to sell plants, but to help people create healthier, greener, and happier living spaces.
                 </p>
 
-                <!-- Three pillars: plant-focused, gender neutral (icon changed to leaf/pot) -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: clamp(1rem, 3vw, 1.5rem); margin: clamp(2rem, 6vw, 3rem) 0;">
-                    <div style="background: var(--clr-cream); padding: clamp(1.5rem, 4vw, 2rem); border-radius: var(--radius-md); border: 1px solid var(--clr-cream-2); text-align: center; height: 100%;">
-                        <div style="width: clamp(40px, 8vw, 48px); height: clamp(40px, 8vw, 48px); background: #2A5C4A; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto clamp(0.75rem, 2vw, 1rem);">
-                            <!-- leaf icon -->
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--clr-cream)" stroke-width="1.5" style="width: clamp(16px, 4vw, 20px);"><path d="M12 2C8 6 6 10 6 14c0 4 2 6 6 6s6-2 6-6c0-4-2-8-6-12z" stroke="currentColor" fill="none"/><path d="M12 14c2 0 3-1 3-3" stroke="currentColor" fill="none"/></svg>
-                        </div>
-                        <h3 style="font-family: var(--font-display); font-size: clamp(1rem, 3vw, 1.125rem); font-weight: 400; color: var(--clr-navy); margin-bottom: 0.75rem;">Healthy Plants</h3>
-                        <p style="color: var(--clr-grey-5); font-size: clamp(0.8125rem, 2.5vw, 0.875rem); line-height: 1.6; margin: 0;">Premium indoor & outdoor plants, carefully nurtured for lasting freshness.</p>
-                    </div>
+                <h2 style="font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.75rem); font-weight: 400; color: var(--clr-navy); margin: 2rem 0 1rem;">Growing More Than Plants</h2>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    What started as a passion has now grown into a full-time business with a clear vision for the future.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    We are developing over 5 acres of dedicated propagation land, where thousands of healthy, premium-quality plants are carefully nurtured. Every plant is grown with attention, care, and a commitment to quality before it reaches our customers.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Our mission extends beyond plants.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 2rem;">
+                    We are proud to provide employment opportunities to more than 20 people, supporting local families while building a sustainable green business. We also dream of transforming our region into one of Kerala's leading hubs for indoor plants and ornamental gardening.
+                </p>
 
-                    <div style="background: var(--clr-cream); padding: clamp(1.5rem, 4vw, 2rem); border-radius: var(--radius-md); border: 1px solid var(--clr-cream-2); text-align: center; height: 100%;">
-                        <div style="width: clamp(40px, 8vw, 48px); height: clamp(40px, 8vw, 48px); background: #2A5C4A; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto clamp(0.75rem, 2vw, 1rem);">
-                            <!-- pot / plant care icon -->
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--clr-cream)" stroke-width="1.5" style="width: clamp(16px, 4vw, 20px);"><path d="M6 10h12v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z" stroke="currentColor" fill="none"/><path d="M10 6h4" stroke="currentColor"/><path d="M12 2v4" stroke="currentColor"/><path d="M16 10V8a4 4 0 0 0-8 0v2" stroke="currentColor"/></svg>
-                        </div>
-                        <h3 style="font-family: var(--font-display); font-size: clamp(1rem, 3vw, 1.125rem); font-weight: 400; color: var(--clr-navy); margin-bottom: 0.75rem;">Easy Care</h3>
-                        <p style="color: var(--clr-grey-5); font-size: clamp(0.8125rem, 2.5vw, 0.875rem); line-height: 1.6; margin: 0;">Low-maintenance varieties, perfect for beginners and busy plant lovers.</p>
-                    </div>
+                <h2 style="font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.75rem); font-weight: 400; color: var(--clr-navy); margin: 2rem 0 1rem;">Quality Comes First</h2>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    At Plantsindo, quality is never compromised.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    We carefully select healthy plants, use secure packaging, and ensure that every order reaches customers in the best possible condition. Whether you are a beginner or a passionate plant collector, our aim is to make plant ownership simple, enjoyable, and rewarding.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 2rem;">
+                    We believe customers are not just buying a plant—they are investing in a healthier lifestyle, a beautiful home, cleaner air, and a peaceful environment.
+                </p>
 
-                    <div style="background: var(--clr-cream); padding: clamp(1.5rem, 4vw, 2rem); border-radius: var(--radius-md); border: 1px solid var(--clr-cream-2); text-align: center; height: 100%;">
-                        <div style="width: clamp(40px, 8vw, 48px); height: clamp(40px, 8vw, 48px); background: #2A5C4A; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto clamp(0.75rem, 2vw, 1rem);">
-                            <!-- heart + leaf icon (passion for plants, gender neutral) -->
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--clr-cream)" stroke-width="1.5" style="width: clamp(16px, 4vw, 20px);"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="currentColor" fill="none"/><path d="M12 6v4M10 8h4" stroke="currentColor"/></svg>
-                        </div>
-                        <h3 style="font-family: var(--font-display); font-size: clamp(1rem, 3vw, 1.125rem); font-weight: 400; color: var(--clr-navy); margin-bottom: 0.75rem;">Thoughtfully Curated</h3>
-                        <p style="color: var(--clr-grey-5); font-size: clamp(0.8125rem, 2.5vw, 0.875rem); line-height: 1.6; margin: 0;">Built on passion for greenery, sustainability, and accessible plant joy.</p>
-                    </div>
-                </div>
+                <h2 style="font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.75rem); font-weight: 400; color: var(--clr-navy); margin: 2rem 0 1rem;">Building a Greener India</h2>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Along with Plantsindo, I also manage another successful business, applying the same values of honesty, quality, and customer satisfaction. These experiences have strengthened my commitment to building businesses that create value for people and society.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 2rem;">
+                    Our long-term vision is to make Plantsindo one of India's most trusted indoor plant brands, while contributing to a greener and more sustainable future.
+                </p>
 
-                <!-- Collection section: plant categories -->
-                <div style="text-align: center; margin: clamp(2rem, 6vw, 3rem) 0;">
-                    <h2 style="font-family: var(--font-display); font-size: clamp(1.5rem, 5vw, 1.95rem); font-weight: 300; color: var(--clr-navy); margin-bottom: 0.75rem;">Our Plant Collection</h2>
-                    <p style="color: var(--clr-grey-5); font-size: clamp(0.875rem, 2.5vw, 1rem); margin: 0 auto 1rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1rem;">
-                        <span>Indoor Plants</span> <span style="color: var(--clr-cream-3);">·</span> <span>Succulents</span> <span style="color: var(--clr-cream-3);">·</span> <span>Air Purifiers</span> <span style="color: var(--clr-cream-3);">·</span> <span>Pet-Friendly</span>
-                    </p>
-                    <p style="color: var(--clr-grey-5); font-size: clamp(0.875rem, 2.5vw, 1rem); font-style: italic;">For homes, offices, and gifting — greenery for every space.</p>
-                </div>
+                <h2 style="font-family: var(--font-display); font-size: clamp(1.35rem, 4vw, 1.75rem); font-weight: 400; color: var(--clr-navy); margin: 2rem 0 1rem;">Our Promise</h2>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Every plant we send carries our passion, care, and commitment.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 1.25rem;">
+                    Whether you purchase a single plant or a complete plant collection, our goal is to ensure that you receive healthy plants, exceptional service, and complete satisfaction.
+                </p>
+                <p style="font-size: clamp(0.95rem, 2.5vw, 1.0625rem); line-height: 1.8; color: var(--clr-grey-5); margin-bottom: 2rem;">
+                    Thank you for being part of our journey. Together, let's make every home greener, every workplace healthier, and every community more beautiful—one plant at a time.
+                </p>
 
-                <!-- Testimonial / quote block: plant-themed, inclusive -->
-                <div style="background: #2A5C4A; padding: clamp(2rem, 6vw, 3rem) clamp(1.5rem, 4vw, 2rem); border-radius: var(--radius-md); margin: clamp(2rem, 6vw, 3rem) 0; text-align: center; color: var(--clr-cream);">
-                    <p style="font-size: clamp(1.125rem, 4vw, 1.25rem); font-weight: 300; line-height: 1.6; max-width: 700px; margin: 0 auto; color: #D4C4A8;">
-                        "Plants are more than decor — they bring life indoors. Resilient, calming, and timeless."
-                    </p>
-                </div>
-
-                <!-- Features row: plant-specific attributes (minimal) -->
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(1rem, 3vw, 2rem) clamp(1.5rem, 4vw, 3rem); margin: clamp(2rem, 6vw, 3rem) 0; padding: clamp(1.5rem, 4vw, 2rem) 0; border-top: 1px solid var(--clr-cream-2); border-bottom: 1px solid var(--clr-cream-2);">
-                    <div style="text-align: center; flex: 0 1 auto;"><span style="color: var(--clr-beige-dark); font-weight: 500; font-size: clamp(0.8125rem, 2.5vw, 0.9375rem); white-space: nowrap;">Low Maintenance</span></div>
-                    <div style="text-align: center; flex: 0 1 auto;"><span style="color: var(--clr-beige-dark); font-weight: 500; font-size: clamp(0.8125rem, 2.5vw, 0.9375rem); white-space: nowrap;">Pet-Friendly</span></div>
-                    <div style="text-align: center; flex: 0 1 auto;"><span style="color: var(--clr-beige-dark); font-weight: 500; font-size: clamp(0.8125rem, 2.5vw, 0.9375rem); white-space: nowrap;">Air Purifying</span></div>
-                    <div style="text-align: center; flex: 0 1 auto;"><span style="color: var(--clr-beige-dark); font-weight: 500; font-size: clamp(0.8125rem, 2.5vw, 0.9375rem); white-space: nowrap;">Nursery Fresh</span></div>
+                <div style="margin: 2.5rem 0 1rem; padding-top: 1.5rem; border-top: 1px solid var(--clr-cream-2);">
+                    <p style="font-family: var(--font-display); font-size: 1.125rem; color: var(--clr-navy); margin: 0 0 0.35rem;">– Anwar</p>
+                    <p style="color: var(--clr-grey-5); font-size: 0.9375rem; margin: 0; line-height: 1.6;">Founder, Plantsindo<br>Cherucode, Wandoor, Malappuram District, Kerala</p>
                 </div>
 
                 <section class="about-connect" aria-labelledby="about-connect-heading">
@@ -79,39 +86,4 @@
             </div>
         </div>
     </section>
-
-    <style>
-        /* Additional mobile optimizations (kept same logic, minimal style) */
-        @media (max-width: 480px) {
-            .static-content {
-                padding: 0 10px !important;
-            }
-            
-            /* Ensure cards don't overflow */
-            [style*="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr))"] {
-                gap: 1rem !important;
-            }
-            
-            /* Adjust collection items for very small screens */
-            [style*="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1rem;"] {
-                flex-direction: column;
-                gap: 0.25rem !important;
-            }
-            
-            [style*="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1rem;"] span {
-                display: inline-block;
-            }
-            
-            [style*="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem 1rem;"] span[style*="color: var(--clr-cream-3)"] {
-                display: none;
-            }
-        }
-        /* minimal additional touch: background / subtle plant hue for sections */
-        .static-page {
-            background-color: #fefaf5; /* very light, earthy, minimal */
-        }
-        [style*="background: #2A5C4A"] {
-            background: #2A5C4A; /* fresh plant green */
-        }
-    </style>
 {% endblock %}

@@ -1,4 +1,3 @@
-{% load static %}
 {% if products %}
 <section class="deal-of-the-day" aria-label="Deal of the day">
     <div class="deal-of-the-day__shell">
@@ -9,16 +8,9 @@
         </div>
         {% endif %}
         {% endwith %}
-        <a href="{{ banner_link|default:shop_url }}" class="deal-of-the-day__banner-link" aria-label="Shop deal of the day">
-            <img
-                src="{% if banner_image %}{{ banner_image }}{% else %}{% static 'img/deal_of_the_day.png' %}{% endif %}"
-                alt=""
-                class="deal-of-the-day__banner-img"
-                width="1200"
-                height="320"
-                loading="lazy"
-                decoding="async">
-        </a>
+        <header class="storefront-section-heading">
+            <h2 class="storefront-section-heading__title">Deal of the day</h2>
+        </header>
         <div class="deal-of-the-day__rail">
             <div
                 class="owl-carousel deal-of-the-day__carousel"

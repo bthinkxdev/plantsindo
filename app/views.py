@@ -1588,13 +1588,42 @@ def _checkout_form_kwargs(request, cart, user, initial=None):
     kwargs = {
         'user': user,
         'cart_items': items,
+        'cart': cart,
     }
     if initial is not None:
         kwargs['initial'] = initial
     return kwargs
 
 
+def _checkout_coupon_identity(request, user=None, active_address=None):
+    """Email/phone for per-customer coupon limits during live totals."""
+    email = ''
+    phone = ''
+    if active_address is not None:
+        email = getattr(active_address, 'email', '') or ''
+        phone = getattr(active_address, 'phone', '') or ''
+    if not email:
+        email = (request.GET.get('email') or request.POST.get('email') or '').strip()
+    if not phone:
+        phone = (request.GET.get('phone') or request.POST.get('phone') or '').strip()
+    if user and getattr(user, 'email', None) and not email:
+        email = user.email
+    return email, phone
+
+
+def _resolve_checkout_coupon_code(request):
+    return (
+        request.GET.get('coupon')
+        or request.GET.get('coupon_code')
+        or request.POST.get('coupon_code')
+        or ''
+    ).strip()
+
+
 def _checkout_lines(cart, items, delivery_issues=None):
+    from app.services.state_delivery_service import delivery_pack_upsell_message
+
+    max_qty = getattr(settings, 'MAX_CART_QTY', 10)
     issue_map = _cart_stock_context(cart)['cart_stock_issue_map']
     delivery_map = {issue.item_id: issue for issue in (delivery_issues or [])}
     return [
@@ -1602,6 +1631,7 @@ def _checkout_lines(cart, items, delivery_issues=None):
             'item': item,
             'stock_issue': issue_map.get(item.id),
             'delivery_issue': delivery_map.get(item.id),
+            'pack_upsell_message': delivery_pack_upsell_message(item.quantity, max_quantity=max_qty),
         }
         for item in items
     ]
@@ -1769,9 +1799,11 @@ class UpdateCartItemView(View):
                 return JsonResponse({'success': False}, status=400)
             return _redirect_open_cart()
         cart = CartService.get_or_create_cart(request)
-        item = get_object_or_404(CartItem, pk=form.cleaned_data['item_id'], cart=cart)
+        item_id = form.cleaned_data['item_id']
+        quantity = form.cleaned_data['quantity']
+        item = get_object_or_404(CartItem, pk=item_id, cart=cart)
         try:
-            CartService.update_item(item, form.cleaned_data['quantity'])
+            CartService.update_item(item, quantity)
         except StockError as exc:
             messages.error(request, str(exc))
             if is_ajax:
@@ -1779,9 +1811,26 @@ class UpdateCartItemView(View):
             return _redirect_open_cart()
         if is_ajax:
             cart = CartService.get_or_create_cart(request)
+            lines = list(
+                cart.items.select_related('product', 'combo', 'selected_pot', 'selected_variant')
+            )
+            item_count = sum((line.quantity for line in lines))
             totals = CartService.compute_totals(cart)
-            item_count = sum((line.quantity for line in cart.items.all()))
-            return JsonResponse({'success': True, 'total': str(totals.subtotal), 'cart_count': item_count})
+            updated = next((line for line in lines if line.pk == item_id), None)
+            from app.services.state_delivery_service import delivery_pack_upsell_message
+
+            qty = updated.quantity if updated else 0
+            max_qty = getattr(settings, 'MAX_CART_QTY', 10)
+            return JsonResponse({
+                'success': True,
+                'total': str(totals.subtotal),
+                'cart_count': item_count,
+                'cart_empty': item_count == 0,
+                'item_id': item_id,
+                'quantity': qty,
+                'line_total': str(updated.line_total) if updated else None,
+                'pack_upsell_message': delivery_pack_upsell_message(qty, max_quantity=max_qty),
+            })
         return _redirect_open_cart()
 
 class RemoveCartItemView(View):
@@ -1855,7 +1904,21 @@ class CheckoutView(TemplateView):
             items = _checkout_items_queryset(cart)
             guard_ctx = _checkout_guard_context(cart, addresses=addresses, active_address=default_address)
             state_id = guard_ctx.get('active_delivery_state_id')
-            checkout_totals = resolve_checkout_totals(cart, state_id=state_id, items=list(items))
+            coupon_code = _resolve_checkout_coupon_code(self.request)
+            email, phone = _checkout_coupon_identity(
+                self.request, user=user, active_address=default_address
+            )
+            checkout_totals = resolve_checkout_totals(
+                cart,
+                state_id=state_id,
+                items=list(items),
+                coupon_code=coupon_code,
+                user=user,
+                email=email,
+                phone=phone,
+            )
+            if coupon_code and not initial.get('coupon_code'):
+                initial['coupon_code'] = checkout_totals.coupon_code or coupon_code
             context.update({
                 'captcha_site_key': settings.CAPTCHA_SITE_KEY,
                 'cart': cart,
@@ -1871,6 +1934,10 @@ class CheckoutView(TemplateView):
                 'default_address': default_address,
                 'is_guest_checkout': user is None,
                 'active_page': 'checkout',
+                'max_cart_qty': getattr(settings, 'MAX_CART_QTY', 10),
+                'applied_coupon_code': checkout_totals.coupon_code or '',
+                'coupon_message': checkout_totals.coupon_message or '',
+                'coupon_error': checkout_totals.coupon_error or '',
             })
             return _apply_checkout_totals_context(context, guard_ctx, checkout_totals)
         except Exception as e:
@@ -1914,10 +1981,18 @@ class OrderCreateView(FormView):
             default_address = next((a for a in addresses if a.is_default), addresses[0] if addresses else None)
         items = _checkout_items_queryset(cart)
         guard_ctx = _checkout_guard_context(cart, addresses=addresses, active_address=default_address)
+        coupon_code = _resolve_checkout_coupon_code(self.request)
+        email, phone = _checkout_coupon_identity(
+            self.request, user=user, active_address=default_address
+        )
         checkout_totals = resolve_checkout_totals(
             cart,
             state_id=guard_ctx.get('active_delivery_state_id'),
             items=list(items),
+            coupon_code=coupon_code,
+            user=user,
+            email=email,
+            phone=phone,
         )
         context.update({
             'cart': cart,
@@ -1932,6 +2007,10 @@ class OrderCreateView(FormView):
             'default_address': default_address,
             'is_guest_checkout': user is None,
             'active_page': 'checkout',
+            'max_cart_qty': getattr(settings, 'MAX_CART_QTY', 10),
+            'applied_coupon_code': checkout_totals.coupon_code or '',
+            'coupon_message': checkout_totals.coupon_message or '',
+            'coupon_error': checkout_totals.coupon_error or '',
         })
         return _apply_checkout_totals_context(context, guard_ctx, checkout_totals)
 
@@ -2330,9 +2409,9 @@ class CartDrawerView(View):
 
 class CheckoutTotalsView(View):
     """
-    Recalculate checkout totals for a delivery state.
+    Recalculate checkout totals for a delivery state (+ optional coupon).
 
-    GET /api/checkout/totals/?state_id=5
+    GET /api/checkout/totals/?state_id=5&coupon=WELCOME10
     """
 
     def get(self, request, *args, **kwargs):
@@ -2340,5 +2419,16 @@ class CheckoutTotalsView(View):
         items = list(_checkout_items_queryset(cart))
         raw_state = request.GET.get('state_id') or ''
         state_id = resolve_delivery_state_id(delivery_state=raw_state) if raw_state else None
-        result = resolve_checkout_totals(cart, state_id=state_id, items=items)
+        user = request.user if request.user.is_authenticated else None
+        coupon_code = _resolve_checkout_coupon_code(request)
+        email, phone = _checkout_coupon_identity(request, user=user)
+        result = resolve_checkout_totals(
+            cart,
+            state_id=state_id,
+            items=items,
+            coupon_code=coupon_code,
+            user=user,
+            email=email,
+            phone=phone,
+        )
         return JsonResponse(result.to_api_dict(items))

@@ -1,4 +1,3 @@
-{% load static %}
 {% if products %}
 <section class="best-sellers" aria-label="Best sellers">
     <div class="best-sellers__shell">
@@ -9,16 +8,9 @@
         </div>
         {% endif %}
         {% endwith %}
-        <a href="{{ banner_link|default:shop_url }}" class="best-sellers__banner-link" aria-label="Shop best sellers">
-            <img
-                src="{% if banner_image %}{{ banner_image }}{% else %}{% static 'img/best_sellers.png' %}{% endif %}"
-                alt=""
-                class="best-sellers__banner-img"
-                width="1200"
-                height="320"
-                loading="lazy"
-                decoding="async">
-        </a>
+        <header class="storefront-section-heading">
+            <h2 class="storefront-section-heading__title">Best sellers</h2>
+        </header>
         <div class="best-sellers__rail">
             <div class="best-sellers__carousel-wrap">
                 <div
