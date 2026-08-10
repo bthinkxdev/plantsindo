@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.forms.formsets import DELETION_FIELD_NAME
-from .models import Banner, BlogPost, Category, Combo, Product, HomeCategory, HomeCategoryProduct, Reel, Testimonial
+from .models import Banner, BlogPost, Category, Combo, Coupon, Product, HomeCategory, HomeCategoryProduct, Reel, Testimonial
 from .models import RentalConfig
 logger = logging.getLogger(__name__)
 
@@ -364,7 +364,8 @@ class ComboForm(forms.ModelForm):
 class ProductDeliveryStateForm(forms.Form):
     """
     Multi-checkbox form: seller picks which states this product delivers to,
-    and sets a per-unit delivery charge for each selected state.
+    and sets a per-pack delivery charge for each selected state
+    (up to DELIVERY_PACK_SIZE pieces share one charge).
     """
 
     states = forms.ModelMultipleChoiceField(
@@ -375,7 +376,8 @@ class ProductDeliveryStateForm(forms.Form):
         help_text=(
             "Tick every state this product can be shipped to. "
             "Since the shop is in Kerala, start with South India. "
-            "Every selected state requires a non-negative delivery charge."
+            "Every selected state requires a non-negative delivery charge "
+            "(per pack of up to 2 pieces)."
         ),
     )
 
@@ -552,3 +554,106 @@ class TestimonialForm(forms.ModelForm):
     def clean_photo(self):
         photo = self.cleaned_data.get('photo')
         return _validate_image_file(photo, required=False)
+
+
+class CouponForm(forms.ModelForm):
+    class Meta:
+        model = Coupon
+        fields = [
+            'code',
+            'discount_type',
+            'value',
+            'min_order_amount',
+            'max_discount_amount',
+            'starts_at',
+            'ends_at',
+            'is_active',
+            'max_uses',
+            'max_uses_per_customer',
+            'description',
+            'internal_note',
+        ]
+        widgets = {
+            'code': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'WELCOME10',
+                'style': 'text-transform:uppercase',
+            }),
+            'discount_type': forms.Select(attrs={'class': 'form-control'}),
+            'value': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+            }),
+            'min_order_amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+            }),
+            'max_discount_amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+            }),
+            'starts_at': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local',
+            }),
+            'ends_at': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local',
+            }),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'max_uses': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'max_uses_per_customer': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'description': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Shown in admin / optional customer note',
+            }),
+            'internal_note': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['max_discount_amount'].required = False
+        self.fields['max_uses'].required = False
+        self.fields['max_uses_per_customer'].required = False
+        self.fields['starts_at'].required = False
+        self.fields['ends_at'].required = False
+        self.fields['description'].required = False
+        self.fields['internal_note'].required = False
+        for name in ('starts_at', 'ends_at'):
+            field = self.fields[name]
+            field.input_formats = [
+                '%Y-%m-%dT%H:%M',
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%d %H:%M',
+            ]
+            if self.instance and getattr(self.instance, name, None):
+                field.widget.attrs['value'] = getattr(self.instance, name).strftime('%Y-%m-%dT%H:%M')
+
+    def clean_code(self):
+        code = (self.cleaned_data.get('code') or '').strip().upper()
+        if not code:
+            raise forms.ValidationError('Coupon code is required.')
+        qs = Coupon.objects.filter(code=code)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('A coupon with this code already exists.')
+        return code
+
+    def clean(self):
+        cleaned = super().clean()
+        dtype = cleaned.get('discount_type')
+        value = cleaned.get('value')
+        if dtype == Coupon.DiscountType.PERCENT and value is not None and value > 100:
+            self.add_error('value', 'Percentage cannot exceed 100.')
+        starts = cleaned.get('starts_at')
+        ends = cleaned.get('ends_at')
+        if starts and ends and ends < starts:
+            self.add_error('ends_at', 'Expiry must be after the start date.')
+        return cleaned

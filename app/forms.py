@@ -111,10 +111,16 @@ class CheckoutForm(forms.Form):
         choices=[("cod", "Cash on Delivery"), ("razorpay", "Online Payment")],
         widget=forms.RadioSelect,
     )
- 
+    coupon_code = forms.CharField(
+        max_length=40,
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
     def __init__(self, *args, **kwargs):
         self.user        = kwargs.pop("user", None)
         self._cart_items = kwargs.pop("cart_items", None)
+        self._cart       = kwargs.pop("cart", None)
         super().__init__(*args, **kwargs)
         self.fields["payment"].initial = "cod"
         configure_delivery_state_field(self.fields["delivery_state"], widget_class="form-control-bw")
@@ -123,7 +129,7 @@ class CheckoutForm(forms.Form):
                 continue
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} form-input".strip()
- 
+
     def clean(self):
         try:
             cleaned_data     = super().clean()
@@ -131,12 +137,12 @@ class CheckoutForm(forms.Form):
             use_new_address  = cleaned_data.get("use_new_address")
             is_guest         = not self.user
             delivery_on      = delivery_enabled()
- 
+
             if is_guest and delivery_on:
                 use_new_address = True
                 cleaned_data["use_new_address"] = True
                 selected_address = None
- 
+
             if selected_address and (not use_new_address) and self.user:
                 try:
                     address = Address.objects.get(pk=selected_address, user=self.user, is_snapshot=False)
@@ -172,7 +178,7 @@ class CheckoutForm(forms.Form):
                         raise
                     except Exception:
                         raise forms.ValidationError("Failed to retrieve addresses. Please try again.")
- 
+
                 if use_new_address and delivery_on:
                     required_fields = ["full_name", "phone", "address_line", "city", "delivery_state", "pincode"]
                     if is_guest:
@@ -197,6 +203,28 @@ class CheckoutForm(forms.Form):
                     delivery_issues = get_cart_delivery_issues(self._cart_items, state_id)
                     if delivery_issues:
                         self.add_error("delivery_state", format_cart_delivery_error(delivery_issues))
+
+            coupon_code = (cleaned_data.get("coupon_code") or "").strip()
+            if coupon_code:
+                from app.services.coupon_service import CouponError, validate_for_checkout
+                from app.services.cart_order import CartService
+
+                subtotal = 0
+                if self._cart is not None:
+                    subtotal = CartService.compute_totals(self._cart, state_id=None).subtotal
+                elif self._cart_items is not None:
+                    subtotal = sum((getattr(i, "line_total", 0) or 0) for i in self._cart_items)
+                try:
+                    validated = validate_for_checkout(
+                        coupon_code,
+                        subtotal=subtotal,
+                        user=self.user,
+                        email=cleaned_data.get("email") or "",
+                        phone=cleaned_data.get("phone") or "",
+                    )
+                    cleaned_data["coupon_code"] = validated.code
+                except CouponError as exc:
+                    self.add_error("coupon_code", exc.message)
 
             return cleaned_data
 

@@ -21,6 +21,8 @@ from app.models import (
 from app.services.cart_order import CartService
 from app.services.state_delivery_service import (
     compute_cart_delivery_charges,
+    delivery_pack_free_slots,
+    delivery_pack_upsell_message,
     get_product_delivery_charge,
     set_product_delivery_states,
 )
@@ -29,7 +31,7 @@ from app.services.state_delivery_service import (
 User = get_user_model()
 
 
-@override_settings(FLAT_DELIVERY_CHARGE=60)
+@override_settings(FLAT_DELIVERY_CHARGE=60, DELIVERY_PACK_SIZE=2)
 class StateDeliveryChargeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -93,7 +95,7 @@ class StateDeliveryChargeTests(TestCase):
         row = ProductDeliveryState.objects.get(product=self.product, state=self.kerala)
         self.assertEqual(row.delivery_charge, Decimal('50'))
 
-    def test_compute_totals_multiplies_charge_by_quantity(self):
+    def test_compute_totals_multiplies_charge_by_packs(self):
         set_product_delivery_states(
             self.product.pk,
             [self.kerala.pk],
@@ -107,9 +109,36 @@ class StateDeliveryChargeTests(TestCase):
             quantity=3,
         )
         totals = CartService.compute_totals(cart, state_id=self.kerala.pk)
-        self.assertEqual(totals.shipping, Decimal('150'))
+        # ceil(3/2)=2 packs × ₹50
+        self.assertEqual(totals.shipping, Decimal('100'))
         self.assertFalse(totals.used_flat_fallback)
-        self.assertEqual(totals.total, Decimal('200') * 3 + Decimal('150'))
+        self.assertEqual(totals.total, Decimal('200') * 3 + Decimal('100'))
+
+    def test_qty_one_and_two_share_same_pack_charge(self):
+        set_product_delivery_states(
+            self.product.pk,
+            [self.kerala.pk],
+            charges={self.kerala.pk: Decimal('80')},
+        )
+        cart1 = Cart.objects.create(status=Cart.Status.ACTIVE)
+        CartItem.objects.create(
+            cart=cart1,
+            product=self.product,
+            unit_price=self.product.base_price,
+            quantity=1,
+        )
+        cart2 = Cart.objects.create(status=Cart.Status.ACTIVE)
+        CartItem.objects.create(
+            cart=cart2,
+            product=self.product,
+            unit_price=self.product.base_price,
+            quantity=2,
+        )
+        t1 = CartService.compute_totals(cart1, state_id=self.kerala.pk)
+        t2 = CartService.compute_totals(cart2, state_id=self.kerala.pk)
+        self.assertEqual(t1.shipping, Decimal('80'))
+        self.assertEqual(t2.shipping, Decimal('80'))
+        self.assertEqual(t1.shipping, t2.shipping)
 
     def test_flat_fallback_when_no_state_charges_configured(self):
         cart = Cart.objects.create(status=Cart.Status.ACTIVE)
@@ -213,7 +242,7 @@ class StateDeliveryChargeTests(TestCase):
         self.assertTrue(payload['success'])
         self.assertTrue(payload['serviceable'])
         self.assertEqual(payload['status'], 'ok')
-        self.assertEqual(Decimal(payload['shipping']), Decimal('160'))
+        self.assertEqual(Decimal(payload['shipping']), Decimal('80'))
         self.assertFalse(payload['checkout_blocked'])
 
     def test_order_persists_delivery_snapshots(self):
@@ -246,13 +275,14 @@ class StateDeliveryChargeTests(TestCase):
             'use_new_address': True,
         }
         order = OrderService.create_order(cart, form_data, user=user, clear_cart=True)
-        self.assertEqual(order.shipping, Decimal('150'))
+        # ceil(3/2)=2 packs × ₹50
+        self.assertEqual(order.shipping, Decimal('100'))
         self.assertEqual(order.delivery_state_name, 'Kerala')
-        self.assertEqual(order.total_delivery_charge, Decimal('150'))
+        self.assertEqual(order.total_delivery_charge, Decimal('100'))
         item = order.items.get()
         self.assertEqual(item.delivery_charge_per_unit, Decimal('50'))
-        self.assertEqual(item.total_delivery_charge, Decimal('150'))
-        self.assertEqual(item.line_grand_total, item.line_total + Decimal('150'))
+        self.assertEqual(item.total_delivery_charge, Decimal('100'))
+        self.assertEqual(item.line_grand_total, item.line_total + Decimal('100'))
 
         # Later product charge change must not affect persisted order
         set_product_delivery_states(
@@ -262,7 +292,7 @@ class StateDeliveryChargeTests(TestCase):
         )
         order.refresh_from_db()
         item.refresh_from_db()
-        self.assertEqual(order.shipping, Decimal('150'))
+        self.assertEqual(order.shipping, Decimal('100'))
         self.assertEqual(item.delivery_charge_per_unit, Decimal('50'))
 
 
@@ -278,6 +308,35 @@ class CartDeliveryBreakdownUnitTests(TestCase):
         i1 = CartItem.objects.create(cart=cart, product=p1, unit_price=100, quantity=2)
         i2 = CartItem.objects.create(cart=cart, product=p2, unit_price=100, quantity=1)
         breakdown = compute_cart_delivery_charges(list(cart.items.all()), kl.pk)
-        self.assertEqual(breakdown.total, Decimal('180'))
-        self.assertEqual(breakdown.line_for(i1.id)['total_delivery_charge'], Decimal('100'))
+        # Approach A: each line packs separately — qty2→1 pack, qty1→1 pack
+        self.assertEqual(breakdown.total, Decimal('130'))
+        self.assertEqual(breakdown.line_for(i1.id)['total_delivery_charge'], Decimal('50'))
         self.assertEqual(breakdown.line_for(i2.id)['total_delivery_charge'], Decimal('80'))
+
+
+@override_settings(DELIVERY_PACK_SIZE=2)
+class DeliveryPackUpsellMessageTests(TestCase):
+    def test_free_slots_and_copy(self):
+        self.assertEqual(delivery_pack_free_slots(1), 1)
+        self.assertEqual(delivery_pack_free_slots(2), 0)
+        self.assertEqual(delivery_pack_free_slots(3), 1)
+        self.assertEqual(delivery_pack_free_slots(4), 0)
+        self.assertEqual(delivery_pack_upsell_message(1), 'Add 1 more - no extra delivery')
+        self.assertEqual(delivery_pack_upsell_message(2), '')
+        self.assertEqual(delivery_pack_upsell_message(3), 'Add 1 more - no extra delivery')
+        self.assertEqual(delivery_pack_upsell_message(4), '')
+
+    def test_hidden_when_at_max_quantity(self):
+        self.assertEqual(delivery_pack_upsell_message(1, max_quantity=1), '')
+        self.assertEqual(delivery_pack_upsell_message(9, max_quantity=10), 'Add 1 more - no extra delivery')
+        self.assertEqual(delivery_pack_upsell_message(10, max_quantity=10), '')
+
+
+@override_settings(DELIVERY_PACK_SIZE=3)
+class DeliveryPackUpsellPackSizeThreeTests(TestCase):
+    def test_multi_slot_copy(self):
+        self.assertEqual(delivery_pack_free_slots(1), 2)
+        self.assertEqual(delivery_pack_upsell_message(1), 'Add 2 more - no extra delivery')
+        self.assertEqual(delivery_pack_free_slots(2), 1)
+        self.assertEqual(delivery_pack_upsell_message(2), 'Add 1 more - no extra delivery')
+        self.assertEqual(delivery_pack_upsell_message(3), '')

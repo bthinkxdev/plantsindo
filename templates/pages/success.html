@@ -110,6 +110,12 @@
                         <span>Subtotal</span>
                         <span>&#8377;{{ order.subtotal }}</span>
                     </div>
+                    {% if order.discount_amount and order.discount_amount > 0 %}
+                    <div class="order-total-row">
+                        <span>Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}</span>
+                        <span>−&#8377;{{ order.discount_amount }}</span>
+                    </div>
+                    {% endif %}
                     <div class="order-total-row">
                         <span>Delivery Charge{% if order.delivery_state %} ({{ order.delivery_state }}){% endif %}</span>
                         <span>{% if order.total_delivery_charge == 0 %}Free{% else %}&#8377;{{ order.total_delivery_charge }}{% endif %}</span>

@@ -52,7 +52,10 @@
                             {% endif %}
                             <div class="line-info">
                                 <h6>{{ item.combo.name }}</h6>
-                                <small>{{ item.variant_display }} · Qty: {{ item.quantity }}</small>
+                                {% if item.variant_display %}
+                                <small class="order-line-meta">{{ item.variant_display }}</small>
+                                {% endif %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty pack_upsell_message=row.pack_upsell_message only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
@@ -69,7 +72,10 @@
                             {% endif %}
                             <div class="line-info">
                                 <h6>{{ item.product.name }}</h6>
-                                <small>{{ item.variant_display }} · Qty: {{ item.quantity }}</small>
+                                {% if item.variant_display %}
+                                <small class="order-line-meta">{{ item.variant_display }}</small>
+                                {% endif %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty pack_upsell_message=row.pack_upsell_message only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
@@ -80,7 +86,7 @@
                             </div>
                             {% endif %}
                             <div class="line-actions">
-                                <div class="line-price">&#8377;{{ item.line_total }}</div>
+                                <div class="line-price" data-line-price>&#8377;{{ item.line_total|floatformat:0 }}</div>
                                 <button type="button"
                                         class="btn-remove-item js-checkout-remove"
                                         data-item-id="{{ item.id }}"
@@ -98,6 +104,39 @@
                         <div class="order-total-row">
                             <span>Subtotal</span>
                             <span id="subtotal-value" data-value="{{ totals.subtotal }}">&#8377;{{ totals.subtotal|floatformat:0 }}</span>
+                        </div>
+                        <div class="checkout-coupon mb-2">
+                            {{ form.coupon_code }}
+                            <label class="small fw-semibold d-block mb-1" for="checkoutCouponInput">Coupon code</label>
+                            <div class="d-flex gap-2 align-items-stretch">
+                                <input type="text"
+                                       id="checkoutCouponInput"
+                                       class="form-control form-control-sm"
+                                       placeholder="e.g. WELCOME10"
+                                       value="{{ applied_coupon_code|default:form.coupon_code.value|default:'' }}"
+                                       autocomplete="off"
+                                       maxlength="40"
+                                       {% if applied_coupon_code %}readonly{% endif %}>
+                                <button type="button" class="btn btn-sm btn-outline-dark" id="checkoutCouponApply">
+                                    {% if applied_coupon_code %}Remove{% else %}Apply{% endif %}
+                                </button>
+                            </div>
+                            <p class="small mt-1 mb-0 {% if coupon_error %}text-danger{% else %}text-success{% endif %}"
+                               id="checkoutCouponMsg"
+                               {% if not coupon_message and not coupon_error %}hidden{% endif %}>
+                                {% if coupon_error %}{{ coupon_error }}{% else %}{{ coupon_message }}{% endif %}
+                            </p>
+                            {% if form.coupon_code.errors %}
+                            <p class="small text-danger mt-1 mb-0">{{ form.coupon_code.errors|striptags }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="order-total-row" id="discountRow"
+                             {% if not totals.discount_amount or totals.discount_amount <= 0 %}hidden{% endif %}>
+                            <span>Discount{% if totals.coupon_code %} ({{ totals.coupon_code }}){% endif %}</span>
+                            <span id="discount-value" class="text-success"
+                                  data-value="{{ totals.discount_amount|default:0 }}">
+                                −&#8377;{{ totals.discount_amount|default:0|floatformat:0 }}
+                            </span>
                         </div>
                         {% if totals.gst_total and totals.gst_total > 0 %}
                         <div class="order-total-row">
@@ -328,6 +367,9 @@
     {% endif %}
     window.CHECKOUT_TOTALS_URL = "{% url 'store:checkout_totals' %}";
     window.CHECKOUT_REMOVE_URL_TEMPLATE = "{% url 'store:cart_remove' item_id=0 %}";
+    window.CHECKOUT_UPDATE_URL = "{% url 'store:cart_update' %}";
+    window.CHECKOUT_MAX_QTY = {{ max_cart_qty|default:10 }};
+    window.DELIVERY_PACK_SIZE = {{ DELIVERY_PACK_SIZE|default:2 }};
 })();
 </script>
 

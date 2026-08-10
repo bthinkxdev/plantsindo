@@ -96,6 +96,11 @@
                             <p style="margin:0 0 4px;">
                                 <strong>Total Amount:</strong> ₹{{ order.total }}
                             </p>
+                            {% if order.discount_amount and order.discount_amount > 0 %}
+                            <p style="margin:0 0 4px;">
+                                <strong>Discount{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}:</strong> −₹{{ order.discount_amount }}
+                            </p>
+                            {% endif %}
                             <p style="margin:0 0 4px;">
                                 <strong>Delivery Charge:</strong> {% if order.total_delivery_charge == 0 %}Free{% else %}₹{{ order.total_delivery_charge }}{% endif %}
                                 {% if order.delivery_state %} ({{ order.delivery_state }}){% endif %}
