@@ -100,8 +100,8 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 ADMIN_NOTIFICATION_EMAILS = ['supportplantsindo@gmail.com']
-SITE_PHONE = config('SITE_PHONE', default='+91 7559947750')
-SITE_WHATSAPP = config('SITE_WHATSAPP', default='917559947750')
+SITE_PHONE = config('SITE_PHONE', default='+91 8848599575')
+SITE_WHATSAPP = config('SITE_WHATSAPP', default='918848599575')
 SITE_EMAIL = config('SITE_EMAIL', default='hello@plantsindo.com')
 
 SITE_INSTAGRAM = config('SITE_INSTAGRAM', default='plantsindo.co')
@@ -111,7 +111,7 @@ SITE_INSTAGRAM_URL = config(
 )
 SITE_FACEBOOK_URL = config(
     'SITE_FACEBOOK_URL',
-    default='https://www.facebook.com/profile.php?id=61587089061711',
+    default='https://www.facebook.com/profile.php?id=61589348505512',
 )
 SITE_BRAND = config('SITE_BRAND', default='Plantsindo')
 SITE_BRAND_PART1 = config('SITE_BRAND_PART1', default='Plants')

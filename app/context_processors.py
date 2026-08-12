@@ -14,8 +14,8 @@ from .services.category_tree import build_active_category_tree
 def site_contact_context(request):
     instagram_handle = getattr(settings, 'SITE_INSTAGRAM', 'plantsindo.co')
     return {
-        'site_phone': getattr(settings, 'SITE_PHONE', '+91 7559947750'),
-        'site_whatsapp': getattr(settings, 'SITE_WHATSAPP', '917559947750'),
+        'site_phone': getattr(settings, 'SITE_PHONE', '+91 8848599575'),
+        'site_whatsapp': getattr(settings, 'SITE_WHATSAPP', '918848599575'),
         'site_email': getattr(settings, 'SITE_EMAIL', 'hello@plantsindo.com'),
         'site_instagram': instagram_handle,
         'site_instagram_url': getattr(
@@ -26,7 +26,7 @@ def site_contact_context(request):
         'site_facebook_url': getattr(
             settings,
             'SITE_FACEBOOK_URL',
-            'https://www.facebook.com/profile.php?id=61587089061711',
+            'https://www.facebook.com/profile.php?id=61589348505512',
         ),
     }
 
