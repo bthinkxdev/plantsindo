@@ -1,4 +1,4 @@
-{% comment %}Expects: item, max_quantity, pack_upsell_message{% endcomment %}
+{% comment %}Expects: item, max_quantity{% endcomment %}
 <div class="order-line-qty-block">
     <div class="order-line-qty cd-qty"
          data-checkout-qty
@@ -16,7 +16,4 @@
                 aria-label="Increase quantity"
                 {% if item.quantity >= max_quantity %}disabled{% endif %}>+</button>
     </div>
-    <p class="order-line-pack-tip"
-       data-checkout-pack-tip
-       {% if not pack_upsell_message %}hidden{% endif %}>{{ pack_upsell_message }}</p>
 </div>

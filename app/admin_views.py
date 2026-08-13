@@ -1499,7 +1499,47 @@ class ProductDeliveryStatesUpdateView(View):
                     messages.error(request, f"{field}: {err}")
  
         return redirect("admin_panel:product_edit", pk=product.pk)
-    
+
+
+class DeliveryChargesView(StaffRequiredMixin, View):
+    """
+    Centralized delivery-charge management: one fixed charge per state,
+    applied to every product. GET renders the page, POST saves all charges.
+
+    GET/POST /admin/delivery-charges/
+    """
+
+    template_name = 'admin/delivery_charges.html'
+
+    def get(self, request):
+        from app.admin_forms import StateDeliveryChargeForm
+
+        form = StateDeliveryChargeForm()
+        return render(request, self.template_name, {
+            'active_menu': 'delivery_charges',
+            'form_title': 'Delivery Charges',
+            'charge_form': form,
+        })
+
+    def post(self, request):
+        from app.admin_forms import StateDeliveryChargeForm
+
+        form = StateDeliveryChargeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Delivery charges updated successfully.')
+            return redirect('admin_panel:delivery_charges')
+
+        for field, errs in form.errors.items():
+            for err in errs:
+                messages.error(request, f'{field}: {err}')
+        return render(request, self.template_name, {
+            'active_menu': 'delivery_charges',
+            'form_title': 'Delivery Charges',
+            'charge_form': form,
+        })
+
+
 class TestimonialListView(StaffRequiredMixin, ListView):
     model               = Testimonial        # imported from .models
     template_name       = 'dashboard/testimonials/list.html'

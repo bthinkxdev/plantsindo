@@ -55,7 +55,7 @@
                                 {% if item.variant_display %}
                                 <small class="order-line-meta">{{ item.variant_display }}</small>
                                 {% endif %}
-                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty pack_upsell_message=row.pack_upsell_message only %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
@@ -75,7 +75,7 @@
                                 {% if item.variant_display %}
                                 <small class="order-line-meta">{{ item.variant_display }}</small>
                                 {% endif %}
-                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty pack_upsell_message=row.pack_upsell_message only %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
@@ -157,6 +157,10 @@
                                 {% endif %}
                             </span>
                         </div>
+                        <p class="order-line-pack-tip"
+                           id="cart-pack-tip"
+                           data-checkout-pack-tip
+                           {% if not pack_upsell_message %}hidden{% endif %}>{{ pack_upsell_message }}</p>
 
                         {% if DELIVERY_INTEGRATED %}
                         <div class="order-total-row" id="codChargeRow" style="display:none;">

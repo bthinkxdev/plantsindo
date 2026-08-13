@@ -106,6 +106,7 @@ urlpatterns = [
     path('combo-items/<int:row_id>/delete/', admin_views.ProductComboComponentDeleteApiView.as_view(), name='product_combo_component_delete'),
     # Delivery management URLs
     path('products/<int:pk>/delivery-states/', admin_views.ProductDeliveryStatesUpdateView.as_view(), name='product_delivery_states_update'),
+    path('delivery-charges/', admin_views.DeliveryChargesView.as_view(), name='delivery_charges'),
     #Testimonial CRUD URLs
     path('testimonials/', admin_views.TestimonialListView.as_view(), name='testimonial_list'),
     path('testimonials/add/', admin_views.TestimonialCreateView.as_view(), name='testimonial_create'),

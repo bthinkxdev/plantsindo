@@ -1,0 +1,76 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }}{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/admin_product_edit.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="product-edit-wrapper" style="max-width:1100px;">
+    <div class="edit-section">
+        <h4 class="section-heading">
+            <span class="section-num"><i class="fas fa-truck" style="font-size:0.7rem;"></i></span>
+            Delivery Charges
+        </h4>
+        <p class="section-hint">
+            One fixed delivery charge per state, applied to every product
+            (per pack of up to {{ DELIVERY_PACK_SIZE|default:2 }} pieces). Product pages only
+            choose which states a product ships to — the charge always comes from here.
+        </p>
+
+        {% if charge_form.non_field_errors %}
+        <div class="alert alert-error" style="margin-bottom:1.25rem;">
+            <i class="fas fa-exclamation-circle"></i>
+            {% for e in charge_form.non_field_errors %}{{ e }}{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% for region_label, rows in charge_form.regions_with_fields %}
+            <div style="margin-bottom:1.5rem;">
+                <p style="font-size:0.75rem; font-weight:600; text-transform:uppercase;
+                          letter-spacing:0.05em; color:#6b7280; margin:0 0 0.625rem;
+                          padding-bottom:0.375rem; border-bottom:1px solid #e5e7eb;">
+                    {{ region_label }}
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:0.625rem;">
+                    {% for state, field in rows %}
+                    <div>
+                        <div class="ds-charge-row">
+                            <label class="ds-charge-label" for="{{ field.id_for_label }}">
+                                {{ state.name }}
+                                <span class="ds-chip-code">{{ state.code }}</span>
+                            </label>
+                            <div class="ds-charge-input-wrap">
+                                <span class="ds-charge-prefix">₹</span>
+                                {{ field }}
+                            </div>
+                        </div>
+                        {% if field.errors %}
+                        <div style="color:#dc2626; font-size:0.75rem; margin-top:0.3rem;">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <div style="display:flex; align-items:center; gap:0.75rem;
+                        position:sticky; bottom:0; z-index:20;
+                        margin:1rem -1.75rem -1.5rem; padding:1rem 1.75rem;
+                        background:#fff; border-top:1px solid #e5e7eb;
+                        border-radius:0 0 12px 12px;
+                        box-shadow:0 -2px 10px rgba(0, 0, 0, 0.06);">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-check"></i> Save all charges
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initPaymentButtonText();
     initAddressToggle();
     initCheckoutLineControls();
-    initCheckoutPackTips();
     initCheckoutCoupon();
     initCheckoutSubmit();
     initCheckoutDeliveryGuard();
@@ -275,12 +274,20 @@ function syncCheckoutQtyButtons(line, qty) {
 }
 
 
+function checkoutCartTotalQty() {
+    var total = 0;
+    document.querySelectorAll('[data-checkout-qty-val]').forEach(function(el) {
+        total += parseInt(el.textContent, 10) || 0;
+    });
+    return total;
+}
+
+
 function checkoutPackUpsellMessage(quantity) {
     var packSize = parseInt(window.DELIVERY_PACK_SIZE, 10);
     if (isNaN(packSize) || packSize < 1) packSize = 2;
     var qty = parseInt(quantity, 10) || 0;
-    var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
-    if (qty <= 0 || packSize <= 1 || qty >= maxQty) return '';
+    if (qty <= 0 || packSize <= 1) return '';
     var rem = qty % packSize;
     if (rem === 0) return '';
     var slots = packSize - rem;
@@ -289,34 +296,23 @@ function checkoutPackUpsellMessage(quantity) {
 }
 
 
-function syncCheckoutPackUpsell(lineOrWrap, message) {
-    var root = lineOrWrap && lineOrWrap.nodeType === 1
-        ? (lineOrWrap.closest('[data-checkout-line]') || lineOrWrap)
-        : null;
-    if (!root) return;
-    var tip = root.querySelector('[data-checkout-pack-tip]');
+function syncCheckoutPackUpsell(message) {
+    // Cart-wide: one tip near the Delivery Charge summary row, not per line.
+    var tip = document.getElementById('cart-pack-tip');
     if (!tip) return;
 
     var text;
     if (message == null) {
-        // Optimistic / init: mirror server formula from current qty
-        var valEl = root.querySelector('[data-checkout-qty-val]');
-        text = checkoutPackUpsellMessage(valEl ? valEl.textContent : 0);
+        // Optimistic: mirror server formula from current pooled quantity
+        text = checkoutPackUpsellMessage(checkoutCartTotalQty());
     } else {
-        // Server authority from cart_update / SSR
+        // Server authority from cart_update / totals AJAX
         text = String(message).trim();
     }
 
     tip.textContent = text;
     if (text) tip.removeAttribute('hidden');
     else tip.setAttribute('hidden', '');
-}
-
-
-function initCheckoutPackTips() {
-    document.querySelectorAll('[data-checkout-line]').forEach(function(line) {
-        syncCheckoutPackUpsell(line, null);
-    });
 }
 
 
@@ -359,7 +355,7 @@ function adjustCheckoutQty(itemId, delta) {
     var previousQty = current;
     valEl.textContent = String(next);
     syncCheckoutQtyButtons(line, next);
-    syncCheckoutPackUpsell(line, null);
+    syncCheckoutPackUpsell(null);
     setCheckoutLineBusy(line, true);
 
     fetch(url, {
@@ -383,7 +379,7 @@ function adjustCheckoutQty(itemId, delta) {
         if (!result.ok || !result.data.success) {
             valEl.textContent = String(previousQty);
             syncCheckoutQtyButtons(line, previousQty);
-            syncCheckoutPackUpsell(line, null);
+            syncCheckoutPackUpsell(null);
             showCheckoutError(
                 (result.data && result.data.error) || 'Could not update quantity.'
             );
@@ -398,7 +394,7 @@ function adjustCheckoutQty(itemId, delta) {
 
         valEl.textContent = String(qty);
         syncCheckoutQtyButtons(line, qty);
-        syncCheckoutPackUpsell(line, result.data.pack_upsell_message);
+        syncCheckoutPackUpsell(result.data.pack_upsell_message);
 
         if (result.data.line_total != null) {
             var priceEl = line.querySelector('[data-line-price]');
@@ -417,7 +413,7 @@ function adjustCheckoutQty(itemId, delta) {
         setCheckoutLineBusy(line, false);
         valEl.textContent = String(previousQty);
         syncCheckoutQtyButtons(line, previousQty);
-        syncCheckoutPackUpsell(line, null);
+        syncCheckoutPackUpsell(null);
         showCheckoutError('Network error. Please try again.');
     });
 }
@@ -579,6 +575,7 @@ function applyCheckoutTotalsPayload(data) {
     }
 
     syncCheckoutLineDeliveryWarnings(data);
+    syncCheckoutPackUpsell(data.pack_upsell_message);
 
     // Delivery/state blocks disable the button without duplicating the message
     // into #checkoutErrorMessage (status already lives on Delivery Charge).

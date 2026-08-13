@@ -19,7 +19,7 @@ from app.models import (
 )
 from app.services import coupon_service
 from app.services.cart_order import CartError, OrderService, resolve_checkout_totals
-from app.services.state_delivery_service import set_product_delivery_states
+from app.services.state_delivery_service import set_product_delivery_states, set_state_delivery_charges
 
 
 User = get_user_model()
@@ -148,11 +148,8 @@ class CouponCheckoutAndOrderTests(TestCase):
             base_stock=50,
             is_active=True,
         )
-        set_product_delivery_states(
-            cls.product.pk,
-            [cls.kerala.pk],
-            charges={cls.kerala.pk: Decimal('50')},
-        )
+        set_state_delivery_charges({cls.kerala.pk: Decimal('50')})
+        set_product_delivery_states(cls.product.pk, [cls.kerala.pk])
 
     def _cart(self, user=None, qty=2):
         cart = Cart.objects.create(user=user, status=Cart.Status.ACTIVE)

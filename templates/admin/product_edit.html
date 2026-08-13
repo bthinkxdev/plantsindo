@@ -320,7 +320,8 @@
     <p class="section-hint">
         Tick every state this product can be shipped to.
         South India is listed first since the shop is based in Kerala.
-        Then set a delivery charge per pack (up to 2 pieces / ~1kg) for each selected state.
+        Delivery charges are fixed per state and managed centrally on the
+        <a href="{% url 'admin_panel:delivery_charges' %}">Delivery Charges</a> page.
     </p>
 
     <form method="post"
@@ -365,25 +366,6 @@
             </div>
         </div>
         {% endfor %}
-
-        <div id="state-delivery-charges-section" style="margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #e5e7eb;">
-            <h5 style="font-size:0.9375rem; font-weight:600; margin:0 0 0.35rem;">State Delivery Charge</h5>
-            <p style="font-size:0.8125rem; color:#6b7280; margin:0 0 0.75rem;">
-                Only checked states appear here. Enter the delivery charge
-                <strong>per pack (up to 2 pieces / ~1kg)</strong>
-                (e.g. Kerala ₹50 covers qty 1 or 2). Required for every selected state. Cannot be negative.
-            </p>
-            <div id="ds-charge-list" class="ds-charge-list" aria-live="polite">
-                <p id="ds-charge-empty" class="ds-charge-empty">Select deliverable states above to configure charges.</p>
-            </div>
-            <script type="application/json" id="ds-charge-initial">
-                {
-                    {% for row in delivery_form.get_charge_rows %}
-                    "{{ row.state.pk }}": "{{ row.charge|default:''|escapejs }}"{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                }
-            </script>
-        </div>
 
         <div style="display:flex; align-items:center; gap:0.75rem;
                     margin-top:1rem; padding-top:1rem; border-top:1px solid #e5e7eb;">

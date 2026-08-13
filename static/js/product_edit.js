@@ -1274,95 +1274,15 @@
     loadVariants();
 })();
 
-// ── Delivery States chips + realtime charge list ───────────────────────────
+// ── Delivery States chips ───────────────────────────────────────────────────
 (function () {
     var section = document.getElementById('delivery-states-section');
     if (!section) return;
-
-    var chargeList = document.getElementById('ds-charge-list');
-    var emptyEl = document.getElementById('ds-charge-empty');
-    var chargeValues = {};
-
-    try {
-        var initialNode = document.getElementById('ds-charge-initial');
-        if (initialNode && initialNode.textContent.trim()) {
-            var parsed = JSON.parse(initialNode.textContent);
-            Object.keys(parsed).forEach(function (key) {
-                if (parsed[key] !== '' && parsed[key] != null) {
-                    chargeValues[String(key)] = String(parsed[key]);
-                }
-            });
-        }
-    } catch (err) {
-        chargeValues = {};
-    }
-
-    function rememberVisibleCharges() {
-        if (!chargeList) return;
-        chargeList.querySelectorAll('.ds-charge-row').forEach(function (row) {
-            var id = row.getAttribute('data-charge-for');
-            var input = row.querySelector('input.ds-charge-input');
-            if (id && input) chargeValues[String(id)] = input.value;
-        });
-    }
 
     function updateCounter() {
         var n = section.querySelectorAll('.ds-chip input[name="states"]:checked').length;
         var el = document.getElementById('ds-counter');
         if (el) el.textContent = n + ' state' + (n === 1 ? '' : 's') + ' selected';
-    }
-
-    function buildChargeRow(chip) {
-        var stateId = chip.getAttribute('data-state-id');
-        var name = chip.getAttribute('data-state-name') || 'State';
-        var code = chip.getAttribute('data-state-code') || '';
-        var value = chargeValues[String(stateId)] || '';
-
-        var row = document.createElement('div');
-        row.className = 'ds-charge-row is-visible';
-        row.setAttribute('data-charge-for', stateId);
-
-        row.innerHTML =
-            '<label class="ds-charge-label" for="charge_' + stateId + '">' +
-                '<span class="ds-charge-state"></span>' +
-                '<span class="ds-chip-code"></span>' +
-            '</label>' +
-            '<div class="ds-charge-input-wrap">' +
-                '<span class="ds-charge-prefix">₹</span>' +
-                '<input type="number" id="charge_' + stateId + '" name="charge_' + stateId + '" ' +
-                    'class="form-control ds-charge-input" min="0" step="0.01" inputmode="decimal" ' +
-                    'placeholder="0.00" required>' +
-            '</div>';
-
-        row.querySelector('.ds-charge-state').textContent = name;
-        row.querySelector('.ds-chip-code').textContent = code;
-        row.querySelector('input.ds-charge-input').value = value;
-
-        row.querySelector('input.ds-charge-input').addEventListener('input', function (e) {
-            chargeValues[String(stateId)] = e.target.value;
-        });
-
-        return row;
-    }
-
-    function syncChargeRows() {
-        if (!chargeList) return;
-        rememberVisibleCharges();
-
-        var checkedChips = Array.prototype.slice.call(
-            section.querySelectorAll('.ds-chip input[name="states"]:checked')
-        ).map(function (cb) { return cb.closest('.ds-chip'); }).filter(Boolean);
-
-        // Keep empty message node; replace only charge rows.
-        Array.prototype.slice.call(chargeList.querySelectorAll('.ds-charge-row')).forEach(function (row) {
-            row.remove();
-        });
-
-        checkedChips.forEach(function (chip) {
-            chargeList.appendChild(buildChargeRow(chip));
-        });
-
-        if (emptyEl) emptyEl.style.display = checkedChips.length ? 'none' : '';
     }
 
     function setChipChecked(chip, checked) {
@@ -1377,7 +1297,6 @@
         if (!chip) return;
         chip.classList.toggle('ds-chip-checked', e.target.checked);
         updateCounter();
-        syncChargeRows();
     });
 
     var selectAll = document.getElementById('ds-select-all');
@@ -1389,7 +1308,6 @@
                 setChipChecked(chip, true);
             });
             updateCounter();
-            syncChargeRows();
         });
     }
 
@@ -1399,39 +1317,10 @@
                 setChipChecked(chip, false);
             });
             updateCounter();
-            syncChargeRows();
-        });
-    }
-
-    var form = document.getElementById('delivery-states-form');
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            rememberVisibleCharges();
-            var missing = [];
-            chargeList.querySelectorAll('.ds-charge-row').forEach(function (row) {
-                var input = row.querySelector('input.ds-charge-input');
-                if (!input) return;
-                var raw = (input.value || '').trim();
-                var label = row.querySelector('.ds-charge-state');
-                var name = label ? label.textContent.trim() : 'state';
-                if (raw === '') {
-                    missing.push(name);
-                    return;
-                }
-                var num = Number(raw);
-                if (isNaN(num) || num < 0) {
-                    missing.push(name + ' (invalid)');
-                }
-            });
-            if (missing.length) {
-                e.preventDefault();
-                alert('Please enter a valid non-negative delivery charge for: ' + missing.join(', '));
-            }
         });
     }
 
     updateCounter();
-    syncChargeRows();
 })();
 // ── End Delivery States ────────────────────────────────────────────────────
 

@@ -56,6 +56,10 @@
                     <i class="fas fa-layer-group"></i>
                     <span>Combo bundles</span>
                 </a>
+                <a href="{% url 'admin_panel:delivery_charges' %}" class="nav-item {% if active_menu == 'delivery_charges' %}active{% endif %}">
+                    <i class="fas fa-truck"></i>
+                    <span>Delivery Charges</span>
+                </a>
                 {% if REVIEW_ENABLED %}
                 <a href="{% url 'admin_panel:review_list' %}" class="nav-item {% if active_menu == 'reviews' %}active{% endif %}">
                     <i class="fas fa-star-half-alt"></i>
