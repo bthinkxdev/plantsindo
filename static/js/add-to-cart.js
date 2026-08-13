@@ -99,6 +99,16 @@
                             triggerCartGleam();
                         }
 
+                        if (result.data.pixel && typeof fbq === "function") {
+                            fbq("track", "AddToCart", {
+                                content_ids: result.data.pixel.content_ids,
+                                content_type: result.data.pixel.content_type,
+                                content_name: result.data.pixel.content_name,
+                                value: parseFloat(result.data.pixel.value) || 0,
+                                currency: result.data.pixel.currency || "INR"
+                            });
+                        }
+
                         var productId = body.get('product_id');
                         var variantId = body.get('variant_id');
                         form.setAttribute('data-cart-added', '1'); 

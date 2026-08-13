@@ -112,4 +112,16 @@
     });
 })();
 </script>
+<script>
+(function(){
+    if (typeof fbq !== 'function') return;
+    fbq('track', 'ViewContent', {
+        content_ids: ['{{ combo.id }}'],
+        content_type: 'product_group',
+        content_name: '{{ combo.name|escapejs }}',
+        value: {{ combo.price|default:0 }},
+        currency: 'INR'
+    });
+})();
+</script>
 {% endblock %}

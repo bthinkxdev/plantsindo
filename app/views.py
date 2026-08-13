@@ -1681,7 +1681,7 @@ class AddToCartView(View):
         if data.get('combo_id'):
             combo = get_object_or_404(Combo, pk=data['combo_id'], is_active=True)
             try:
-                CartService.add_combo_item(cart, combo, data['quantity'], line_type=line_type, is_gift=data.get('is_gift', False))
+                combo_item = CartService.add_combo_item(cart, combo, data['quantity'], line_type=line_type, is_gift=data.get('is_gift', False))
             except StockError as exc:
                 messages.error(request, str(exc))
                 if is_ajax:
@@ -1693,7 +1693,17 @@ class AddToCartView(View):
             else:
                 if is_ajax:
                     cart_count = sum((item.quantity for item in cart.items.all()))
-                    return JsonResponse({'success': True, 'cart_count': cart_count})
+                    return JsonResponse({
+                        'success': True,
+                        'cart_count': cart_count,
+                        'pixel': {
+                            'content_ids': [str(combo.pk)],
+                            'content_type': 'product_group',
+                            'content_name': combo.name,
+                            'value': str((combo_item.unit_price or 0) * data['quantity']),
+                            'currency': 'INR',
+                        },
+                    })
             action = request.POST.get('action', 'add')
             if action == 'buy':
                 return redirect('store:checkout')
@@ -1713,7 +1723,7 @@ class AddToCartView(View):
                 return redirect('store:product_detail', slug=product.slug)
             sellable = product
         try:
-            CartService.add_item(cart, sellable, data['quantity'], line_type=line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=data.get('is_gift', False), selected_pot_id=data.get('selected_pot_id'))
+            added_item = CartService.add_item(cart, sellable, data['quantity'], line_type=line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=data.get('is_gift', False), selected_pot_id=data.get('selected_pot_id'))
         except StockError as exc:
             messages.error(request, str(exc))
             if is_ajax:
@@ -1725,7 +1735,17 @@ class AddToCartView(View):
         else:
             if is_ajax:
                 cart_count = sum((item.quantity for item in cart.items.all()))
-                return JsonResponse({'success': True, 'cart_count': cart_count})
+                return JsonResponse({
+                    'success': True,
+                    'cart_count': cart_count,
+                    'pixel': {
+                        'content_ids': [str(product.pk)],
+                        'content_type': 'product',
+                        'content_name': product.name,
+                        'value': str((added_item.unit_price or 0) * data['quantity']),
+                        'currency': 'INR',
+                    },
+                })
         action = request.POST.get('action', 'add')
         if action == 'buy':
             return redirect('store:checkout')

@@ -377,6 +377,24 @@
 })();
 </script>
 
+<script>
+(function(){
+    if (typeof fbq !== 'function') return;
+    var contentIds = [];
+    {% for row in checkout_lines %}
+    contentIds.push('{% if row.item.combo_id %}{{ row.item.combo_id }}{% else %}{{ row.item.product_id }}{% endif %}');
+    {% endfor %}
+    if (!contentIds.length) return;
+    fbq('track', 'InitiateCheckout', {
+        content_ids: contentIds,
+        content_type: 'product',
+        num_items: {{ checkout_lines|length }},
+        value: {{ totals.total|default:0 }},
+        currency: 'INR'
+    });
+})();
+</script>
+
 {% if DELIVERY_INTEGRATED %}
 <script>
 (function() {

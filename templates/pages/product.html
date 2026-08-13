@@ -158,3 +158,18 @@
 
 {% include "partials/_pdp_scripts.html" %}
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    if (typeof fbq !== 'function') return;
+    fbq('track', 'ViewContent', {
+        content_ids: ['{{ product.id }}'],
+        content_type: 'product',
+        content_name: '{{ product.name|escapejs }}',
+        value: {% if selected_variant %}{{ selected_variant.price|default:0 }}{% else %}{{ product.base_price|default:0 }}{% endif %},
+        currency: 'INR'
+    });
+})();
+</script>
+{% endblock %}

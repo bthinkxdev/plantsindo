@@ -131,3 +131,33 @@
     </div>
 </section>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+    if (typeof fbq !== 'function') return;
+    var orderNumber = '{{ order.order_number|escapejs }}';
+    var storageKey = 'fbq_purchase_fired_' + orderNumber;
+    try {
+        if (orderNumber && sessionStorage.getItem(storageKey)) return;
+    } catch (e) {}
+    var contentIds = [];
+    var contents = [];
+    {% for item in order.items.all %}
+    contentIds.push('{% if item.combo_id %}{{ item.combo_id }}{% else %}{{ item.product_id }}{% endif %}');
+    contents.push({
+        id: '{% if item.combo_id %}{{ item.combo_id }}{% else %}{{ item.product_id }}{% endif %}',
+        quantity: {{ item.quantity }}
+    });
+    {% endfor %}
+    fbq('track', 'Purchase', {
+        content_ids: contentIds,
+        contents: contents,
+        content_type: 'product',
+        value: {{ order.total|default:0 }},
+        currency: 'INR'
+    }, { eventID: 'order-{{ order.order_number }}' });
+    try { sessionStorage.setItem(storageKey, '1'); } catch (e) {}
+})();
+</script>
+{% endblock %}
