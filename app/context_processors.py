@@ -16,7 +16,7 @@ def site_contact_context(request):
     return {
         'site_phone': getattr(settings, 'SITE_PHONE', '+91 8848599575'),
         'site_whatsapp': getattr(settings, 'SITE_WHATSAPP', '918848599575'),
-        'site_email': getattr(settings, 'SITE_EMAIL', 'hello@plantsindo.com'),
+        'site_email': getattr(settings, 'SITE_EMAIL', 'supportplantsindo@gmail.com'),
         'site_instagram': instagram_handle,
         'site_instagram_url': getattr(
             settings,

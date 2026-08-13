@@ -102,7 +102,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 ADMIN_NOTIFICATION_EMAILS = ['supportplantsindo@gmail.com']
 SITE_PHONE = config('SITE_PHONE', default='+91 8848599575')
 SITE_WHATSAPP = config('SITE_WHATSAPP', default='918848599575')
-SITE_EMAIL = config('SITE_EMAIL', default='hello@plantsindo.com')
+SITE_EMAIL = config('SITE_EMAIL', default='supportplantsindo@gmail.com')
 
 SITE_INSTAGRAM = config('SITE_INSTAGRAM', default='plantsindo.co')
 SITE_INSTAGRAM_URL = config(
