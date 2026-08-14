@@ -275,10 +275,6 @@ class ProductBasicEditForm(forms.ModelForm):
         dod_start = cleaned.get('deal_of_day_start')
         dod_end = cleaned.get('deal_of_day_end')
         if is_deal:
-            if not dod_start:
-                self.add_error('deal_of_day_start', 'Start date is required for Deal of the Day.')
-            if not dod_end:
-                self.add_error('deal_of_day_end', 'End date is required for Deal of the Day.')
             if dod_start and dod_end and dod_end < dod_start:
                 self.add_error('deal_of_day_end', 'End date cannot be before start date.')
                 

@@ -260,8 +260,14 @@
                                 }
                             }
                         }
-                        var err = (res.data.errors && res.data.errors.__all__ && res.data.errors.__all__[0]) || firstErr || "Error saving.";
-                        basicFeedback.textContent = "Please correct the highlighted errors.";
+                        var displayErr = "Please correct the highlighted errors.";
+                        if (res.data.errors && res.data.errors.__all__ && res.data.errors.__all__[0]) {
+                            displayErr = res.data.errors.__all__[0];
+                        } else if (firstErr) {
+                            var firstKey = Object.keys(res.data.errors)[0];
+                            displayErr = firstKey + ": " + firstErr;
+                        }
+                        basicFeedback.textContent = displayErr;
                         basicFeedback.className = "save-feedback err";
                     }
                 })
