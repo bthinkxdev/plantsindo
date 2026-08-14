@@ -58,6 +58,7 @@ urlpatterns = [
     path('api/home/reels/', views.HomeLazyReelsView.as_view(), name='home_reels'),
     path('api/home/testimonials/', views.HomeLazyTestimonialsView.as_view(), name='home_testimonials'),
     path('api/home/combos/', views.HomeLazyCombosView.as_view(), name='home_combos'),
+    path('api/search-suggest/', views.SearchSuggestView.as_view(), name='search_suggest'),
     path('blog/', storefront_blog_views.BlogListView.as_view(), name='blog_list'),
     path('blog/<slug:slug>/', storefront_blog_views.BlogDetailView.as_view(), name='blog_detail'),
 ]

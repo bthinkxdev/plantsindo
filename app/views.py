@@ -408,6 +408,40 @@ def _empty_home_context():
 # Wire these in urls.py (see bottom of file)
 # ──────────────────────────────────────────────────────────────
  
+class SearchSuggestView(View):
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+        
+        #if no query, return 5 most recently added products
+        if not query:
+            products = Product.objects.filter(is_active=True).order_by('-created_at')[:5]
+        else:
+            #if there is a query, search by name or category name
+            from django.db.models import Q
+            products = Product.objects.filter(is_active=True).filter(
+                Q(name__icontains=query) | Q(category__name__icontains=query)
+            ).select_related('category').prefetch_related('images')[:5]
+            
+        suggestions = []
+        for p in products:
+            image_url = ''
+            if p.images.exists():
+                image_url = p.images.first().image.url
+            elif p.category and p.category.image:
+                image_url = p.category.image.url
+                
+            from django.urls import reverse
+            suggestions.append({
+                'name': p.name,
+                'url': reverse('store:product_detail', kwargs={'slug': p.slug}),
+                'image': image_url,
+                'price': str(p.base_price) if p.base_price else '',
+                'category': p.category.name if p.category else ''
+            })
+            
+        from django.http import JsonResponse
+        return JsonResponse({'suggestions': suggestions})
+ 
 class HomeLazyReelsView(View):
     """GET /api/home/reels/ — below-fold, not on critical path."""
  
@@ -665,6 +699,15 @@ class ProductListView(ListView):
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         context          = self.get_context_data()
+
+        #if user searched but got no results, redirect to Shop page
+        query = request.GET.get('q')
+        if query is not None and not context.get('card_items') and not context.get('simple_products'):
+            from django.shortcuts import redirect
+            from django.contrib import messages
+            if query.strip():
+                messages.warning(request, f"No products found for '{query}'. Showing all products.")
+            return redirect('store:product_list')
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             # ── AJAX / infinite-scroll request ──

@@ -1,4 +1,4 @@
-﻿
+
 :root {
   --cd-navy:      var(--text-color);
   --cd-navy-mid:  var(--primary-green);
@@ -1159,4 +1159,74 @@ body.has-bottom-bar {
 }
 .back-to-top--hidden {
     display: none;
+}
+
+/* Search Autosuggest Dropdown */
+.search-autosuggest-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border-radius: var(--cd-radius);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    list-style: none;
+    margin: 8px 0 0 0;
+    padding: 8px 0;
+    z-index: var(--cd-z);
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+    
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.search-autosuggest-dropdown.is-open {
+    display: block;
+}
+.search-autosuggest-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    transition: background-color 0.2s ease;
+    text-decoration: none;
+}
+.search-autosuggest-item:hover {
+    background-color: #f1f3f1;
+    color: var(--text-color);
+}
+.search-autosuggest-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 12px;
+    background: #f8f9f8;
+}
+.search-autosuggest-item-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+.search-autosuggest-item-name {
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+.search-autosuggest-item-category {
+    font-size: 0.8em;
+    color: var(--cd-muted);
+}
+.search-autosuggest-item-price {
+    font-weight: 600;
+    color: var(--primary-green);
+    margin-left: 12px;
 }

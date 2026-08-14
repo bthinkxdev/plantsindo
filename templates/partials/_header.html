@@ -18,7 +18,7 @@
                 <span class="site-brand-text ms-2 d-none d-lg-inline">{{ site_brand_part1 }}<span class="site-brand-text__tld">{{ site_brand_part2 }}.com</span></span>
             </a>
             <div class="site-header__search-slot">
-                <form class="site-search-pill" action="{% url 'store:product_list' %}" method="get" role="search">
+                <form class="site-search-pill" action="{% url 'store:product_list' %}" method="get" role="search" onsubmit="return this.q.value.trim() !== '';">
                     <div class="typed-ghost-wrap" data-typed-ghost="search">
                         <div class="typed-ghost-hint" aria-hidden="true">
                             <span class="typed-ghost-prefix">Search</span>
@@ -58,7 +58,7 @@
             {% with p=item.parent ch=item.children %}
             {% if ch %}
             <div class="site-mega">
-                <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-nav-link site-mega__trigger {% if active_page == 'collection' %}is-active{% endif %}" aria-haspopup="true" aria-expanded="false">{{ p.name }}</a>
+                <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-nav-link site-mega__trigger {% if request.GET.category == p.slug %}is-active{% endif %}" aria-haspopup="true" aria-expanded="false">{{ p.name }}</a>
                 <div class="site-mega__panel" role="region" aria-label="{{ p.name }} categories">
                     <div class="site-mega__list">
                         {% for c in ch %}
@@ -69,31 +69,31 @@
                 </div>
             </div>
             {% else %}
-            <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-nav-link {% if active_page == 'collection' %}is-active{% endif %}">{{ p.name }}</a>
+            <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-nav-link {% if request.GET.category == p.slug %}is-active{% endif %}">{{ p.name }}</a>
             {% endif %}
             {% endwith %}
             {% empty %}
             <a href="{% url 'store:product_list' %}" class="site-nav-link">Shop</a>
             {% endfor %}
-            <a href="{% url 'store:product_list' %}" class="site-nav-link {% if active_page == 'collection' %}is-active{% endif %}">Shop all</a>
+            <a href="{% url 'store:product_list' %}" class="site-nav-link {% if active_page == 'collection' and not request.GET.category and request.GET.combo != '1' and request.GET.sort != 'price_asc' %}is-active{% endif %}">Shop all</a>
             {% comment %} Rental disabled for this storefront — re-enable when needed.
             <a href="{% url 'store:product_list' %}?rent=1" class="site-nav-link {% if request.GET.rent == '1' %}is-active{% endif %}">Rental</a>
             {% endcomment %}
             {% comment %} <a href="{% url 'store:product_list' %}?plant_type=outdoor" class="site-nav-link">Outdoor</a> {% endcomment %}
-            <a href="{% url 'store:product_list' %}?combo=1" class="site-nav-link">Combos</a>
-            <a href="{% url 'store:product_list' %}?sort=price_asc" class="site-nav-link">Offers</a>
+            <a href="{% url 'store:product_list' %}?combo=1" class="site-nav-link {% if request.GET.combo == '1' %}is-active{% endif %}">Combos</a>
+            <a href="{% url 'store:product_list' %}?sort=price_asc" class="site-nav-link {% if request.GET.sort == 'price_asc' %}is-active{% endif %}">Offers</a>
             <a href="{% url 'store:contact' %}" class="site-nav-link {% if active_page == 'contact' %}is-active{% endif %}">Plant care</a>
             {% comment %} <a href="{% url 'store:about' %}" class="site-nav-link {% if active_page == 'about' %}is-active{% endif %}">Blog</a> {% endcomment %}
         </nav>
     </div>
     <div class="collapse site-mobile-nav d-lg-none px-3" id="navbarCollapse">
-        <a href="{% url 'store:home' %}">Home</a>
-        <a href="{% url 'store:product_list' %}">Shop all</a>
+        <a href="{% url 'store:home' %}" class="{% if active_page == 'home' %}is-active{% endif %}">Home</a>
+        <a href="{% url 'store:product_list' %}" class="{% if active_page == 'collection' and not request.GET.category and request.GET.combo != '1' and request.GET.sort != 'price_asc' %}is-active{% endif %}">Shop all</a>
         {% for item in nav_category_menu %}
         {% with p=item.parent ch=item.children %}
         {% if ch %}
         <div class="mobile-acc">
-            <button class="mobile-acc__btn" type="button">
+            <button class="mobile-acc__btn {% if request.GET.category == p.slug %}is-active{% endif %}" type="button">
                 {{ p.name }}
                 <span class="mobile-acc__chevron">&#8250;</span>
             </button>
@@ -105,11 +105,11 @@
             </div>
         </div>
         {% else %}
-        <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-mobile-nav__parent-link">{{ p.name }}</a>
+        <a href="{% url 'store:product_list' %}?category={{ p.slug }}" class="site-mobile-nav__parent-link {% if request.GET.category == p.slug %}is-active{% endif %}">{{ p.name }}</a>
         {% endif %}
         {% endwith %}
         {% endfor %}
-        <a href="{% url 'store:product_list' %}?combo=1">Combos</a>
+        <a href="{% url 'store:product_list' %}?combo=1" class="{% if request.GET.combo == '1' %}is-active{% endif %}">Combos</a>
         {% comment %} Rental disabled — see desktop nav above. {% endcomment %}
         <a href="#" class="js-open-cart-drawer">Cart</a>
         {% if WISHLIST_ENABLED %}<a href="{% url 'store:wishlist' %}">Wishlist</a>{% endif %}

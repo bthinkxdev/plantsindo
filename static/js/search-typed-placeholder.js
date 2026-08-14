@@ -1,6 +1,6 @@
 (() => {
   // Populated from DB (10 most recently added products) via templates/base.html json_script.
-  const FALLBACK_PHRASES = ["Search   plants,   pots,   seeds…"];
+  const FALLBACK_PHRASES = ["plants,   pots,   seeds…"];
 
   function airyPhrase(text) {
     return String(text || "")
