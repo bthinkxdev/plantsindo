@@ -1,4 +1,4 @@
-﻿{{ variant_json|json_script:"variant-data" }}
+{{ variant_json|json_script:"variant-data" }}
 {{ ordered_attributes|json_script:"ordered-attributes" }}
 {{ pdp_rental_keys_in_cart|json_script:"pdp-rental-keys-cart" }}
 <script>window.productId = {{ product.id }};</script>
@@ -531,6 +531,14 @@
             setStockMessage('In Stock (' + sq + ')', 'ok');
         } else {
             setStockMessage('Out of Stock', 'out');
+        }
+
+        if (qtyInput) {
+            qtyInput.setAttribute('max', sq);
+            if (parseInt(qtyInput.value, 10) > sq) {
+                qtyInput.value = Math.max(1, sq);
+            }
+            qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         if (mainImg && variant.image) {

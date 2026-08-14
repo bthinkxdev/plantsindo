@@ -27,7 +27,7 @@
                     </div>
                 {% else %}
                     <div class="stock-indicator small mb-2 text-muted">
-                        <i class="fas fa-check-circle me-1"></i> In Stock
+                        <i class="fas fa-check-circle me-1"></i> In Stock ({{ product.base_stock }})
                     </div>
                 {% endif %}
             {% else %}
@@ -149,7 +149,7 @@
     <div class="product-cta-row">
         <div class="qty-selector quantity">
             <button class="btn-minus" type="button"><i class="fas fa-minus"></i></button>
-            <input type="number" id="qtyInput" value="1" min="1" max="99" readonly style="width:50px;text-align:center;">
+            <input type="number" id="qtyInput" value="1" min="1" max="{% if product.is_simple_product %}{% if product.base_stock and product.base_stock < 10 %}{{ product.base_stock }}{% else %}10{% endif %}{% else %}10{% endif %}" data-stock="{% if product.is_simple_product %}{{ product.base_stock|default:99 }}{% else %}99{% endif %}" data-max-cart="10" readonly style="width:50px;text-align:center;">
             <button class="btn-plus" type="button"><i class="fas fa-plus"></i></button>
         </div>
         {% if product.is_simple_product and product.id in cart_simple_product_ids %}

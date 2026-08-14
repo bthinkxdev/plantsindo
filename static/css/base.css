@@ -1017,6 +1017,7 @@ body.storefront {
 .shop-category-hero {
   width: 100%;
   max-width: var(--container-max);
+  aspect-ratio: 3 / 1;
   margin: 0 auto var(--spacing-md);
   padding: 0;
   position: relative;
@@ -1027,7 +1028,7 @@ body.storefront {
 .shop-category-hero picture,
 .shop-category-hero__img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
 }
 
@@ -2280,3 +2281,5 @@ img.img-loaded {
     padding: 0;
     border-radius: 0;
 }
+.quantity button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+

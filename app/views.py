@@ -545,10 +545,59 @@ class ProductListView(ListView):
 
     def get_queryset(self):
         try:
-            combo_only = (self.request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
+            request = self.request
+            combo_only = (request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
             if combo_only:
-                return collection_combo_cards(self.request)
-            return collection_card_items(self.request, self.paginate_by)
+                return collection_combo_cards(request)
+            
+            cards = collection_card_items(request, self.paginate_by)
+            
+            category_slug = request.GET.get('category')
+            min_price = request.GET.get('min_price')
+            max_price = request.GET.get('max_price')
+            query = request.GET.get('q')
+            sort = (request.GET.get('sort') or '').strip().lower()
+            rent_only = (request.GET.get('rent') or '').strip() in ('1', 'true', 'yes')
+
+            simple_qs = (
+                Product.objects.active()
+                .filter(variants__isnull=True)
+                .filter(Q(base_stock__gt=0) | Q(is_combo_product=True))
+                .select_related('category')
+                .prefetch_related('images')
+            )
+            if rent_only:
+                simple_qs = simple_qs.filter(
+                    is_rent_available=True,
+                    rental_config__is_rent_enabled=True,
+                ).select_related('rental_config')
+            if category_slug and category_slug != 'all':
+                _, ids = category_filter_ids_for_slug(category_slug, include_children=True, max_depth=10)
+                if ids:
+                    simple_qs = simple_qs.filter(category_id__in=ids)
+            if min_price:
+                simple_qs = simple_qs.filter(base_price__gte=min_price)
+            if max_price:
+                simple_qs = simple_qs.filter(base_price__lte=max_price)
+            if query:
+                simple_qs = simple_qs.filter(
+                    Q(name__icontains=query)
+                    | Q(description__icontains=query)
+                    | Q(category__name__icontains=query)
+                )
+            simple_qs = apply_plant_filters_to_product_qs(simple_qs, request)
+            
+            simple_cards = [{'kind': 'simple', 'product': p} for p in simple_qs]
+            all_cards = cards + simple_cards
+            
+            if sort == 'price_asc':
+                all_cards.sort(key=lambda c: getattr(c.get('variant'), 'price', 0) if c['kind'] == 'variant' else (getattr(c.get('product'), 'base_price', 0) or 0))
+            elif sort == 'price_desc':
+                all_cards.sort(key=lambda c: getattr(c.get('variant'), 'price', 0) if c['kind'] == 'variant' else (getattr(c.get('product'), 'base_price', 0) or 0), reverse=True)
+            else:
+                all_cards.sort(key=lambda c: c['variant'].product.created_at if c['kind'] == 'variant' else c['product'].created_at, reverse=True)
+                
+            return all_cards
         except Exception as e:
             logger.error('ProductListView.get_queryset error: %s', e, exc_info=True)
             return []
@@ -579,6 +628,8 @@ class ProductListView(ListView):
         if selected_category:
             parent_id = selected_category.parent_id
             if parent_id:
+                if parent_id in tree.by_id:
+                    context['parent_category_slug'] = tree.by_id[parent_id].slug
                 selected_child_categories = [
                     tree.by_id[cid]
                     for cid in tree.children_ids.get(parent_id, [])
@@ -637,45 +688,10 @@ class ProductListView(ListView):
 
         if combo_only:
             context['simple_products']      = []
-            context['total_product_count']  = len(context.get('card_items', []))
+            context['total_product_count']  = len(self.object_list) if hasattr(self, 'object_list') else 0
         else:
-            simple_qs = (
-                Product.objects.active()
-                .filter(variants__isnull=True)
-                .filter(Q(base_stock__gt=0) | Q(is_combo_product=True))
-                .select_related('category')
-                .prefetch_related('images')
-            )
-            if rent_only:
-                simple_qs = simple_qs.filter(
-                    is_rent_available=True,
-                    rental_config__is_rent_enabled=True,
-                ).select_related('rental_config')
-            if category_slug and category_slug != 'all':
-                _, ids = category_filter_ids_for_slug(category_slug, include_children=True, max_depth=10)
-                if ids:
-                    simple_qs = simple_qs.filter(category_id__in=ids)
-            if min_price:
-                simple_qs = simple_qs.filter(base_price__gte=min_price)
-            if max_price:
-                simple_qs = simple_qs.filter(base_price__lte=max_price)
-            if query:
-                simple_qs = simple_qs.filter(
-                    Q(name__icontains=query)
-                    | Q(description__icontains=query)
-                    | Q(category__name__icontains=query)
-                )
-            simple_qs = apply_plant_filters_to_product_qs(simple_qs, request)
-            if sort == 'price_asc':
-                simple_qs = simple_qs.order_by('base_price', 'created_at')
-            elif sort == 'price_desc':
-                simple_qs = simple_qs.order_by('-base_price', '-created_at')
-            else:
-                simple_qs = simple_qs.order_by('-created_at', 'name', 'id')
-            context['simple_products']     = list(simple_qs)
-            context['total_product_count'] = (
-                len(context.get('card_items', [])) + len(context['simple_products'])
-            )
+            context['simple_products']     = []
+            context['total_product_count'] = len(self.object_list) if hasattr(self, 'object_list') else 0
 
         # ── Cart state (per-request, must stay live) ──
         try:
@@ -2432,7 +2448,7 @@ class CartDrawerView(View):
                     variant_display = item.variant_display or 'Bundle'
                     unit_price = item.unit_price
                     product_url = request.build_absolute_uri(reverse('store:combo_detail', kwargs={'slug': item.combo.slug}))
-                    items_data.append({'id': item.id, 'name': item.combo.name, 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url})
+                    items_data.append({'id': item.id, 'name': item.combo.name, 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
                     continue
                 if item.selected_variant:
                     for img in item.selected_variant.images.filter(image__isnull=False).exclude(image='').order_by('-is_primary', 'display_order', 'id'):
@@ -2467,7 +2483,7 @@ class CartDrawerView(View):
                     product_url = request.build_absolute_uri(f'/products/{item.product.slug}/')
                 else:
                     product_url = request.build_absolute_uri('/products/')
-                items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url})
+                items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
             totals = CartService.compute_totals(cart)
             item_count = sum((i['quantity'] for i in items_data))
             return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count})

@@ -15,16 +15,40 @@
                 {% for cat in categories %}
                 <option value="{{ cat.slug }}" {% if filters.category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
                 {% endfor %}
+                {% if selected_category and selected_category not in categories %}
+                <option value="{{ selected_category.slug }}" selected>{{ selected_category.name }}</option>
+                {% endif %}
             </select>
             {% if child_categories %}
             <div class="filter-child-cats d-flex flex-wrap gap-2">
                 {% for c in child_categories %}
-                <a class="btn btn-sm btn-outline-dark"
-                   href="{% url 'store:product_list' %}?category={{ c.slug }}{% if filters.sort %}&sort={{ filters.sort }}{% endif %}{% if filters.q %}&q={{ filters.q }}{% endif %}">
+                <button type="button" class="btn btn-sm {% if filters.category == c.slug %}btn-dark active{% else %}btn-outline-dark{% endif %} filter-child-cat-btn" data-slug="{{ c.slug }}">
                     {{ c.name }}
-                </a>
+                </button>
                 {% endfor %}
             </div>
+            <script>
+                document.querySelectorAll('.filter-child-cat-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        document.querySelectorAll('.filter-child-cat-btn').forEach(function(b) { 
+                            b.classList.remove('btn-dark', 'active');
+                            b.classList.add('btn-outline-dark');
+                        });
+                        this.classList.remove('btn-outline-dark');
+                        this.classList.add('btn-dark', 'active');
+                        var select = document.querySelector('select[name="category"]');
+                        if (select) {
+                            var option = Array.from(select.options).find(o => o.value === this.dataset.slug);
+                            if (option) {
+                                option.selected = true;
+                            } else {
+                                var newOption = new Option(this.textContent.trim(), this.dataset.slug, true, true);
+                                select.add(newOption);
+                            }
+                        }
+                    });
+                });
+            </script>
             {% endif %}
         </div>
         <div class="filter-section filter-section--price">
@@ -34,8 +58,9 @@
                 <input type="number" name="max_price" value="{{ filters.max_price }}" placeholder="Max" class="form-control mb-2" min="0" step="1">
             </div>
         </div>
-        <div class="filter-actions">
+        <div class="filter-actions d-flex gap-2 mt-3">
             <button type="submit" class="btn btn-dark w-100">Apply</button>
+            <a href="{% url 'store:product_list' %}?{% if parent_category_slug %}category={{ parent_category_slug }}&{% endif %}{% if filters.combo %}combo={{ filters.combo }}{% endif %}" class="btn btn-outline-dark w-100">Clear</a>
         </div>
     </form>
 </aside>

@@ -239,11 +239,36 @@
         var $btn   = $(this);
         var $input = $btn.closest('.quantity').find('input[type="text"], input[type="number"]');
         var current = parseInt($input.val(), 10) || 1;
+        var max = parseInt($input.attr('max'), 10);
 
         if ($btn.hasClass('btn-plus')) {
-            var max = parseInt($input.attr('max'), 10);
             if (isNaN(max) || current < max) {
                 $input.val(current + 1);
+                current++;
+                
+                if (!isNaN(max) && current >= max) {
+                    var stock = parseInt($input.attr('data-stock'), 10);
+                    var maxCart = parseInt($input.attr('data-max-cart'), 10) || 10;
+                    var messageText = '';
+                    if (!isNaN(stock) && current >= stock) {
+                        messageText = 'Only ' + stock + ' left in stock';
+                    } else {
+                        messageText = 'Maximum ' + maxCart + ' items allowed per order';
+                    }
+                    
+                    var toastId = 'pdp-stock-toast';
+                    var $toast = $('#' + toastId);
+                    if (!$toast.length) {
+                        $toast = $('<div id="' + toastId + '" class="toast-message" style="position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#dc3545; color:#fff; padding:12px 24px; border-radius:50px; z-index:10000; font-size:0.875rem; font-weight:600; display:none; white-space:nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); pointer-events:none;"><i class="fas fa-exclamation-circle me-2"></i><span></span></div>');
+                        $('body').append($toast);
+                    }
+                    $toast.find('span').text(messageText);
+                    $toast.stop(true, true).fadeIn(300);
+                    clearTimeout(window.pdpStockToastTimer);
+                    window.pdpStockToastTimer = setTimeout(function() {
+                        $toast.fadeOut(300);
+                    }, 2500);
+                }
             }
         } else {
             var min = parseInt($input.attr('min'), 10) || 1;
@@ -253,6 +278,22 @@
         }
 
         $input.trigger('change');
+    });
+
+    $(document).on('change input', '.quantity input', function() {
+        var $input = $(this);
+        var current = parseInt($input.val(), 10) || 1;
+        var min = parseInt($input.attr('min'), 10) || 1;
+        var max = parseInt($input.attr('max'), 10);
+        
+        var $container = $input.closest('.quantity');
+        $container.find('.btn-minus').prop('disabled', current <= min);
+        $container.find('.btn-plus').prop('disabled', !isNaN(max) && current >= max);
+    });
+    
+    // Initial setup on load
+    $(window).on('load', function() {
+        $('.quantity input').trigger('change');
     });
 
 

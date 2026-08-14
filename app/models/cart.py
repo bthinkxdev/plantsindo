@@ -223,3 +223,29 @@ class CartItem(TimeStampedModel):
         gift = ' gift' if self.is_gift else ''
         name = self.catalog_name or 'Item'
         return f'{name} ({kind}){gift} x {self.quantity}'
+
+    @property
+    def max_allowed_quantity(self):
+        from django.conf import settings
+        max_cart = getattr(settings, 'MAX_CART_QTY', 10)
+        
+        if self.selected_variant:
+            stock = self.selected_variant.stock_quantity if self.selected_variant.stock_quantity is not None else 99
+        elif self.product:
+            stock = self.product.base_stock if self.product.base_stock is not None else 99
+        elif self.combo:
+            stock = getattr(self.combo, 'stock', 99)
+        else:
+            stock = 99
+            
+        return min(stock, max_cart)
+
+    @property
+    def actual_stock(self):
+        if self.selected_variant:
+            return self.selected_variant.stock_quantity if self.selected_variant.stock_quantity is not None else 99
+        elif self.product:
+            return self.product.base_stock if self.product.base_stock is not None else 99
+        elif self.combo:
+            return getattr(self.combo, 'stock', 99)
+        return 99

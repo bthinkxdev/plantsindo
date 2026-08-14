@@ -337,6 +337,13 @@ function getCheckoutCsrfToken() {
 
 function syncCheckoutQtyButtons(line, qty) {
     var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var qtyContainer = line.querySelector('[data-checkout-qty]');
+    if (qtyContainer && qtyContainer.getAttribute('data-max')) {
+        var itemMax = parseInt(qtyContainer.getAttribute('data-max'), 10);
+        if (!isNaN(itemMax)) {
+            maxQty = itemMax;
+        }
+    }
     var decBtn = line.querySelector('.js-checkout-qty-dec');
     var incBtn = line.querySelector('.js-checkout-qty-inc');
     if (decBtn) decBtn.disabled = qty <= 1;
@@ -417,6 +424,13 @@ function adjustCheckoutQty(itemId, delta) {
     if (!valEl) return;
 
     var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var qtyContainer = line.querySelector('[data-checkout-qty]');
+    if (qtyContainer && qtyContainer.getAttribute('data-max')) {
+        var itemMax = parseInt(qtyContainer.getAttribute('data-max'), 10);
+        if (!isNaN(itemMax)) {
+            maxQty = itemMax;
+        }
+    }
     var current = parseInt(valEl.textContent, 10) || 1;
     var next = current + delta;
     if (next < 1 || next > maxQty) return;
@@ -425,6 +439,33 @@ function adjustCheckoutQty(itemId, delta) {
     var previousQty = current;
     valEl.textContent = String(next);
     syncCheckoutQtyButtons(line, next);
+    
+    if (next >= maxQty && qtyContainer) {
+        var actualStock = parseInt(qtyContainer.getAttribute('data-actual-stock'), 10) || 99;
+        var messageText = '';
+        if (next >= actualStock) {
+            messageText = 'Only ' + actualStock + ' left in stock';
+        } else {
+            messageText = 'Maximum ' + maxQty + ' items allowed';
+        }
+
+        var container = qtyContainer.parentElement;
+        if (!container.querySelector('.stock-limit-msg')) {
+            var msg = document.createElement('div');
+            msg.className = 'stock-limit-msg text-danger fw-bold';
+            msg.style.cssText = 'font-size:0.75rem; position:absolute; top:100%; left:0; width:max-content; margin-top:2px; z-index:10; transition: opacity 0.3s; pointer-events: none;';
+            msg.textContent = messageText;
+            container.style.position = 'relative';
+            container.appendChild(msg);
+            setTimeout(function() {
+                msg.style.opacity = '0';
+                setTimeout(function() {
+                    if (msg.parentNode) msg.parentNode.removeChild(msg);
+                }, 300);
+            }, 2200);
+        }
+    }
+
     syncCheckoutPackUpsell(null);
     setCheckoutLineBusy(line, true);
 

@@ -3,7 +3,8 @@
     <div class="order-line-qty cd-qty"
          data-checkout-qty
          data-item-id="{{ item.id }}"
-         data-max="{{ max_quantity }}">
+         data-max="{{ max_quantity }}"
+         data-actual-stock="{{ item.actual_stock }}">
         <button type="button"
                 class="cd-qty__btn js-checkout-qty-dec"
                 data-item-id="{{ item.id }}"

@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}{% load product_filters %}
 {% block title %}{{ page_title|default:"Shop" }} — {{ site_brand }}{% endblock %}
 {% block content %}
@@ -143,10 +143,8 @@
                 </div>
                 {% endif %}
                 {% endwith %}
-                {% endif %}
-            {% endfor %}
-
-            {% for product in simple_products %}
+                {% elif card.kind == 'simple' %}
+                {% with product=card.product %}
             <div class="product-card">
                 <div class="product-img-wrap">
                     {% if product.discount_percent %}<span class="product-badge badge-sale">{{ product.discount_percent }}% OFF</span>{% endif %}
@@ -188,9 +186,11 @@
                     </div>
                 </div>
             </div>
+            {% endwith %}
+            {% endif %}
             {% endfor %}
 
-            {% if not card_items and not simple_products %}
+            {% if not card_items %}
             <div class="col-12 text-center py-5">
                 <p class="text-muted">No products found. Try adjusting filters.</p>
                 <a href="{% url 'store:product_list' %}" class="btn btn-outline-dark">Clear filters</a>

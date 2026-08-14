@@ -73,11 +73,9 @@
     </div>
     {% endif %}
     {% endwith %}
-    {% endif %}
-{% endfor %}
-
-{% for product in simple_products %}
-<div class="product-card">
+    {% elif card.kind == 'simple' %}
+    {% with product=card.product %}
+    <div class="product-card">
     <div class="product-img-wrap">
         {% if product.discount_percent %}<span class="product-badge badge-sale">{{ product.discount_percent }}% OFF</span>{% endif %}
         {% include "partials/_rating_pill.html" with product=product %}
@@ -114,5 +112,6 @@
             <a href="{% url 'store:product_detail' product.slug %}" class="product-cta border-0 text-decoration-none">View product</a>
         </div>
     </div>
-</div>
+    {% endwith %}
+    {% endif %}
 {% endfor %}

@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% block title %}Checkout — {{ site_brand }}{% endblock %}
 {% block content %}
@@ -16,13 +16,7 @@
         </div>
         {% endif %}
 
-        {% if messages %}
-        <div class="storefront-messages mb-4">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} mb-2" role="alert">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
+
 
         {% if form.non_field_errors %}
         <div class="alert alert-danger mb-4">{{ form.non_field_errors }}</div>
@@ -55,7 +49,7 @@
                                 {% if item.variant_display %}
                                 <small class="order-line-meta">{{ item.variant_display }}</small>
                                 {% endif %}
-                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty only %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=item.max_allowed_quantity|default:max_cart_qty only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
@@ -75,7 +69,7 @@
                                 {% if item.variant_display %}
                                 <small class="order-line-meta">{{ item.variant_display }}</small>
                                 {% endif %}
-                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=max_cart_qty only %}
+                                {% include "partials/_checkout_line_qty.html" with item=item max_quantity=item.max_allowed_quantity|default:max_cart_qty only %}
                                 {% if stock_issue %}
                                 <small class="order-line-stock-warn d-block">{{ stock_issue.message }}</small>
                                 {% endif %}
