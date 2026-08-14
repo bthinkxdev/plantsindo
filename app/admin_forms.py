@@ -296,10 +296,69 @@ class ReelForm(forms.ModelForm):
         self.fields['poster_image'].required = False
         self.fields['display_order'].required = False
         self.fields['product'].queryset = Product.objects.filter(is_active=True).order_by('name')
+        self.fields['product'].required = True
+        self.fields['product'].empty_label = "Select a product..."
+        self.fields['product'].error_messages = {'required': 'A linked product is mandatory for storefront visibility.'}
 
     def clean_poster_image(self):
         image = self.cleaned_data.get('poster_image')
-        return _validate_image_file(image, required=False)
+        image = _validate_image_file(image, required=False)
+        if image:
+            from django.core.files.uploadedfile import UploadedFile
+            if isinstance(image, UploadedFile):
+                try:
+                    from PIL import Image as PILImage
+                    img = PILImage.open(image)
+                    width, height = img.size
+                    ratio = width / height
+                    if not (0.55 <= ratio <= 0.58):
+                        raise forms.ValidationError('Poster image must have an approximate 9:16 vertical ratio.')
+                    image.seek(0)
+                except forms.ValidationError:
+                    raise
+                except Exception:
+                    raise forms.ValidationError('Invalid poster image.')
+        return image
+
+    def clean_video(self):
+        video = self.cleaned_data.get('video')
+        from django.core.files.uploadedfile import UploadedFile
+        if not video or not isinstance(video, UploadedFile):
+            return video
+            
+        import tempfile
+        import subprocess
+        import os
+        
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+                for chunk in video.chunks():
+                    temp_video.write(chunk)
+                temp_path = temp_video.name
+            
+            cmd = [
+                'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0',
+                temp_path
+            ]
+            
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
+            if 'x' in output:
+                width, height = map(int, output.split('x'))
+                ratio = width / height
+                if not (0.55 <= ratio <= 0.58):
+                    raise forms.ValidationError('Video must have an approximate 9:16 vertical ratio.')
+        except forms.ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"FFprobe failed to validate video: {str(e)}")
+            raise forms.ValidationError('Could not validate video format. Please ensure it is a valid video file.')
+        finally:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+            video.seek(0)
+            
+        return video
 
 
 class RentalConfigForm(forms.ModelForm):

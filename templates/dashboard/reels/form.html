@@ -23,19 +23,21 @@
       <div class="form-group">
         <label class="form-label">Title</label>
         {{ form.title }}
-        {% for e in form.title.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        {% for e in form.title.errors %}<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ e }}</div>{% endfor %}
       </div>
 
       <div class="form-group">
-        <label class="form-label">Product (required)</label>
+        <label class="form-label" for="{{ form.product.id_for_label }}">Product (required)</label>
         {{ form.product }}
-        {% for e in form.product.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        {% if form.product.errors %}
+          <div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ form.product.errors.0 }}</div>
+        {% endif %}
       </div>
 
       <div class="form-group">
         <label class="form-label">Caption</label>
         {{ form.caption }}
-        {% for e in form.caption.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        {% for e in form.caption.errors %}<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ e }}</div>{% endfor %}
       </div>
 
       <div class="form-group">
@@ -48,7 +50,7 @@
             </video>
           </div>
         {% endif %}
-        {% for e in form.video.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        {% for e in form.video.errors %}<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ e }}</div>{% endfor %}
       </div>
 
       <div class="form-group">
@@ -59,14 +61,14 @@
             <img src="{{ form.instance.poster_image.url }}" alt="" style="max-width:220px;border-radius:10px;border:1px solid #e5e7eb;">
           </div>
         {% endif %}
-        {% for e in form.poster_image.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+        {% for e in form.poster_image.errors %}<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ e }}</div>{% endfor %}
       </div>
 
       <div class="form-group" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
         <div style="min-width:220px;">
           <label class="form-label">Display order</label>
           {{ form.display_order }}
-          {% for e in form.display_order.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+          {% for e in form.display_order.errors %}<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">{{ e }}</div>{% endfor %}
         </div>
         <label style="display:flex;gap:0.5rem;align-items:center;">
           {{ form.is_active }} <span>Active</span>

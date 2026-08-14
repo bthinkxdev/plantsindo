@@ -1328,6 +1328,9 @@ class DashboardReelCreateView(StaffRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.save()
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel created.')
         return redirect(self.success_url)
 
@@ -1346,6 +1349,9 @@ class DashboardReelUpdateView(StaffRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.save()
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel updated.')
         return redirect(self.success_url)
 
@@ -1362,6 +1368,9 @@ class DashboardReelToggleActiveView(StaffRequiredMixin, View):
         reel = get_object_or_404(Reel, pk=pk)
         reel.is_active = not bool(reel.is_active)
         reel.save(update_fields=['is_active', 'updated_at'])
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(request, 'Reel status updated.')
         return redirect('admin_panel:reel_list')
 
