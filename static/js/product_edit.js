@@ -228,6 +228,10 @@
                     });
                 })
                 .then(function (res) {
+                    var existingErrors = basicForm.querySelectorAll('.field-error');
+                    for (var i = 0; i < existingErrors.length; i++) {
+                        existingErrors[i].parentNode.removeChild(existingErrors[i]);
+                    }
                     if (res.ok && res.data.success) {
                         setBasicInitial();
                         updateBasicSaveButton();
@@ -235,13 +239,30 @@
                         basicFeedback.className = "save-feedback";
                         toast("Basic details saved.");
                     } else {
-                        var err =
-                            (res.data.errors && (res.data.errors.__all__ && res.data.errors.__all__[0])) ||
-                            (res.data.errors && res.data.errors.name && res.data.errors.name[0]) ||
-                            "Error saving.";
-                        basicFeedback.textContent = err;
+                        var firstErr = null;
+                        if (res.data.errors) {
+                            for (var key in res.data.errors) {
+                                if (res.data.errors.hasOwnProperty(key)) {
+                                    var msg = res.data.errors[key][0];
+                                    if (!firstErr) firstErr = msg;
+                                    var fieldId = "basic-" + key;
+                                    var el = document.getElementById(fieldId);
+                                    if (!el) el = basicForm.querySelector('[name="' + key + '"]');
+                                    if (el && el.parentNode) {
+                                        var errDiv = document.createElement("div");
+                                        errDiv.className = "field-error";
+                                        errDiv.style.color = "red";
+                                        errDiv.style.fontSize = "0.8rem";
+                                        errDiv.style.marginTop = "4px";
+                                        errDiv.textContent = msg;
+                                        el.parentNode.appendChild(errDiv);
+                                    }
+                                }
+                            }
+                        }
+                        var err = (res.data.errors && res.data.errors.__all__ && res.data.errors.__all__[0]) || firstErr || "Error saving.";
+                        basicFeedback.textContent = "Please correct the highlighted errors.";
                         basicFeedback.className = "save-feedback err";
-                        toast(err, "error");
                     }
                 })
                 .catch(function () {

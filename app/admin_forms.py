@@ -215,6 +215,17 @@ class ProductBasicEditForm(forms.ModelForm):
         self.fields['hsn_code'].required = False
         self.fields['base_original_price'].required = False
         self.fields['care_instructions'].required = False
+        
+        #base field strict validation
+        self.fields['category'].required = True
+        self.fields['category'].error_messages = {'required': 'Category is required.'}
+        self.fields['name'].required = True
+        self.fields['name'].error_messages = {'required': 'Product name is required.'}
+        self.fields['base_price'].required = True
+        self.fields['base_price'].error_messages = {'required': 'Selling price is required.'}
+        self.fields['base_stock'].required = True
+        self.fields['base_stock'].error_messages = {'required': 'Stock is required.'}
+
         active = Category.objects.filter(is_active=True)
         if self.instance and self.instance.pk and self.instance.category_id:
             current = self.instance.category
@@ -236,14 +247,29 @@ class ProductBasicEditForm(forms.ModelForm):
                         self.add_error('gst_percentage', 'GST % must be between 0 and 28.')
                 except (TypeError, ValueError):
                     self.add_error('gst_percentage', 'Enter a valid number.')
+            if not cleaned.get('hsn_code'):
+                self.add_error('hsn_code', 'HSN Code is required when GST is applicable.')
         elif gst_pct is not None:
             cleaned['gst_percentage'] = None
+            
         base_price = cleaned.get('base_price')
         base_original_price = cleaned.get('base_original_price')
         if base_original_price and (not base_price):
             self.add_error('base_price', 'Selling price is required when original price is set.')
         if base_original_price and base_price and (base_original_price <= base_price):
             self.add_error('base_original_price', 'Original/MRP price must be greater than the selling price.')
+            
+        is_deal = cleaned.get('is_deal_of_day')
+        dod_start = cleaned.get('deal_of_day_start')
+        dod_end = cleaned.get('deal_of_day_end')
+        if is_deal:
+            if not dod_start:
+                self.add_error('deal_of_day_start', 'Start date is required for Deal of the Day.')
+            if not dod_end:
+                self.add_error('deal_of_day_end', 'End date is required for Deal of the Day.')
+            if dod_start and dod_end and dod_end < dod_start:
+                self.add_error('deal_of_day_end', 'End date cannot be before start date.')
+                
         return cleaned
 
 

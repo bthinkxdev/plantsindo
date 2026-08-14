@@ -113,23 +113,57 @@
             is_plant_combo: plantComboEl ? plantComboEl.checked : false,
             care_instructions: careEl ? (careEl.value || "").trim() : "",
         };
+        var existingErrors = wrapper.querySelectorAll('.field-error');
+        for (var i = 0; i < existingErrors.length; i++) {
+            existingErrors[i].parentNode.removeChild(existingErrors[i]);
+        }
+
+        function showFieldError(key, msg) {
+            var el = document.getElementById("basic-" + key) || wrapper.querySelector('[name="' + key + '"]');
+            if (el && el.parentNode) {
+                var errDiv = document.createElement("div");
+                errDiv.className = "field-error";
+                errDiv.style.color = "red";
+                errDiv.style.fontSize = "0.8rem";
+                errDiv.style.marginTop = "4px";
+                errDiv.textContent = msg;
+                el.parentNode.appendChild(errDiv);
+            }
+        }
+
+        var hasError = false;
         if (!payload.name) {
-            toast("Name is required.", "error");
-            return;
+            showFieldError("name", "Name is required.");
+            hasError = true;
         }
         if (!payload.category) {
-            toast("Please select a category.", "error");
-            return;
+            showFieldError("category", "Please select a category.");
+            hasError = true;
+        }
+        if (!payload.base_price) {
+            showFieldError("base_price", "Selling price is required.");
+            hasError = true;
+        }
+        if (payload.base_stock == null) {
+            showFieldError("base_stock", "Stock is required.");
+            hasError = true;
         }
         if (payload.is_gst_applicable && (payload.gst_percentage == null || payload.gst_percentage === "")) {
-            toast("GST % must be between 0 and 28 when GST is applicable.", "error");
+            showFieldError("gst_percentage", "GST % must be between 0 and 28 when GST is applicable.");
+            hasError = true;
+        }
+
+        if (hasError) {
             return;
         }
+
         var btn = this;
         var feedback = document.getElementById("basic-feedback");
         btn.disabled = true;
-        feedback.textContent = "Creating…";
-        feedback.className = "save-feedback";
+        if (feedback) {
+            feedback.textContent = "Creating…";
+            feedback.className = "save-feedback";
+        }
         showLoader();
         fetch(urlCreateBasic, {
             method: "POST",
@@ -143,27 +177,26 @@
             .then(function (data) {
                 btn.disabled = false;
                 if (data.success && data.product_id) {
-                    feedback.textContent = "";
+                    if (feedback) feedback.textContent = "";
                     toast("Product created. Redirecting to edit…");
                     var editUrl = urlEditTpl.replace("/0/", "/" + data.product_id + "/");
                     window.location.href = editUrl;
                 } else {
-                    var errMsg = "Error creating product.";
+                    var firstErr = null;
                     if (data.errors) {
-                        if (data.errors.__all__ && data.errors.__all__[0])
-                            errMsg = data.errors.__all__[0];
-                        else {
-                            for (var key in data.errors) {
-                                if (data.errors[key] && data.errors[key][0]) {
-                                    errMsg = data.errors[key][0];
-                                    break;
-                                }
+                        for (var key in data.errors) {
+                            if (data.errors.hasOwnProperty(key)) {
+                                var msg = data.errors[key][0];
+                                if (!firstErr) firstErr = msg;
+                                showFieldError(key, msg);
                             }
                         }
                     }
-                    feedback.textContent = errMsg;
-                    feedback.className = "save-feedback err";
-                    toast(errMsg, "error");
+                    var errMsg = (data.errors && data.errors.__all__ && data.errors.__all__[0]) || firstErr || "Error creating product.";
+                    if (feedback) {
+                        feedback.textContent = "Please correct the highlighted errors.";
+                        feedback.className = "save-feedback err";
+                    }
                 }
             })
             .catch(function () {

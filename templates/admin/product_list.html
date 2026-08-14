@@ -56,13 +56,8 @@
                 <option value="active" {% if filter_status == "active" %}selected{% endif %}>Live</option>
                 <option value="inactive" {% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
             </select>
-            <select name="offer" class="form-control product-filter-select" onchange="this.form.submit()">
-                <option value="">All offer types</option>
-                <option value="combo" {% if filter_offer == "combo" %}selected{% endif %}>Combo bundles</option>
-            </select>
-            <button type="submit" class="btn btn-secondary product-filter-btn">
-                <i class="fas fa-filter"></i> Apply
-            </button>
+
+
             {% if search_query or filter_category or filter_status or filter_offer %}
                 <a href="{% url 'admin_panel:product_list' %}" class="btn btn-secondary product-filter-btn" title="Clear filters">
                     <i class="fas fa-times"></i> Clear
@@ -108,11 +103,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Offer type</label>
-                    <select name="offer" class="form-control">
-                        <option value="">All</option>
-                        <option value="combo" {% if filter_offer == "combo" %}selected{% endif %}>Combo bundles</option>
-                    </select>
+
                 </div>
                 <div class="filters-sheet-footer">
                     <button type="button" class="btn btn-secondary" id="filterClear">Clear</button>

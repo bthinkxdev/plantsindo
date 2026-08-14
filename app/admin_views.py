@@ -484,10 +484,6 @@ class ProductListView(StaffRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
-        if offer == 'rental':
-            qs = qs.filter(is_rent_available=True)
-        elif offer == 'combo':
-            qs = qs.filter(is_legacy_combo=True)
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -497,7 +493,6 @@ class ProductListView(StaffRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['filter_category'] = self.request.GET.get('category', '')
         context['filter_status'] = self.request.GET.get('status', '')
-        context['filter_offer'] = self.request.GET.get('offer', '')
         _low = getattr(settings, 'LOW_STOCK_THRESHOLD', 5)
         for product in context['products']:
             product.inventory_count = product.get_stock()
@@ -790,6 +785,14 @@ class ProductDeleteView(StaffRequiredMixin, DeleteView):
         self.object = self.get_object()
         product_name = self.object.name
         success_url = self.get_success_url()
+        
+        from app.models.combo import ComboItem
+        combo_items = ComboItem.objects.filter(product=self.object).select_related('combo')
+        if combo_items.exists():
+            combo_names = ", ".join([ci.combo.name for ci in combo_items])
+            messages.error(request, f'Cannot delete product "{product_name}". It is included in the following Combo Bundle(s): {combo_names}.')
+            return redirect(success_url)
+            
         if OrderItem.objects.filter(product=self.object).exists():
             messages.error(request, f'Cannot delete product "{product_name}". It is linked to existing orders.')
             return redirect(success_url)
@@ -820,6 +823,19 @@ class ProductDeleteCheckView(StaffRequiredMixin, View):
 
     def get(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
+        
+        # Check if included in combos
+        from app.models.combo import ComboItem
+        combo_items = ComboItem.objects.filter(product=product).select_related('combo')
+        if combo_items.exists():
+            combo_names = ", ".join([ci.combo.name for ci in combo_items])
+            return JsonResponse({
+                'can_delete': False, 
+                'has_active_orders': False, 
+                'has_orders': False, 
+                'message': f'Cannot delete "{product.name}". It is included in the following Combo Bundle(s): {combo_names}'
+            })
+            
         all_orders = Order.objects.filter(items__product=product).distinct()
         active_orders = all_orders.exclude(status__in=['delivered', 'cancelled']).distinct()
         if active_orders.exists():
