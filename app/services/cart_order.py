@@ -765,9 +765,28 @@ class CartService:
 
         try:
             items = list(
-                cart.items.select_related('product', 'combo')
+                cart.items.select_related('product', 'combo', 'selected_variant')
                 .prefetch_related('combo__items')
             )
+            for item in items:
+                if getattr(item, 'line_type', '') == 'rental':
+                    continue
+                updated = False
+                if item.combo_id and item.combo:
+                    if item.combo.price is not None and item.unit_price != item.combo.price:
+                        item.unit_price = item.combo.price
+                        updated = True
+                elif getattr(item, 'selected_variant_id', None) and getattr(item, 'selected_variant', None):
+                    if item.selected_variant.price is not None and item.unit_price != item.selected_variant.price:
+                        item.unit_price = item.selected_variant.price
+                        updated = True
+                elif item.product_id and item.product:
+                    if item.product.base_price is not None and item.unit_price != item.product.base_price:
+                        item.unit_price = item.product.base_price
+                        updated = True
+                if updated:
+                    item.save(update_fields=['unit_price'])
+
             subtotal = sum((item.line_total for item in items))
             gst_total = cart.gst_total
             breakdown = compute_cart_delivery_charges(items, state_id)

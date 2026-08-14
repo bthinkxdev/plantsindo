@@ -233,6 +233,12 @@
           return;
         }
         if (data.cart_count !== undefined) syncAllBadges(data.cart_count);
+        if (data.line_total !== undefined) {
+            var priceEl = row.querySelector('.cd-item__price');
+            if (priceEl) {
+                priceEl.textContent = fmtPrice(parseFloat(data.line_total));
+            }
+        }
         if (data.total !== undefined) {
           totalEl.textContent = fmtPrice(parseFloat(data.total));
         } else {

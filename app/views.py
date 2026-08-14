@@ -2434,6 +2434,7 @@ class CartDrawerView(View):
     def get(self, request, *args, **kwargs):
         try:
             cart = CartService.get_or_create_cart(request)
+            totals = CartService.compute_totals(cart)
             items_qs = cart.items.select_related('product', 'combo', 'selected_variant').prefetch_related('selected_variant__images', 'combo__items__product').all()
             items_data = []
             for item in items_qs:
@@ -2484,7 +2485,6 @@ class CartDrawerView(View):
                 else:
                     product_url = request.build_absolute_uri('/products/')
                 items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
-            totals = CartService.compute_totals(cart)
             item_count = sum((i['quantity'] for i in items_data))
             return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count})
         except Exception as exc:
