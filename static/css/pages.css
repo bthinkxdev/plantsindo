@@ -219,7 +219,8 @@ body.storefront .shop-breadcrumb {
     min-height: 0;
     max-height: min(75vh, 540px);
     height: auto;
-    object-fit: contain;
+    aspect-ratio: 2 / 1;
+    object-fit: cover;
     object-position: center top;
   }
 }

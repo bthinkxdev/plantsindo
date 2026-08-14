@@ -91,7 +91,7 @@ class CategoryForm(forms.ModelForm):
 
     def clean_banner_image(self):
         image = self.cleaned_data.get('banner_image')
-        return _validate_image_file(image, required=False)
+        return _validate_banner_image(image, required=False)
 
 
 def _validate_banner_image(image, required=True):
@@ -109,6 +109,9 @@ def _validate_banner_image(image, required=True):
             width, height = img.size
             if width * height > 5000000:
                 raise forms.ValidationError('Image resolution cannot exceed 5 megapixels. Please resize or compress.')
+            ratio = width / height
+            if not (1.5 <= ratio <= 3.0):
+                raise forms.ValidationError(f'Banner image aspect ratio must be between 1.5:1 and 3.0:1. Uploaded image is {ratio:.2f}:1.')
             img.verify()
             image.seek(0)
         except forms.ValidationError:
