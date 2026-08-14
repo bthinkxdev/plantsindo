@@ -12,11 +12,72 @@ document.addEventListener('DOMContentLoaded', function() {
     initCheckoutDeliveryTotals();
 });
 
+function setInvalidField(el, msg) {
+    if (!el) return;
+    el.classList.add('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback text-danger small mt-1';
+        el.parentNode.insertBefore(feedback, el.nextSibling);
+    }
+    feedback.textContent = msg;
+    feedback.style.display = 'block';
+}
+
+function setValidField(el) {
+    if (!el) return;
+    el.classList.remove('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.style.display = 'none';
+    }
+}
+
+function validateCheckoutNewAddress() {
+    var form = document.getElementById('checkoutForm');
+    if (!form) return true;
+
+    var fields = [
+        { el: form.querySelector('[name="full_name"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid name (must contain letters).' },
+        { el: form.querySelector('[name="phone"]'), validate: val => { var p = val.replace(/[\s\-\+\(\)]/g, ''); return p.length >= 10 && !isNaN(p); }, msg: 'Please enter a valid 10-digit phone number.' },
+        { el: form.querySelector('[name="address_line"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid address (must contain letters).' },
+        { el: form.querySelector('[name="city"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid city (must contain letters).' },
+        { el: form.querySelector('[name="delivery_state"]'), validate: val => val !== '', msg: 'Please select a state.' },
+        { el: form.querySelector('[name="pincode"]'), validate: val => { var p = val.replace(/[\s\-]/g, ''); return p.length === 6 && !isNaN(p); }, msg: 'Please enter a valid 6-digit PIN code.' }
+    ];
+
+    var emailEl = form.querySelector('[name="email"]');
+    if (emailEl && (emailEl.hasAttribute('required') || emailEl.value.trim() !== '')) {
+        fields.push({
+            el: emailEl,
+            validate: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
+            msg: 'Please enter a valid email address.'
+        });
+    }
+
+    var isValid = true;
+
+    fields.forEach(function(f) {
+        if (f.el) {
+            if (!f.validate(f.el.value)) {
+                setInvalidField(f.el, f.msg);
+                isValid = false;
+            } else {
+                setValidField(f.el);
+            }
+        }
+    });
+
+    return isValid;
+}
+
 function initCheckoutSubmit() {
     var form = document.getElementById('checkoutForm');
     var placeOrderBtn = document.getElementById('placeOrderBtn');
     if (!form || !placeOrderBtn) return;
 
+    form.setAttribute('novalidate', 'novalidate');
     applyCheckoutBlockedState();
 
     form.addEventListener('submit', function(e) {
@@ -25,6 +86,15 @@ function initCheckoutSubmit() {
             showCheckoutError(window.CHECKOUT_SUMMARY || window.CHECKOUT_STOCK_SUMMARY || 'Please fix cart issues before checkout.');
             return;
         }
+
+        if (isUsingNewAddress()) {
+            if (!validateCheckoutNewAddress()) {
+                e.preventDefault();
+                showCheckoutError('Please fill in all required address fields correctly.');
+                return;
+            }
+        }
+
         syncAddressToHidden();
         syncPaymentToHidden();
 

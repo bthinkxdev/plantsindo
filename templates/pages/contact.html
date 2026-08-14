@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}{% load product_filters %}
 {% block title %}Contact — {{ site_brand }}{% endblock %}
 {% block extra_css %}
@@ -126,3 +126,84 @@
 </section>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+function setInvalidField(el, msg) {
+    if (!el) return;
+    el.classList.add('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback text-danger small mt-1';
+        el.parentNode.insertBefore(feedback, el.nextSibling);
+    }
+    feedback.textContent = msg;
+    feedback.style.display = 'block';
+}
+
+function setValidField(el) {
+    if (!el) return;
+    el.classList.remove('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('contactForm');
+    if (form) {
+        form.setAttribute('novalidate', 'novalidate');
+        form.addEventListener('submit', function(e) {
+            var nameEl = form.querySelector('[name="name"]');
+            var emailEl = form.querySelector('[name="email"]');
+            var subjectEl = form.querySelector('[name="subject"]');
+            var messageEl = form.querySelector('[name="message"]');
+            
+            var isValid = true;
+
+            var fields = [
+                { el: nameEl, validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid name (must contain letters).' },
+                { el: emailEl, validate: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()), msg: 'Please enter a valid email address.' },
+                { el: subjectEl, validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid subject (must contain letters).' },
+                { el: messageEl, validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid message (must contain letters).' }
+            ];
+
+            fields.forEach(function(f) {
+                if (f.el) {
+                    if (!f.validate(f.el.value)) {
+                        setInvalidField(f.el, f.msg);
+                        isValid = false;
+                    } else {
+                        setValidField(f.el);
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+        
+        form.querySelectorAll('input, textarea').forEach(function(el) {
+            el.addEventListener('blur', function() {
+                var val = this.value.trim();
+                if (this.name === 'email') {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                        setInvalidField(this, 'Please enter a valid email address.');
+                    } else {
+                        setValidField(this);
+                    }
+                } else {
+                    if (val === '' || !/[a-zA-Z]/.test(val)) {
+                        setInvalidField(this, 'Please enter valid text (must contain letters).');
+                    } else {
+                        setValidField(this);
+                    }
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
