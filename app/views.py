@@ -571,6 +571,11 @@ class ProductListView(ListView):
                     is_rent_available=True,
                     rental_config__is_rent_enabled=True,
                 ).select_related('rental_config')
+            
+            offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
+            if offer_only:
+                simple_qs = simple_qs.filter(base_original_price__isnull=False, base_original_price__gt=F('base_price'))
+                
             if category_slug and category_slug != 'all':
                 _, ids = category_filter_ids_for_slug(category_slug, include_children=True, max_depth=10)
                 if ids:

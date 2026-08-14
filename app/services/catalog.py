@@ -1,4 +1,4 @@
-from django.db.models import OuterRef, Subquery, Q
+from django.db.models import OuterRef, Subquery, Q, F
 from ..models import Combo, Variant
 from .category_tree import category_filter_ids_for_slug
 from .combo_catalog import combo_is_in_stock, prefetch_combo_items
@@ -86,6 +86,9 @@ def collection_combo_cards(request):
     max_price = request.GET.get('max_price')
     query = request.GET.get('q')
     sort = (request.GET.get('sort') or '').strip().lower()
+    offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
+    if offer_only:
+        qs = qs.filter(original_price__isnull=False, original_price__gt=F('price'))
     if min_price:
         qs = qs.filter(price__gte=min_price)
     if max_price:
@@ -135,6 +138,7 @@ def collection_card_items(request, paginate_by=12):
     query      = request.GET.get('q')
     sort       = (request.GET.get('sort') or '').strip().lower()
     rent_only  = (request.GET.get('rent') or '').strip() in ('1', 'true', 'yes')
+    offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
  
     # ── Step 1: build the filtered base qs (no select_related yet — keep it cheap) ──
     base_qs = Variant.objects.filter(
@@ -154,6 +158,9 @@ def collection_card_items(request, paginate_by=12):
         if ids:
             base_qs = base_qs.filter(product__category_id__in=ids)
  
+    if offer_only:
+        base_qs = base_qs.filter(original_price__isnull=False, original_price__gt=F('price'))
+
     if min_price:
         base_qs = base_qs.filter(price__gte=min_price)
     if max_price:
