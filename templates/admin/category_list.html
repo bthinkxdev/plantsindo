@@ -16,52 +16,31 @@
 
     <div class="card-body">
         
-        <form method="get" class="filters filters-inline">
-            <div class="search-box">
+        <form method="get" class="filters" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
+            <div class="search-box" style="flex: 1; min-width: 200px;">
                 <i class="fas fa-search"></i>
                 <input type="text" name="search" class="form-control" placeholder="Search categories..." 
                        value="{{ search_query }}">
             </div>
-            <select name="parent" class="form-control" style="max-width: 240px;">
-                <option value="" {% if not parent_filter %}selected{% endif %}>All parents</option>
-                <option value="root" {% if parent_filter == 'root' %}selected{% endif %}>Root only</option>
-                {% for p in parent_categories %}
-                <option value="{{ p.id }}" {% if parent_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
-                {% endfor %}
-            </select>
-        </form>
-
-        <button type="button" class="btn btn-secondary filter-trigger mb-2" id="filterTrigger" aria-label="Open filters">
-            <i class="fas fa-filter"></i> Search
-        </button>
-
-        <div class="filter-overlay" id="filterOverlay" aria-hidden="true"></div>
-        <div class="filters-sheet" id="filtersSheet">
-            <div class="filters-sheet-header">
-                <strong>Search Categories</strong>
-                <button type="button" class="btn btn-sm btn-secondary" id="filterSheetClose" aria-label="Close">✕</button>
+            <div style="display: flex; gap: 10px; flex: 2; min-width: 250px;">
+                <select name="status" class="form-control" style="flex: 1; min-width: 0;">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                <select name="parent" class="form-control" style="flex: 1; min-width: 0;">
+                    <option value="" {% if not parent_filter %}selected{% endif %}>All parents</option>
+                    <option value="root" {% if parent_filter == 'root' %}selected{% endif %}>Root only</option>
+                    {% for p in parent_categories %}
+                    <option value="{{ p.id }}" {% if parent_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <form method="get" class="filters-sheet-body">
-                <div class="form-group">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" class="form-control" placeholder="Search categories..." value="{{ search_query }}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Parent</label>
-                    <select name="parent" class="form-control">
-                        <option value="" {% if not parent_filter %}selected{% endif %}>All parents</option>
-                        <option value="root" {% if parent_filter == 'root' %}selected{% endif %}>Root only</option>
-                        {% for p in parent_categories %}
-                        <option value="{{ p.id }}" {% if parent_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="filters-sheet-footer">
-                    <button type="button" class="btn btn-secondary" id="filterClear">Clear</button>
-                    <button type="submit" class="btn btn-primary">Apply</button>
-                </div>
-            </form>
-        </div>
+            <div style="display: flex; gap: 10px; flex: 1; min-width: 200px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.5rem; justify-content: center;"><i class="fas fa-filter"></i> Filter</button>
+                <a href="{% url 'admin_panel:category_list' %}" class="btn btn-secondary" style="flex: 1; padding: 0.5rem; justify-content: center;"><i class="fas fa-times"></i> Clear</a>
+            </div>
+        </form>
 
         
         {% if categories %}

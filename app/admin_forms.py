@@ -51,11 +51,23 @@ class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['slug'].required = False
-        # Avoid self as parent in edit form
         if self.instance and self.instance.pk:
             self.fields['parent'].queryset = Category.objects.exclude(pk=self.instance.pk).order_by('name')
         else:
             self.fields['parent'].queryset = Category.objects.all().order_by('name')
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if not name:
+            raise forms.ValidationError("Category name is required.")
+        
+        #case-insensitive unique check
+        qs = Category.objects.filter(name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("A category with this name already exists.")
+        return name
 
     def clean_image(self):
         image = self.cleaned_data.get('image')

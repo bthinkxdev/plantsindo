@@ -296,10 +296,11 @@ class CategoryListView(StaffRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Category.objects.select_related('parent').annotate(product_count=Count('products'))
-        search = self.request.GET.get('search')
+        search = self.request.GET.get('search', '').strip()
         parent = self.request.GET.get('parent')
+        status = self.request.GET.get('status')
         if search:
-            qs = qs.filter(Q(name__icontains=search))
+            qs = qs.filter(Q(name__icontains=search) | Q(slug__icontains=search))
         if parent:
             if parent == 'root':
                 qs = qs.filter(parent__isnull=True)
@@ -308,6 +309,10 @@ class CategoryListView(StaffRequiredMixin, ListView):
                     qs = qs.filter(parent_id=int(parent))
                 except (TypeError, ValueError):
                     pass
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
         return qs.order_by('parent__name', 'name', '-created_at')
 
     def get_context_data(self, **kwargs):
@@ -315,6 +320,7 @@ class CategoryListView(StaffRequiredMixin, ListView):
         context['active_menu'] = 'categories'
         context['search_query'] = self.request.GET.get('search', '')
         context['parent_filter'] = self.request.GET.get('parent', '')
+        context['status_filter'] = self.request.GET.get('status', '')
         context['parent_categories'] = list(Category.objects.filter(parent__isnull=True).order_by('name').only('id', 'name'))
         return context
 
