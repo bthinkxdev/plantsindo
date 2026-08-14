@@ -1,4 +1,4 @@
-﻿
+
 
 .storefront {
   --ug-primary: var(--primary-green);
@@ -2769,6 +2769,7 @@ body.storefront .hc-hero__slide > .hc-pcard {
   aspect-ratio: 1;
   background: linear-gradient(160deg, var(--secondary-green) 0%, #f4f1ea 100%);
   margin-bottom: 10px;
+  position: relative;
 }
 
 .p99-compact-card__img-wrap img {
@@ -2819,19 +2820,23 @@ body.storefront .hc-hero__slide > .hc-pcard {
 }
 
 .p99-compact-card__rating-slot {
-  min-height: 26px;
-  margin: 0 auto 6px;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-shrink: 0;
-  width: 100%;
+  width: auto;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .p99-compact-card .p99-rating-pill {
   position: static;
   align-self: center;
-  margin: 0 auto 6px;
+  margin: 0;
   font-size: 0.62rem;
   font-weight: 700;
   padding: 3px 8px;
@@ -3136,17 +3141,12 @@ body.storefront .hc-hero__slide > .hc-pcard {
   font-size: 0.75rem;
 }
 
-.deal-of-the-day .p99-compact-card__rating-slot,
-.best-sellers .p99-compact-card__rating-slot,
-.featured-pick-rail .p99-compact-card__rating-slot {
-  min-height: 20px;
-  margin-bottom: 3px;
-}
+
 
 .deal-of-the-day .p99-compact-card .p99-rating-pill,
 .best-sellers .p99-compact-card .p99-rating-pill,
 .featured-pick-rail .p99-compact-card .p99-rating-pill {
-  font-size: 0.52rem;
+  font-size: 0.58rem;
   padding: 2px 5px;
   min-height: 20px;
 }
@@ -3154,7 +3154,7 @@ body.storefront .hc-hero__slide > .hc-pcard {
 .deal-of-the-day .p99-compact-card .p99-rating-pill .p99-divider,
 .best-sellers .p99-compact-card .p99-rating-pill .p99-divider,
 .featured-pick-rail .p99-compact-card .p99-rating-pill .p99-divider {
-  height: 8px;
+  height: 9px;
 }
 
 body.storefront .deal-of-the-day__carousel.owl-carousel .owl-stage,
@@ -9282,4 +9282,23 @@ body.storefront .order-line .line-info {
     padding: 0 0.16rem;
     border-radius: 2px;
   }
+}
+
+/* force removal of gaps between product title and price */
+body.storefront .p99-product-card .tpc-name,
+body.storefront .shop-page #shopProductGrid .product-card .product-name {
+    min-height: 0 !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    height: auto !important;
+}
+body.storefront .p99-product-card .tpc-name-link {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    flex-grow: 0 !important;
+}
+body.storefront .p99-product-card .p99-tag-row:empty {
+    display: none !important;
+    margin: 0 !important;
+    min-height: 0 !important;
 }

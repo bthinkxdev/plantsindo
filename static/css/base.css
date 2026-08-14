@@ -1,4 +1,4 @@
-﻿/* Plantsindo — design tokens (sage / tropical / warm cream) */
+/* Plantsindo — design tokens (sage / tropical / warm cream) */
 :root {
   --primary: var(--primary-green);
   --secondary: var(--secondary-green);
@@ -1761,7 +1761,7 @@ body.storefront .p99-product-card .tpc-body {
   padding: 14px 14px 16px !important;
 }
 .p99-product-card .tpc-name {
-  min-height: var(--store-pc-title-minh) !important;
+  margin: 0 !important;
   color: var(--text-color) !important;
   font-family: var(--font-display) !important;
   font-weight: 600 !important;
