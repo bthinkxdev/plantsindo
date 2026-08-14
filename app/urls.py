@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .webhook_views import ShiprocketWebhookView
+from . import storefront_blog_views
 
 app_name = 'store'
 
@@ -57,4 +58,6 @@ urlpatterns = [
     path('api/home/reels/', views.HomeLazyReelsView.as_view(), name='home_reels'),
     path('api/home/testimonials/', views.HomeLazyTestimonialsView.as_view(), name='home_testimonials'),
     path('api/home/combos/', views.HomeLazyCombosView.as_view(), name='home_combos'),
+    path('blog/', storefront_blog_views.BlogListView.as_view(), name='blog_list'),
+    path('blog/<slug:slug>/', storefront_blog_views.BlogDetailView.as_view(), name='blog_detail'),
 ]

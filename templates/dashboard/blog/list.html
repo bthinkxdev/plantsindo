@@ -26,8 +26,8 @@
         <i class="fas fa-search"></i>
         <input type="text" name="q" class="form-control" placeholder="Search title/slug…" value="{{ filter_q }}">
       </div>
-      <select name="status" class="form-control product-filter-select" onchange="this.form.submit()">
-        <option value="">All</option>
+      <select name="status" class="form-control product-filter-select" style="width: auto;">
+        <option value="">All Status</option>
         <option value="published" {% if filter_status == "published" %}selected{% endif %}>Published</option>
         <option value="draft" {% if filter_status == "draft" %}selected{% endif %}>Draft</option>
       </select>
@@ -35,7 +35,7 @@
         <i class="fas fa-filter"></i> Apply
       </button>
       {% if filter_q or filter_status %}
-        <a href="{% url 'admin_panel:blog_list' %}" class="btn btn-secondary product-filter-btn">
+        <a href="{% url 'admin_panel:blog_list' %}" class="btn btn-secondary product-filter-btn" title="Clear filters">
           <i class="fas fa-times"></i> Clear
         </a>
       {% endif %}
@@ -43,6 +43,37 @@
   </div>
 
   <div class="product-listing-body">
+    <button type="button" class="btn btn-secondary filter-trigger mb-2" id="filterTrigger" aria-label="Open filters">
+        <i class="fas fa-filter"></i> Filters
+        {% if filter_q or filter_status %}<span class="product-count-badge" style="background:#1976D2;color:#fff;">!</span>{% endif %}
+    </button>
+
+    <div class="filter-overlay" id="filterOverlay" aria-hidden="true"></div>
+    <div class="filters-sheet" id="filtersSheet">
+        <div class="filters-sheet-header">
+            <strong>Filters</strong>
+            <button type="button" class="btn btn-sm btn-secondary" id="filterSheetClose" aria-label="Close">✕</button>
+        </div>
+        <form method="get" class="filters-sheet-body">
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input type="text" name="q" class="form-control" placeholder="Search title/slug…" value="{{ filter_q }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All</option>
+                    <option value="published" {% if filter_status == "published" %}selected{% endif %}>Published</option>
+                    <option value="draft" {% if filter_status == "draft" %}selected{% endif %}>Draft</option>
+                </select>
+            </div>
+            <div class="filters-sheet-footer">
+                <a href="{% url 'admin_panel:blog_list' %}" class="btn btn-secondary" id="filterClear">Clear</a>
+                <button type="submit" class="btn btn-primary">Apply</button>
+            </div>
+        </form>
+    </div>
+
     {% if posts %}
       <div class="list-cards">
         {% for post in posts %}
@@ -73,15 +104,66 @@
               <a href="{% url 'admin_panel:blog_edit' post.pk %}" class="btn btn-primary" style="flex: 1;">
                 <i class="fas fa-pen"></i> Edit
               </a>
-              <form method="post" action="{% url 'admin_panel:blog_toggle_publish' post.pk %}">
+              <form method="post" action="{% url 'admin_panel:blog_toggle_publish' post.pk %}" style="flex: 1; display: flex;">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-secondary">
+                <button type="submit" class="btn btn-secondary" style="width: 100%;">
                   {% if post.is_published %}Unpublish{% else %}Publish{% endif %}
                 </button>
               </form>
             </div>
           </div>
         {% endfor %}
+      </div>
+
+      <div class="list-table product-listing-table-wrap">
+        <div class="product-listing-table">
+          <div class="product-listing-thead">
+            <div class="product-col product-col-img">Blog Post</div>
+            <div class="product-col product-col-status">Status</div>
+            <div class="product-col product-col-actions">Actions</div>
+          </div>
+          {% for post in posts %}
+          <div class="product-row">
+            <div class="product-col product-col-img">
+              <div class="product-row-info">
+                {% if post.cover_image %}
+                  <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="product-thumb">
+                {% else %}
+                  <div class="product-thumb product-thumb-placeholder">
+                    <i class="fas fa-image"></i>
+                  </div>
+                {% endif %}
+                <div class="product-details">
+                  <a href="{% url 'admin_panel:blog_edit' post.pk %}" class="product-name">{{ post.title }}</a>
+                  <div class="product-meta">
+                    <span class="product-category">/{{ post.slug }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="product-col product-col-status">
+              {% if post.is_published %}
+                <span class="badge" style="background:#e8f5e9;color:#2e7d32;">Published</span>
+              {% else %}
+                <span class="badge" style="background:#fff3e0;color:#e65100;">Draft</span>
+              {% endif %}
+            </div>
+            <div class="product-col product-col-actions">
+              <div class="tbl-actions">
+                <a href="{% url 'admin_panel:blog_edit' post.pk %}" class="btn btn-sm btn-secondary btn-icon" title="Edit">
+                  <i class="fas fa-pen"></i>
+                </a>
+                <form method="post" action="{% url 'admin_panel:blog_toggle_publish' post.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-secondary" style="width: auto; padding: 0 0.75rem; white-space: nowrap;">
+                    {% if post.is_published %}Unpublish{% else %}Publish{% endif %}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
 
       {% if is_paginated %}
@@ -107,5 +189,32 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var filterTrigger = document.getElementById('filterTrigger');
+    var filterOverlay = document.getElementById('filterOverlay');
+    var filtersSheet = document.getElementById('filtersSheet');
+    var filterSheetClose = document.getElementById('filterSheetClose');
+
+    if (filterTrigger && filterOverlay && filtersSheet && filterSheetClose) {
+        function openFilters() {
+            filtersSheet.classList.add('open');
+            filterOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFilters() {
+            filtersSheet.classList.remove('open');
+            filterOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        filterTrigger.addEventListener('click', openFilters);
+        filterSheetClose.addEventListener('click', closeFilters);
+        filterOverlay.addEventListener('click', closeFilters);
+    }
+});
+</script>
 {% endblock %}
 
