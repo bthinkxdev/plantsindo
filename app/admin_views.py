@@ -490,6 +490,14 @@ class ProductListView(StaffRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
+        
+        if offer == '1':
+            from django.db.models import F
+            qs = qs.filter(
+                Q(base_original_price__isnull=False, base_original_price__gt=F('base_price')) |
+                Q(variants__original_price__isnull=False, variants__original_price__gt=F('variants__price'))
+            ).distinct()
+            
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -499,6 +507,7 @@ class ProductListView(StaffRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('search', '')
         context['filter_category'] = self.request.GET.get('category', '')
         context['filter_status'] = self.request.GET.get('status', '')
+        context['filter_offer'] = self.request.GET.get('offer', '')
         _low = getattr(settings, 'LOW_STOCK_THRESHOLD', 5)
         for product in context['products']:
             product.inventory_count = product.get_stock()
@@ -845,7 +854,7 @@ class ProductDeleteCheckView(StaffRequiredMixin, View):
         all_orders = Order.objects.filter(items__product=product).distinct()
         active_orders = all_orders.exclude(status__in=['delivered', 'cancelled']).distinct()
         if active_orders.exists():
-            return JsonResponse({'can_delete': False, 'has_active_orders': True, 'has_orders': True, 'message': f'Cannot delete: {active_orders.count()} active order(s)'})
+            return JsonResponse({'can_delete': False, 'has_active_orders': True, 'has_orders': True, 'message': f'Cannot delete product "{product.name}". It has {active_orders.count()} active order(s).'})
         if not all_orders.exists():
             return JsonResponse({'can_delete': True, 'will_delete_completely': True, 'has_orders': False, 'message': 'Product will be completely deleted'})
         return JsonResponse({'can_delete': True, 'will_delete_completely': False, 'has_orders': True, 'message': 'Product will be set to inactive'})

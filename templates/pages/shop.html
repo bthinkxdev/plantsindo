@@ -52,6 +52,7 @@
                     <input type="hidden" name="max_price" value="{{ filters.max_price }}">
                     <input type="hidden" name="q" value="{{ filters.q }}">
                     {% if filters.combo %}<input type="hidden" name="combo" value="{{ filters.combo }}">{% endif %}
+                    {% if filters.offer %}<input type="hidden" name="offer" value="{{ filters.offer }}">{% endif %}
                     <label class="visually-hidden" for="shopSortSelect">Sort by</label>
                     <select name="sort" id="shopSortSelect" onchange="this.form.submit()">
                         {% for value, label in sort_options %}

@@ -56,8 +56,10 @@
                 <option value="active" {% if filter_status == "active" %}selected{% endif %}>Live</option>
                 <option value="inactive" {% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
             </select>
-
-
+            <select name="offer" class="form-control product-filter-select" onchange="this.form.submit()">
+                <option value="">All Offers</option>
+                <option value="1" {% if filter_offer == "1" %}selected{% endif %}>On Offer / Discounted</option>
+            </select>
             {% if search_query or filter_category or filter_status or filter_offer %}
                 <a href="{% url 'admin_panel:product_list' %}" class="btn btn-secondary product-filter-btn" title="Clear filters">
                     <i class="fas fa-times"></i> Clear

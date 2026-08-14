@@ -54,10 +54,10 @@
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.can_delete === false && data.message && data.message.indexOf("Combo Bundle") !== -1) {
+                if (data.can_delete === false) {
                     toast(data.message, "error");
                 } else {
-                    var msg = data.can_delete === false ? data.message : ("Are you sure you want to delete \"" + name + "\"? The product will be permanently deleted along with all variants and images if it has no related orders.");
+                    var msg = "Are you sure you want to delete \"" + name + "\"? The product will be permanently deleted along with all variants and images if it has no related orders.";
                     openDeleteModal(url, name, msg);
                 }
             })

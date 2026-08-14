@@ -666,6 +666,7 @@ class ProductListView(ListView):
         sort       = request.GET.get('sort', 'newest')
         rent_only  = (request.GET.get('rent')  or '').strip() in ('1', 'true', 'yes')
         combo_only = (request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
+        offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
 
         context['combo_only'] = combo_only
         if combo_only:
@@ -677,6 +678,7 @@ class ProductListView(ListView):
             'max_price':  max_price,
             'q':          query,
             'sort':       sort,
+            'offer':      '1' if offer_only else '',
             'difficulty': request.GET.get('difficulty', ''),
             'sunlight':   request.GET.get('sunlight', ''),
             'watering':   request.GET.get('watering', ''),

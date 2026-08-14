@@ -160,7 +160,7 @@
                 {% if messages %}
                     <div class="messages-container" data-has-messages="1">
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}" data-message-tag="{{ message.tags|default:'info' }}" data-message-text="{{ message|escapejs }}">
+                            <div class="alert alert-{{ message.tags }}" data-message-tag="{{ message.tags|default:'info' }}" data-message-text="{{ message }}">
                                 <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
                                 {{ message }}
                                 <button class="alert-close">&times;</button>
