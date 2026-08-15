@@ -806,7 +806,7 @@ class ComboDetailView(DetailView):
         rows = list(obj.items.all())
         ctx['combo_lines'] = [{'name': r.product.name, 'quantity': r.quantity, 'product_slug': r.product.slug} for r in rows]
         ctx['pdp_combo_available'] = bool(rows) and combo_is_in_stock(obj, multiplier=1)
-        ctx['active_page'] = 'collection'
+        ctx['active_page'] = 'combo'
         try:
             cart = CartService.get_or_create_cart(self.request)
             ctx['cart_combo_ids'] = set(cart.items.filter(line_type=CartItem.LineKind.PURCHASE).values_list('combo_id', flat=True))
