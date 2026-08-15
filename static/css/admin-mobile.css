@@ -251,6 +251,7 @@
         box-shadow: none !important;
         border-radius: 0 !important;
         max-height: none !important;
+        display: block !important;
     }
     .report-filters-sheet .filters-sheet-header {
         display: none !important;
@@ -1068,6 +1069,7 @@
         box-shadow: none !important;
         border-radius: 0 !important;
         max-height: none !important;
+        display: block !important;
     }
     .report-filters-sheet .filters-sheet-header { display: none !important; }
 }

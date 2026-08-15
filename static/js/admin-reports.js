@@ -1,5 +1,5 @@
 
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
     'use strict';
 
     var config = window.ReportConfig || {};
@@ -44,6 +44,7 @@
 
     function setLoading(loading) {
         if (tableWrap) tableWrap.classList.toggle('report-loading', !!loading);
+        if (!loading && window.pageLoader) window.pageLoader.hide();
     }
 
     function updateSummary(data) {
@@ -111,6 +112,11 @@
             var sortInput = document.getElementById('reportSortInput');
             if (sortInput) sortInput.value = sortInput.value || '-created_at';
             fetchReport();
+            
+            if (window.innerWidth < 769) {
+                var closeBtn = document.getElementById('reportFilterSheetClose');
+                if (closeBtn) closeBtn.click();
+            }
         });
     }
 
@@ -141,4 +147,4 @@
     });
 
     updateExportLinks();
-})();
+});

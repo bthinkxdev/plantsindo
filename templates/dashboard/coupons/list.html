@@ -12,21 +12,59 @@
   </a>
 </div>
 
-<form method="get" class="mb-3 d-flex gap-2 align-items-center flex-wrap">
-  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" style="width:12rem;"
+<form method="get" class="mb-3 d-flex gap-2 align-items-center w-100 flex-nowrap" style="flex-direction: row !important;">
+  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" style="flex: 1; min-width: 0;"
          placeholder="Search code…">
-  <select name="status" class="form-control form-control-sm" style="width:auto;"
+  <select name="status" class="form-control form-control-sm" style="width:auto; flex-shrink: 0;"
           onchange="this.form.submit()">
     <option value="">All</option>
     <option value="active" {% if filter_status == 'active' %}selected{% endif %}>Active</option>
     <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
   </select>
-  <button type="submit" class="btn btn-sm btn-outline-secondary">Filter</button>
-  <small class="text-muted">{{ paginator.count }} coupon{{ paginator.count|pluralize }}</small>
+  <small class="text-muted text-nowrap d-none d-sm-inline">{{ paginator.count }} coupon{{ paginator.count|pluralize }}</small>
 </form>
 
 {% if coupons %}
-<div class="card">
+<div class="list-cards">
+  {% for c in coupons %}
+  <div class="list-card">
+    <div class="list-card-header">
+      <div style="flex:1;min-width:0;">
+        <div class="list-card-title">{{ c.code }}</div>
+        {% if c.description %}<div style="font-size:0.85rem;color:var(--gray-600);">{{ c.description|truncatechars:48 }}</div>{% endif %}
+      </div>
+      <div>
+        {% if c.is_active %}<span class="badge" style="background:#e8f5e9;color:#2e7d32;">Active</span>
+        {% else %}<span class="badge" style="background:#f5f5f5;color:#616161;">Disabled</span>{% endif %}
+      </div>
+    </div>
+    <div class="list-card-meta">
+      <span>
+        <i class="fas fa-tag"></i>
+        {% if c.discount_type == 'percent' %}
+          {{ c.value|floatformat:0 }}%
+        {% else %}
+          ₹{{ c.value|floatformat:0 }} off
+        {% endif %}
+      </span>
+      <span>
+        <i class="fas fa-sync"></i> {{ c.times_redeemed }} / {% if c.max_uses %}{{ c.max_uses }}{% else %}∞{% endif %} uses
+      </span>
+    </div>
+    <div class="list-card-actions">
+      <form method="post" action="{% url 'admin_panel:coupon_toggle_active' c.pk %}" style="flex: 1; display: flex;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm {% if c.is_active %}btn-outline-secondary{% else %}btn-success{% endif %}" style="width: 100%;">
+          {% if c.is_active %}Disable{% else %}Activate{% endif %}
+        </button>
+      </form>
+      <a href="{% url 'admin_panel:coupon_edit' c.pk %}" class="btn btn-sm btn-outline-primary" style="flex: 1; justify-content: center;">Edit</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card list-table">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
@@ -62,7 +100,7 @@
             {% if c.ends_at %}Until {{ c.ends_at|date:"d M Y H:i" }}{% else %}No expiry{% endif %}
           </td>
           <td>
-            {{ c.times_redeemed }}{% if c.max_uses %}/{{ c.max_uses }}{% else %}∞{% endif %}
+            {{ c.times_redeemed }} / {% if c.max_uses %}{{ c.max_uses }}{% else %}∞{% endif %}
             {% if c.max_uses_per_customer %}
               <div class="small text-muted">{{ c.max_uses_per_customer }}/customer</div>
             {% endif %}
