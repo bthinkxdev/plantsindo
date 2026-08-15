@@ -842,6 +842,7 @@ body.storefront {
 .storefront .pi-footer__newsletter {
   margin-top: 2rem;
   padding-top: 2rem;
+  padding-bottom: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .storefront .pi-footer__newsletter-inner {

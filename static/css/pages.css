@@ -3624,9 +3624,11 @@ body.storefront .p99-reels-card > .p99-compact-card {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 9px 12px;
+  padding: 6px 8px;
   border-radius: 999px;
   min-width: 64px;
+  text-align: center;
+  line-height: 1.15;
 }
 
 .p99-reel-btn:hover {
