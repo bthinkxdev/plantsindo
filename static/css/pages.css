@@ -6090,7 +6090,6 @@ body.storefront .shop-page .toolbar-right .results-count {
     position: relative;
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    border-top: 4px solid var(--clr-black);
     animation: successCardIn 0.45s ease-out;
 }
 
