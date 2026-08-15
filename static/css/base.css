@@ -2284,3 +2284,7 @@ img.img-loaded {
 }
 .quantity button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
+.static-content p, 
+.static-content li {
+    text-align: justify;
+}
