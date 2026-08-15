@@ -61,7 +61,6 @@ body {
     display: flex;
     flex-direction: column;
     transition: var(--transition);
-    overflow-y: auto;
 }
 
 .sidebar-header {
@@ -98,6 +97,7 @@ body {
 .sidebar-nav {
     flex: 1;
     padding: 1rem 0;
+    overflow-y: auto;
 }
 
 .nav-item {
@@ -2144,4 +2144,19 @@ body {
 .ds-charge-input {
     max-width: 6.5rem;
     text-align: right;
+}
+
+/* Custom thin scrollbar for sidebar nav */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }

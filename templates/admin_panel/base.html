@@ -201,6 +201,15 @@
             }
         });
 
+        // Scroll sidebar to active item on load
+        document.addEventListener('DOMContentLoaded', function() {
+            var activeNav = document.querySelector('.sidebar-nav .nav-item.active');
+            if (activeNav) {
+                // Using scrollIntoView to center the active item within its scrolling container (.sidebar-nav)
+                activeNav.scrollIntoView({ block: 'center', behavior: 'instant' });
+            }
+        });
+
         // Simple toast helper
         function showAdminToast(message, type) {
             var container = document.getElementById('admin-toast-container');
