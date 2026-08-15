@@ -42,9 +42,9 @@ def cart_context(request):
             if line_type != CartItem.LineKind.PURCHASE:
                 continue
             if variant_id is not None:
-                cart_variant_ids.add(variant_id)
+                cart_variant_ids.add(str(variant_id))
             else:
-                cart_simple_product_ids.add(product_id)
+                cart_simple_product_ids.add(str(product_id))
     except Exception:
         cart_count = 0
         cart_subtotal = 0

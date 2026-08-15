@@ -1834,7 +1834,7 @@ class BuyNowView(View):
                 return redirect('store:product_detail', slug=product.slug)
             return _redirect_open_cart()
         data = form.cleaned_data
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_or_create_buy_now_cart(request)
         lt_raw = (data.get('line_type') or 'purchase').strip().lower()
         line_type = CartItem.LineKind.RENTAL if lt_raw == 'rental' else CartItem.LineKind.PURCHASE
         rb = data.get('rental_billing') or None
@@ -1861,6 +1861,8 @@ class BuyNowView(View):
                         return redirect('store:product_detail', slug=product.slug)
                     sellable = product
                 CartService.add_item(cart, sellable, data['quantity'], line_type=line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=data.get('is_gift', False), selected_pot_id=data.get('selected_pot_id'))
+            
+            request.session['checkout_mode'] = 'buy_now'
         except StockError as exc:
             messages.error(request, str(exc))
             if data.get('combo_id'):
@@ -1875,7 +1877,7 @@ class BuyNowView(View):
                 return redirect('store:combo_detail', slug=c.slug)
             p = get_object_or_404(Product, pk=data['product_id'])
             return redirect('store:product_detail', slug=p.slug)
-        return redirect('store:checkout')
+        return redirect(reverse('store:checkout') + '?mode=buy_now')
 
 class UpdateCartItemView(View):
     http_method_names = ['post']
@@ -1888,10 +1890,16 @@ class UpdateCartItemView(View):
             if is_ajax:
                 return JsonResponse({'success': False}, status=400)
             return _redirect_open_cart()
-        cart = CartService.get_or_create_cart(request)
         item_id = form.cleaned_data['item_id']
         quantity = form.cleaned_data['quantity']
-        item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+        item = get_object_or_404(CartItem, pk=item_id)
+        cart = item.cart
+        user = request.user if request.user.is_authenticated else None
+        session_key = request.session.session_key
+        if user and cart.user != user:
+            raise Http404()
+        elif not user and cart.session_key != session_key:
+            raise Http404()
         try:
             CartService.update_item(item, quantity)
         except StockError as exc:
@@ -1900,7 +1908,6 @@ class UpdateCartItemView(View):
                 return JsonResponse({'success': False, 'error': str(exc)}, status=400)
             return _redirect_open_cart()
         if is_ajax:
-            cart = CartService.get_or_create_cart(request)
             lines = list(
                 cart.items.select_related('product', 'combo', 'selected_pot', 'selected_variant')
             )
@@ -1931,8 +1938,14 @@ class RemoveCartItemView(View):
         if next_url and (not next_url.startswith('/')):
             next_url = None
         try:
-            cart = CartService.get_or_create_cart(request)
-            item = get_object_or_404(CartItem, pk=kwargs.get('item_id'), cart=cart)
+            item = get_object_or_404(CartItem, pk=kwargs.get('item_id'))
+            cart = item.cart
+            user = request.user if request.user.is_authenticated else None
+            session_key = request.session.session_key
+            if user and cart.user != user:
+                raise Http404()
+            elif not user and cart.session_key != session_key:
+                raise Http404()
             item.delete()
             is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
             if not is_ajax:
@@ -1947,8 +1960,7 @@ class RemoveCartItemView(View):
             return redirect(next_url)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         if is_ajax:
-            cart = CartService.get_or_create_cart(request)
-            item_count = sum(item.quantity for item in cart.items.all())
+            item_count = sum(item.quantity for item in cart.items.all()) if 'cart' in locals() else 0
             return JsonResponse({
                 'success': True,
                 'cart_count': item_count,
@@ -1960,16 +1972,21 @@ class CheckoutView(TemplateView):
     template_name = 'pages/checkout.html'
 
     def dispatch(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        mode = request.GET.get('mode')
+        if mode in ('cart', 'buy_now'):
+            request.session['checkout_mode'] = mode
+        elif 'mode' not in request.GET and request.path == reverse('store:checkout'):
+            request.session['checkout_mode'] = 'cart'
+
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
-            messages.info(request, 'Your cart is empty.')
-            return _redirect_open_cart()
+            return render(request, 'pages/checkout.html', {'cart_is_empty': True})
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         try:
             context = super().get_context_data(**kwargs)
-            cart = CartService.get_or_create_cart(self.request)
+            cart = CartService.get_checkout_cart(self.request)
             user = self.request.user if self.request.user.is_authenticated else None
             addresses = []
             default_address = None
@@ -2043,7 +2060,7 @@ class OrderCreateView(FormView):
     template_name = 'pages/checkout.html'
 
     def dispatch(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
             messages.info(request, 'Your cart is empty.')
             return _redirect_open_cart()
@@ -2051,14 +2068,14 @@ class OrderCreateView(FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         user = self.request.user if self.request.user.is_authenticated else None
         kwargs.update(_checkout_form_kwargs(self.request, cart, user))
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         user = self.request.user if self.request.user.is_authenticated else None
         addresses = []
         default_address = None
@@ -2113,7 +2130,7 @@ class OrderCreateView(FormView):
         except CaptchaError as exc:
             messages.error(self.request, str(exc))
             return redirect('store:checkout')
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         payment_method = form.cleaned_data.get('payment')
         order_user = self.request.user if self.request.user.is_authenticated else None
         if payment_method == 'razorpay':
@@ -2134,7 +2151,7 @@ class OrderCreateView(FormView):
 class CreateRazorpayOrderView(View):
 
     def post(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
             return JsonResponse({'status': 'error', 'message': 'Your cart is empty.'}, status=400)
 
@@ -2370,7 +2387,7 @@ class RazorpayPaymentVerifyView(View):
                         Variant.objects.filter(pk=item.selected_variant_id).update(stock_quantity=F('stock_quantity') - item.quantity)
                     else:
                         Product.objects.filter(pk=product.pk).update(base_stock=F('base_stock') - item.quantity)
-                cart = CartService.get_or_create_cart(request)
+                cart = CartService.get_checkout_cart(request)
                 if cart.items.exists():
                     for cart_item in cart.items.select_related('selected_pot').all():
                         if cart_item.selected_pot_id:
@@ -2507,7 +2524,7 @@ class CheckoutTotalsView(View):
     """
 
     def get(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         items = list(_checkout_items_queryset(cart))
         raw_state = request.GET.get('state_id') or ''
         state_id = resolve_delivery_state_id(delivery_state=raw_state) if raw_state else None

@@ -514,9 +514,22 @@
         }
 
         var inStock = ((variant.stock != null ? variant.stock : variant.stock_quantity) || 0) > 0;
-        if (addBtn) {
+        
+        var pdpMainCartBtn = document.getElementById('pdpMainCartBtn');
+        if (pdpMainCartBtn && window.cartVariantIds) {
+            if (window.cartVariantIds.includes(String(variant.id))) {
+                pdpMainCartBtn.className = "btn-add-cart btn btn-view-cart";
+                pdpMainCartBtn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>';
+                pdpMainCartBtn.disabled = false;
+            } else {
+                pdpMainCartBtn.className = "btn-add-cart btn js-pdp-add-cart";
+                pdpMainCartBtn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>';
+                pdpMainCartBtn.disabled = !inStock;
+            }
+        } else if (addBtn) {
             addBtn.disabled = !inStock;
         }
+
         if (buyNowBtn) {
             buyNowBtn.disabled = !inStock;
         }

@@ -667,6 +667,26 @@ class CartService:
         return cart
 
     @classmethod
+    def get_or_create_buy_now_cart(cls, request):
+        user = getattr(request, 'user', None)
+        user = user if user and user.is_authenticated else None
+        if user:
+            cart, _ = Cart.objects.get_or_create(user=user, status=Cart.Status.BUY_NOW)
+            return cart
+        session_key = cls._ensure_session_key(request)
+        cart = Cart.objects.filter(session_key=session_key, status=Cart.Status.BUY_NOW, user__isnull=True).first()
+        if not cart:
+            cart = Cart.objects.create(session_key=session_key, status=Cart.Status.BUY_NOW)
+        return cart
+
+    @classmethod
+    def get_checkout_cart(cls, request):
+        mode = request.session.get('checkout_mode', 'cart')
+        if mode == 'buy_now':
+            return cls.get_or_create_buy_now_cart(request)
+        return cls.get_or_create_cart(request)
+
+    @classmethod
     def merge_carts(cls, user, session_key):
         if not user or not session_key:
             return

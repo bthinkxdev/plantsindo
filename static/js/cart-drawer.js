@@ -107,6 +107,9 @@
       itemsEl.innerHTML = '';
       footerEl.hidden   = true;
       emptyEl.hidden    = false;
+      if (window.location.pathname.indexOf('/checkout') !== -1) {
+          window.location.reload();
+      }
       return;
     }
 

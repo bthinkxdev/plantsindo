@@ -11,6 +11,7 @@ class Cart(TimeStampedModel):
 
     class Status(models.TextChoices):
         ACTIVE = ('active', 'Active')
+        BUY_NOW = ('buy_now', 'Buy Now')
         ORDERED = ('ordered', 'Ordered')
         ABANDONED = ('abandoned', 'Abandoned')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True, related_name='carts')
