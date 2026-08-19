@@ -1,9 +1,48 @@
 {% extends "admin_panel/base.html" %}
 {% load static product_filters %}
 
+{% block extra_css %}
+<style>
+@media (max-width: 768px) {
+    .topbar {
+        height: auto !important;
+        min-height: 64px !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        align-items: flex-start !important;
+    }
+    .topbar .topbar-title {
+        flex: 1;
+        min-width: 0;
+    }
+    .topbar-title-inner .page-title-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        gap: 1rem;
+    }
+    .page-title-actions .page-title-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.5rem;
+    }
+    .page-title-actions .page-title-buttons .btn {
+        width: 100% !important;
+        justify-content: center;
+        padding: 0.75rem 1rem !important;
+    }
+    .page-title-actions .page-title-buttons .btn .btn-text {
+        white-space: normal !important;
+    }
+}
+</style>
+{% endblock %}
+
 {% block title %}Order {{ order.order_number }}{% endblock %}
 {% block page_title %}
-    <span class="page-title-actions">
+    <div class="page-title-actions">
         <span class="page-title-text">Order Details</span>
         <div class="page-title-buttons">
             <a href="{% url 'admin_panel:order_invoice' order.order_number %}" target="_blank" class="btn btn-primary" aria-label="Print Invoice">
@@ -13,7 +52,7 @@
                 <i class="fas fa-file-pdf"></i> <span class="btn-text">Download PDF</span>
             </a>
         </div>
-    </span>
+    </div>
 {% endblock %}
 
 {% block content %}

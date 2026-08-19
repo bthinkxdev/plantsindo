@@ -28,11 +28,7 @@
 
         if (clearBtn) {
             clearBtn.addEventListener('click', function() {
-                var form = sheet.querySelector('form');
-                if (form) {
-                    form.reset();
-                    form.submit();
-                }
+                window.location.href = window.location.pathname;
             });
         }
     }

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blog - {{ site_brand }}{% endblock %}
+
+{% block content %}
+<section class="static-page">
+    <div class="container">
+        <div class="static-content" style="max-width: 1000px; margin: 0 auto; padding: 0 15px;">
+            <div style="text-align: center; margin-bottom: clamp(2rem, 8vw, 3rem);">
+                <h1 style="font-family: var(--font-display); font-size: clamp(1.75rem, 5vw, 2.5rem); font-weight: 500; color: var(--clr-navy); letter-spacing: 0.02em; margin-bottom: 0.75rem; line-height: 1.2;">Our Blog</h1>
+                <p style="font-family: var(--font-display); font-size: clamp(1.05rem, 3vw, 1.25rem); color: var(--clr-grey-5); margin: 0 auto 1rem; max-width: 36rem; line-height: 1.45;">Stories, tips, and inspiration from the greenhouse</p>
+                <div class="section-divider mx-auto" style="background: var(--clr-beige); width: clamp(30px, 8vw, 36px);"></div>
+            </div>
+
+            {% if posts %}
+            <div class="row g-4">
+                {% for post in posts %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100" style="border: 1px solid var(--clr-cream-2); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
+                        {% if post.cover_image %}
+                        <a href="{% url 'store:blog_detail' post.slug %}" style="display: block;">
+                            <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width: 100%; height: 200px; object-fit: cover;">
+                        </a>
+                        {% else %}
+                        <div style="width: 100%; height: 200px; background-color: var(--clr-cream-1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-leaf" style="font-size: 2rem; color: var(--clr-beige);"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body" style="padding: 1.5rem; display: flex; flex-direction: column; flex: 1;">
+                            <div style="font-size: 0.85rem; color: var(--clr-grey-4); margin-bottom: 0.5rem;">
+                                {{ post.published_at|date:"M d, Y" }}
+                            </div>
+                            <h2 style="font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 0.75rem;">
+                                <a href="{% url 'store:blog_detail' post.slug %}" style="color: var(--clr-navy); text-decoration: none;">{{ post.title }}</a>
+                            </h2>
+                            <p style="color: var(--clr-grey-5); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.25rem; flex: 1;">
+                                {{ post.excerpt|truncatewords:20 }}
+                            </p>
+                            <a href="{% url 'store:blog_detail' post.slug %}" style="color: var(--clr-navy); font-weight: 500; font-size: 0.95rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                Read more <i class="fas fa-arrow-right" style="font-size: 0.8em;"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+            <div class="pagination" style="margin-top: 3rem; display: flex; justify-content: center; gap: 0.5rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Previous</a>
+                {% endif %}
+                <span class="btn" style="pointer-events: none; background: var(--clr-cream-1);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% else %}
+            <div style="text-align: center; padding: 4rem 1rem; background: var(--clr-cream-1); border-radius: 8px;">
+                <i class="fas fa-pen-nib" style="font-size: 2.5rem; color: var(--clr-beige); margin-bottom: 1rem;"></i>
+                <p style="color: var(--clr-grey-5); font-size: 1.1rem; margin: 0;">No blog posts available yet. Check back soon!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

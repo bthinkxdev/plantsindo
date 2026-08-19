@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% block title %}Order History - {{ site_brand }}{% endblock %}
 {% block content %}
@@ -37,10 +37,10 @@
                             <div class="order-status mb-2" style="font-size: var(--text-sm);">
                                 Shipment: {{ order.shipment.current_status|default:"Pending" }}
                                 {% if order.shipment.awb_code %}
-                                    Â· AWB: {{ order.shipment.awb_code }}
+                                    &middot; AWB: {{ order.shipment.awb_code }}
                                 {% endif %}
                                 {% if order.shipment.courier_name %}
-                                    Â· {{ order.shipment.courier_name }}
+                                    &middot; {{ order.shipment.courier_name }}
                                 {% endif %}
                             </div>
                             {% endif %}
@@ -52,7 +52,7 @@
                             <div class="order-items-list pt-2" style="border-top: 1px solid var(--clr-grey-2);">
                                 {% for item in order.items.all %}
                                 <div class="order-total-row">
-                                    <span>{{ item.product_name }} ({{ item.variant_snapshot }}) Ã— {{ item.quantity }}</span>
+                                    <span>{{ item.product_name }} ({{ item.variant_snapshot }}) &times; {{ item.quantity }}</span>
                                     <span style="font-weight: 600;">&#8377;{{ item.line_total }}</span>
                                 </div>
                                 {% endfor %}

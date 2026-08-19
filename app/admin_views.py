@@ -296,10 +296,11 @@ class CategoryListView(StaffRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Category.objects.select_related('parent').annotate(product_count=Count('products'))
-        search = self.request.GET.get('search')
+        search = self.request.GET.get('search', '').strip()
         parent = self.request.GET.get('parent')
+        status = self.request.GET.get('status')
         if search:
-            qs = qs.filter(Q(name__icontains=search))
+            qs = qs.filter(Q(name__icontains=search) | Q(slug__icontains=search))
         if parent:
             if parent == 'root':
                 qs = qs.filter(parent__isnull=True)
@@ -308,6 +309,10 @@ class CategoryListView(StaffRequiredMixin, ListView):
                     qs = qs.filter(parent_id=int(parent))
                 except (TypeError, ValueError):
                     pass
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
         return qs.order_by('parent__name', 'name', '-created_at')
 
     def get_context_data(self, **kwargs):
@@ -315,6 +320,7 @@ class CategoryListView(StaffRequiredMixin, ListView):
         context['active_menu'] = 'categories'
         context['search_query'] = self.request.GET.get('search', '')
         context['parent_filter'] = self.request.GET.get('parent', '')
+        context['status_filter'] = self.request.GET.get('status', '')
         context['parent_categories'] = list(Category.objects.filter(parent__isnull=True).order_by('name').only('id', 'name'))
         return context
 
@@ -484,10 +490,14 @@ class ProductListView(StaffRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
-        if offer == 'rental':
-            qs = qs.filter(is_rent_available=True)
-        elif offer == 'combo':
-            qs = qs.filter(is_legacy_combo=True)
+        
+        if offer == '1':
+            from django.db.models import F
+            qs = qs.filter(
+                Q(base_original_price__isnull=False, base_original_price__gt=F('base_price')) |
+                Q(variants__original_price__isnull=False, variants__original_price__gt=F('variants__price'))
+            ).distinct()
+            
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -790,6 +800,14 @@ class ProductDeleteView(StaffRequiredMixin, DeleteView):
         self.object = self.get_object()
         product_name = self.object.name
         success_url = self.get_success_url()
+        
+        from app.models.combo import ComboItem
+        combo_items = ComboItem.objects.filter(product=self.object).select_related('combo')
+        if combo_items.exists():
+            combo_names = ", ".join([ci.combo.name for ci in combo_items])
+            messages.error(request, f'Cannot delete product "{product_name}". It is included in the following Combo Bundle(s): {combo_names}.')
+            return redirect(success_url)
+            
         if OrderItem.objects.filter(product=self.object).exists():
             messages.error(request, f'Cannot delete product "{product_name}". It is linked to existing orders.')
             return redirect(success_url)
@@ -820,10 +838,23 @@ class ProductDeleteCheckView(StaffRequiredMixin, View):
 
     def get(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
+        
+        # Check if included in combos
+        from app.models.combo import ComboItem
+        combo_items = ComboItem.objects.filter(product=product).select_related('combo')
+        if combo_items.exists():
+            combo_names = ", ".join([ci.combo.name for ci in combo_items])
+            return JsonResponse({
+                'can_delete': False, 
+                'has_active_orders': False, 
+                'has_orders': False, 
+                'message': f'Cannot delete "{product.name}". It is included in the following Combo Bundle(s): {combo_names}'
+            })
+            
         all_orders = Order.objects.filter(items__product=product).distinct()
         active_orders = all_orders.exclude(status__in=['delivered', 'cancelled']).distinct()
         if active_orders.exists():
-            return JsonResponse({'can_delete': False, 'has_active_orders': True, 'has_orders': True, 'message': f'Cannot delete: {active_orders.count()} active order(s)'})
+            return JsonResponse({'can_delete': False, 'has_active_orders': True, 'has_orders': True, 'message': f'Cannot delete product "{product.name}". It has {active_orders.count()} active order(s).'})
         if not all_orders.exists():
             return JsonResponse({'can_delete': True, 'will_delete_completely': True, 'has_orders': False, 'message': 'Product will be completely deleted'})
         return JsonResponse({'can_delete': True, 'will_delete_completely': False, 'has_orders': True, 'message': 'Product will be set to inactive'})
@@ -1328,6 +1359,9 @@ class DashboardReelCreateView(StaffRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.save()
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel created.')
         return redirect(self.success_url)
 
@@ -1346,6 +1380,9 @@ class DashboardReelUpdateView(StaffRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.save()
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel updated.')
         return redirect(self.success_url)
 
@@ -1362,6 +1399,9 @@ class DashboardReelToggleActiveView(StaffRequiredMixin, View):
         reel = get_object_or_404(Reel, pk=pk)
         reel.is_active = not bool(reel.is_active)
         reel.save(update_fields=['is_active', 'updated_at'])
+        from django.core.cache import caches
+        _cache = caches['locmem'] if 'locmem' in caches else caches['default']
+        _cache.delete('home_reels_v1')
         messages.success(request, 'Reel status updated.')
         return redirect('admin_panel:reel_list')
 

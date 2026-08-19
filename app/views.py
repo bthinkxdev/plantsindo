@@ -408,6 +408,40 @@ def _empty_home_context():
 # Wire these in urls.py (see bottom of file)
 # ──────────────────────────────────────────────────────────────
  
+class SearchSuggestView(View):
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+        
+        #if no query, return 5 most recently added products
+        if not query:
+            products = Product.objects.filter(is_active=True).order_by('-created_at')[:5]
+        else:
+            #if there is a query, search by name or category name
+            from django.db.models import Q
+            products = Product.objects.filter(is_active=True).filter(
+                Q(name__icontains=query) | Q(category__name__icontains=query)
+            ).select_related('category').prefetch_related('images')[:5]
+            
+        suggestions = []
+        for p in products:
+            image_url = ''
+            if p.images.exists():
+                image_url = p.images.first().image.url
+            elif p.category and p.category.image:
+                image_url = p.category.image.url
+                
+            from django.urls import reverse
+            suggestions.append({
+                'name': p.name,
+                'url': reverse('store:product_detail', kwargs={'slug': p.slug}),
+                'image': image_url,
+                'price': str(p.base_price) if p.base_price else '',
+                'category': p.category.name if p.category else ''
+            })
+            
+        from django.http import JsonResponse
+        return JsonResponse({'suggestions': suggestions})
+ 
 class HomeLazyReelsView(View):
     """GET /api/home/reels/ — below-fold, not on critical path."""
  
@@ -511,10 +545,64 @@ class ProductListView(ListView):
 
     def get_queryset(self):
         try:
-            combo_only = (self.request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
+            request = self.request
+            combo_only = (request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
             if combo_only:
-                return collection_combo_cards(self.request)
-            return collection_card_items(self.request, self.paginate_by)
+                return collection_combo_cards(request)
+            
+            cards = collection_card_items(request, self.paginate_by)
+            
+            category_slug = request.GET.get('category')
+            min_price = request.GET.get('min_price')
+            max_price = request.GET.get('max_price')
+            query = request.GET.get('q')
+            sort = (request.GET.get('sort') or '').strip().lower()
+            rent_only = (request.GET.get('rent') or '').strip() in ('1', 'true', 'yes')
+
+            simple_qs = (
+                Product.objects.active()
+                .filter(variants__isnull=True)
+                .filter(Q(base_stock__gt=0) | Q(is_combo_product=True))
+                .select_related('category')
+                .prefetch_related('images')
+            )
+            if rent_only:
+                simple_qs = simple_qs.filter(
+                    is_rent_available=True,
+                    rental_config__is_rent_enabled=True,
+                ).select_related('rental_config')
+            
+            offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
+            if offer_only:
+                simple_qs = simple_qs.filter(base_original_price__isnull=False, base_original_price__gt=F('base_price'))
+                
+            if category_slug and category_slug != 'all':
+                _, ids = category_filter_ids_for_slug(category_slug, include_children=True, max_depth=10)
+                if ids:
+                    simple_qs = simple_qs.filter(category_id__in=ids)
+            if min_price:
+                simple_qs = simple_qs.filter(base_price__gte=min_price)
+            if max_price:
+                simple_qs = simple_qs.filter(base_price__lte=max_price)
+            if query:
+                simple_qs = simple_qs.filter(
+                    Q(name__icontains=query)
+                    | Q(description__icontains=query)
+                    | Q(category__name__icontains=query)
+                )
+            simple_qs = apply_plant_filters_to_product_qs(simple_qs, request)
+            
+            simple_cards = [{'kind': 'simple', 'product': p} for p in simple_qs]
+            all_cards = cards + simple_cards
+            
+            if sort == 'price_asc':
+                all_cards.sort(key=lambda c: getattr(c.get('variant'), 'price', 0) if c['kind'] == 'variant' else (getattr(c.get('product'), 'base_price', 0) or 0))
+            elif sort == 'price_desc':
+                all_cards.sort(key=lambda c: getattr(c.get('variant'), 'price', 0) if c['kind'] == 'variant' else (getattr(c.get('product'), 'base_price', 0) or 0), reverse=True)
+            else:
+                all_cards.sort(key=lambda c: c['variant'].product.created_at if c['kind'] == 'variant' else c['product'].created_at, reverse=True)
+                
+            return all_cards
         except Exception as e:
             logger.error('ProductListView.get_queryset error: %s', e, exc_info=True)
             return []
@@ -545,6 +633,8 @@ class ProductListView(ListView):
         if selected_category:
             parent_id = selected_category.parent_id
             if parent_id:
+                if parent_id in tree.by_id:
+                    context['parent_category_slug'] = tree.by_id[parent_id].slug
                 selected_child_categories = [
                     tree.by_id[cid]
                     for cid in tree.children_ids.get(parent_id, [])
@@ -576,6 +666,7 @@ class ProductListView(ListView):
         sort       = request.GET.get('sort', 'newest')
         rent_only  = (request.GET.get('rent')  or '').strip() in ('1', 'true', 'yes')
         combo_only = (request.GET.get('combo') or '').strip().lower() in ('1', 'true', 'yes')
+        offer_only = (request.GET.get('offer') or '').strip() in ('1', 'true', 'yes')
 
         context['combo_only'] = combo_only
         if combo_only:
@@ -587,6 +678,7 @@ class ProductListView(ListView):
             'max_price':  max_price,
             'q':          query,
             'sort':       sort,
+            'offer':      '1' if offer_only else '',
             'difficulty': request.GET.get('difficulty', ''),
             'sunlight':   request.GET.get('sunlight', ''),
             'watering':   request.GET.get('watering', ''),
@@ -603,45 +695,10 @@ class ProductListView(ListView):
 
         if combo_only:
             context['simple_products']      = []
-            context['total_product_count']  = len(context.get('card_items', []))
+            context['total_product_count']  = len(self.object_list) if hasattr(self, 'object_list') else 0
         else:
-            simple_qs = (
-                Product.objects.active()
-                .filter(variants__isnull=True)
-                .filter(Q(base_stock__gt=0) | Q(is_combo_product=True))
-                .select_related('category')
-                .prefetch_related('images')
-            )
-            if rent_only:
-                simple_qs = simple_qs.filter(
-                    is_rent_available=True,
-                    rental_config__is_rent_enabled=True,
-                ).select_related('rental_config')
-            if category_slug and category_slug != 'all':
-                _, ids = category_filter_ids_for_slug(category_slug, include_children=True, max_depth=10)
-                if ids:
-                    simple_qs = simple_qs.filter(category_id__in=ids)
-            if min_price:
-                simple_qs = simple_qs.filter(base_price__gte=min_price)
-            if max_price:
-                simple_qs = simple_qs.filter(base_price__lte=max_price)
-            if query:
-                simple_qs = simple_qs.filter(
-                    Q(name__icontains=query)
-                    | Q(description__icontains=query)
-                    | Q(category__name__icontains=query)
-                )
-            simple_qs = apply_plant_filters_to_product_qs(simple_qs, request)
-            if sort == 'price_asc':
-                simple_qs = simple_qs.order_by('base_price', 'created_at')
-            elif sort == 'price_desc':
-                simple_qs = simple_qs.order_by('-base_price', '-created_at')
-            else:
-                simple_qs = simple_qs.order_by('-created_at', 'name', 'id')
-            context['simple_products']     = list(simple_qs)
-            context['total_product_count'] = (
-                len(context.get('card_items', [])) + len(context['simple_products'])
-            )
+            context['simple_products']     = []
+            context['total_product_count'] = len(self.object_list) if hasattr(self, 'object_list') else 0
 
         # ── Cart state (per-request, must stay live) ──
         try:
@@ -665,6 +722,15 @@ class ProductListView(ListView):
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
         context          = self.get_context_data()
+
+        #if user searched but got no results, redirect to Shop page
+        query = request.GET.get('q')
+        if query is not None and not context.get('card_items') and not context.get('simple_products'):
+            from django.shortcuts import redirect
+            from django.contrib import messages
+            if query.strip():
+                messages.warning(request, f"No products found for '{query}'. Showing all products.")
+            return redirect('store:product_list')
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             # ── AJAX / infinite-scroll request ──
@@ -740,7 +806,7 @@ class ComboDetailView(DetailView):
         rows = list(obj.items.all())
         ctx['combo_lines'] = [{'name': r.product.name, 'quantity': r.quantity, 'product_slug': r.product.slug} for r in rows]
         ctx['pdp_combo_available'] = bool(rows) and combo_is_in_stock(obj, multiplier=1)
-        ctx['active_page'] = 'collection'
+        ctx['active_page'] = 'combo'
         try:
             cart = CartService.get_or_create_cart(self.request)
             ctx['cart_combo_ids'] = set(cart.items.filter(line_type=CartItem.LineKind.PURCHASE).values_list('combo_id', flat=True))
@@ -1768,7 +1834,7 @@ class BuyNowView(View):
                 return redirect('store:product_detail', slug=product.slug)
             return _redirect_open_cart()
         data = form.cleaned_data
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_or_create_buy_now_cart(request)
         lt_raw = (data.get('line_type') or 'purchase').strip().lower()
         line_type = CartItem.LineKind.RENTAL if lt_raw == 'rental' else CartItem.LineKind.PURCHASE
         rb = data.get('rental_billing') or None
@@ -1795,6 +1861,8 @@ class BuyNowView(View):
                         return redirect('store:product_detail', slug=product.slug)
                     sellable = product
                 CartService.add_item(cart, sellable, data['quantity'], line_type=line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=data.get('is_gift', False), selected_pot_id=data.get('selected_pot_id'))
+            
+            request.session['checkout_mode'] = 'buy_now'
         except StockError as exc:
             messages.error(request, str(exc))
             if data.get('combo_id'):
@@ -1809,7 +1877,7 @@ class BuyNowView(View):
                 return redirect('store:combo_detail', slug=c.slug)
             p = get_object_or_404(Product, pk=data['product_id'])
             return redirect('store:product_detail', slug=p.slug)
-        return redirect('store:checkout')
+        return redirect(reverse('store:checkout') + '?mode=buy_now')
 
 class UpdateCartItemView(View):
     http_method_names = ['post']
@@ -1822,10 +1890,16 @@ class UpdateCartItemView(View):
             if is_ajax:
                 return JsonResponse({'success': False}, status=400)
             return _redirect_open_cart()
-        cart = CartService.get_or_create_cart(request)
         item_id = form.cleaned_data['item_id']
         quantity = form.cleaned_data['quantity']
-        item = get_object_or_404(CartItem, pk=item_id, cart=cart)
+        item = get_object_or_404(CartItem, pk=item_id)
+        cart = item.cart
+        user = request.user if request.user.is_authenticated else None
+        session_key = request.session.session_key
+        if user and cart.user != user:
+            raise Http404()
+        elif not user and cart.session_key != session_key:
+            raise Http404()
         try:
             CartService.update_item(item, quantity)
         except StockError as exc:
@@ -1834,7 +1908,6 @@ class UpdateCartItemView(View):
                 return JsonResponse({'success': False, 'error': str(exc)}, status=400)
             return _redirect_open_cart()
         if is_ajax:
-            cart = CartService.get_or_create_cart(request)
             lines = list(
                 cart.items.select_related('product', 'combo', 'selected_pot', 'selected_variant')
             )
@@ -1865,8 +1938,14 @@ class RemoveCartItemView(View):
         if next_url and (not next_url.startswith('/')):
             next_url = None
         try:
-            cart = CartService.get_or_create_cart(request)
-            item = get_object_or_404(CartItem, pk=kwargs.get('item_id'), cart=cart)
+            item = get_object_or_404(CartItem, pk=kwargs.get('item_id'))
+            cart = item.cart
+            user = request.user if request.user.is_authenticated else None
+            session_key = request.session.session_key
+            if user and cart.user != user:
+                raise Http404()
+            elif not user and cart.session_key != session_key:
+                raise Http404()
             item.delete()
             is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
             if not is_ajax:
@@ -1881,8 +1960,7 @@ class RemoveCartItemView(View):
             return redirect(next_url)
         is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         if is_ajax:
-            cart = CartService.get_or_create_cart(request)
-            item_count = sum(item.quantity for item in cart.items.all())
+            item_count = sum(item.quantity for item in cart.items.all()) if 'cart' in locals() else 0
             return JsonResponse({
                 'success': True,
                 'cart_count': item_count,
@@ -1894,16 +1972,21 @@ class CheckoutView(TemplateView):
     template_name = 'pages/checkout.html'
 
     def dispatch(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        mode = request.GET.get('mode')
+        if mode in ('cart', 'buy_now'):
+            request.session['checkout_mode'] = mode
+        elif 'mode' not in request.GET and request.path == reverse('store:checkout'):
+            request.session['checkout_mode'] = 'cart'
+
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
-            messages.info(request, 'Your cart is empty.')
-            return _redirect_open_cart()
+            return render(request, 'pages/checkout.html', {'cart_is_empty': True})
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         try:
             context = super().get_context_data(**kwargs)
-            cart = CartService.get_or_create_cart(self.request)
+            cart = CartService.get_checkout_cart(self.request)
             user = self.request.user if self.request.user.is_authenticated else None
             addresses = []
             default_address = None
@@ -1977,7 +2060,7 @@ class OrderCreateView(FormView):
     template_name = 'pages/checkout.html'
 
     def dispatch(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
             messages.info(request, 'Your cart is empty.')
             return _redirect_open_cart()
@@ -1985,14 +2068,14 @@ class OrderCreateView(FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         user = self.request.user if self.request.user.is_authenticated else None
         kwargs.update(_checkout_form_kwargs(self.request, cart, user))
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         user = self.request.user if self.request.user.is_authenticated else None
         addresses = []
         default_address = None
@@ -2047,7 +2130,7 @@ class OrderCreateView(FormView):
         except CaptchaError as exc:
             messages.error(self.request, str(exc))
             return redirect('store:checkout')
-        cart = CartService.get_or_create_cart(self.request)
+        cart = CartService.get_checkout_cart(self.request)
         payment_method = form.cleaned_data.get('payment')
         order_user = self.request.user if self.request.user.is_authenticated else None
         if payment_method == 'razorpay':
@@ -2068,7 +2151,7 @@ class OrderCreateView(FormView):
 class CreateRazorpayOrderView(View):
 
     def post(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
             return JsonResponse({'status': 'error', 'message': 'Your cart is empty.'}, status=400)
 
@@ -2304,7 +2387,7 @@ class RazorpayPaymentVerifyView(View):
                         Variant.objects.filter(pk=item.selected_variant_id).update(stock_quantity=F('stock_quantity') - item.quantity)
                     else:
                         Product.objects.filter(pk=product.pk).update(base_stock=F('base_stock') - item.quantity)
-                cart = CartService.get_or_create_cart(request)
+                cart = CartService.get_checkout_cart(request)
                 if cart.items.exists():
                     for cart_item in cart.items.select_related('selected_pot').all():
                         if cart_item.selected_pot_id:
@@ -2375,6 +2458,7 @@ class CartDrawerView(View):
     def get(self, request, *args, **kwargs):
         try:
             cart = CartService.get_or_create_cart(request)
+            totals = CartService.compute_totals(cart)
             items_qs = cart.items.select_related('product', 'combo', 'selected_variant').prefetch_related('selected_variant__images', 'combo__items__product').all()
             items_data = []
             for item in items_qs:
@@ -2389,7 +2473,7 @@ class CartDrawerView(View):
                     variant_display = item.variant_display or 'Bundle'
                     unit_price = item.unit_price
                     product_url = request.build_absolute_uri(reverse('store:combo_detail', kwargs={'slug': item.combo.slug}))
-                    items_data.append({'id': item.id, 'name': item.combo.name, 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url})
+                    items_data.append({'id': item.id, 'name': item.combo.name, 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
                     continue
                 if item.selected_variant:
                     for img in item.selected_variant.images.filter(image__isnull=False).exclude(image='').order_by('-is_primary', 'display_order', 'id'):
@@ -2424,8 +2508,7 @@ class CartDrawerView(View):
                     product_url = request.build_absolute_uri(f'/products/{item.product.slug}/')
                 else:
                     product_url = request.build_absolute_uri('/products/')
-                items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url})
-            totals = CartService.compute_totals(cart)
+                items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
             item_count = sum((i['quantity'] for i in items_data))
             return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count})
         except Exception as exc:
@@ -2441,7 +2524,7 @@ class CheckoutTotalsView(View):
     """
 
     def get(self, request, *args, **kwargs):
-        cart = CartService.get_or_create_cart(request)
+        cart = CartService.get_checkout_cart(request)
         items = list(_checkout_items_queryset(cart))
         raw_state = request.GET.get('state_id') or ''
         state_id = resolve_delivery_state_id(delivery_state=raw_state) if raw_state else None

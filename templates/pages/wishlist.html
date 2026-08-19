@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% block title %}My Wishlist — {{ site_brand }}{% endblock %}
 {% block meta_description %}Your saved favourites at {{ site_brand }}. Add them to cart before they're gone.{% endblock %}
@@ -43,7 +43,7 @@
         <div class="wl-grid wow fadeInUp" data-wow-delay="0.1s" id="wishlistGrid">
             {% for item in wishlist_items %}
             {% if item.selected_variant %}
-            {% with v=item.selected_variant p=v.product %}
+            {% with v=item.selected_variant p=item.selected_variant.product %}
             <div class="wl-card" id="wl-card-{{ v.id }}" data-variant-id="{{ v.id }}">
                 <div class="wl-gallery">
                     {% if p.discount_percent %}
@@ -82,11 +82,7 @@
                        href="{% if p.slug %}{% url 'store:product_detail' p.slug %}?variant={{ v.id }}{% else %}{% url 'store:product_list' %}{% endif %}">
                         <h3 class="wl-name">{{ p.name }}</h3>
                     </a>
-                    {% with disp=v.get_attribute_values_display %}
-                    {% if disp %}
-                    <p class="wl-variant">{{ disp }}</p>
-                    {% endif %}
-                    {% endwith %}
+
                     <div class="wl-price-row">
                         <span class="wl-price-current">&#8377;{{ v.price|floatformat:0 }}</span>
                         {% if v.original_price and v.original_price > v.price %}

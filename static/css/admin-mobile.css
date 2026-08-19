@@ -251,6 +251,7 @@
         box-shadow: none !important;
         border-radius: 0 !important;
         max-height: none !important;
+        display: block !important;
     }
     .report-filters-sheet .filters-sheet-header {
         display: none !important;
@@ -526,17 +527,11 @@
 }
 
 @media (max-width: 768px) {
-    .topbar:has(.page-title-actions) {
-        min-height: var(--topbar-height);
-        height: auto;
-        padding: 1rem;
-        align-items: flex-start;
-    }
-    .topbar:has(.page-title-actions) .topbar-title {
+    .topbar .topbar-title {
         flex: 1;
         min-width: 0;
     }
-    .topbar:has(.page-title-actions) .topbar-title-inner {
+    .topbar .topbar-title-inner {
         flex-direction: column;
         align-items: stretch;
     }
@@ -546,12 +541,21 @@
         gap: 0.75rem;
     }
     .page-title-actions .page-title-buttons {
+        display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        width: 100%;
     }
     .page-title-actions .page-title-buttons .btn {
         width: 100%;
+        min-height: 44px;
+        padding: 0.5rem;
+        font-size: 0.95rem;
         justify-content: center;
+    }
+    .page-title-actions .page-title-buttons .btn .btn-text {
+        white-space: normal;
+        overflow: visible;
     }
     .order-detail-grid {
         grid-template-columns: 1fr !important;
@@ -1065,6 +1069,7 @@
         box-shadow: none !important;
         border-radius: 0 !important;
         max-height: none !important;
+        display: block !important;
     }
     .report-filters-sheet .filters-sheet-header { display: none !important; }
 }
@@ -1108,17 +1113,27 @@
 .page-title-buttons .btn { min-height: 44px; padding: 0.625rem 1.25rem; align-items: center; justify-content: center; }
 
 @media (max-width: 768px) {
-    .topbar:has(.page-title-actions) {
-        min-height: var(--topbar-height);
-        height: auto;
-        padding: 1rem;
-        align-items: flex-start;
-    }
-    .topbar:has(.page-title-actions) .topbar-title { flex: 1; min-width: 0; }
-    .topbar:has(.page-title-actions) .topbar-title-inner { flex-direction: column; align-items: stretch; }
+    .topbar .topbar-title { flex: 1; min-width: 0; }
+    .topbar .topbar-title-inner { flex-direction: column; align-items: stretch; }
+    
     .page-title-actions { flex-direction: column; align-items: stretch; gap: 0.75rem; }
-    .page-title-actions .page-title-buttons { flex-direction: column; gap: 0.5rem; }
-    .page-title-actions .page-title-buttons .btn { width: 100%; justify-content: center; }
+    .page-title-actions .page-title-buttons { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 0.5rem; 
+        width: 100%; 
+    }
+    .page-title-actions .page-title-buttons .btn { 
+        width: 100%; 
+        min-height: 44px;
+        padding: 0.5rem; 
+        font-size: 0.95rem; 
+        justify-content: center; 
+    }
+    .page-title-actions .page-title-buttons .btn .btn-text { 
+        white-space: normal;
+        overflow: visible;
+    }
 }
 
 

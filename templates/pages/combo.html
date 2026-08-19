@@ -31,7 +31,7 @@
                 <div class="product-price mb-3">
                     <span class="price-current h4 mb-0">₹{{ combo.price|floatformat:0 }}</span>
                     {% if combo.original_price and combo.original_price > combo.price %}
-                    <span class="price-old text-muted ms-2">₹{{ combo.original_price|floatformat:0 }}</span>
+                    <span class="price-old text-muted text-decoration-line-through ms-2">₹{{ combo.original_price|floatformat:0 }}</span>
                     {% if combo.discount_percent %}
                     <span class="badge bg-danger ms-2">{{ combo.discount_percent }}% OFF</span>
                     {% endif %}
@@ -54,7 +54,7 @@
                 <div class="mb-4 small text-muted"><strong>Good to know:</strong> {{ combo.instructions|linebreaks }}</div>
                 {% endif %}
 
-                <div id="pdp-pin-wrap" class="mb-3">
+                {% comment %} <div id="pdp-pin-wrap" class="mb-3">
                     <div class="pincode-service d-flex flex-md-row flex-column justify-content-between align-items-md-center gap-3 p-3 border rounded-2">
                         <div class="small">
                             <span class="fw-semibold d-block">Delivery pincode</span>
@@ -65,10 +65,10 @@
                             <button type="button" class="btn btn-dark" id="comboPinBtn">Check</button>
                         </div>
                     </div>
-                </div>
+                </div> {% endcomment %}
 
                 {% if combo.id in cart_combo_ids %}
-                <a href="#" class="product-cta border-0 d-inline-block text-center text-decoration-none w-100 py-3 js-open-cart-drawer">View Cart</a>
+                <a href="#" class="btn btn-dark text-center w-100 py-3 js-open-cart-drawer">View Cart</a>
                 {% else %}
                 <form method="post" action="{% url 'store:cart_add' %}" class="product-add-form">
                     {% csrf_token %}
@@ -80,7 +80,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="combo_id" value="{{ combo.id }}">
                     <input type="hidden" name="quantity" value="1">
-                    <button type="submit" class="btn btn-outline-dark w-100 py-2" {% if not pdp_combo_available %}disabled{% endif %}>Buy now</button>
+                    <button type="submit" class="btn btn-dark w-100 py-2" {% if not pdp_combo_available %}disabled{% endif %}>Buy now</button>
                 </form>
                 {% endif %}
             </div>
@@ -90,7 +90,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
+{% comment %} <script>
 (function(){
     var url = "{% url 'store:pincode_check' %}";
     var btn = document.getElementById('comboPinBtn');
@@ -111,7 +111,7 @@
             .catch(function(){ msg.textContent = 'Could not check right now.'; msg.className = 'pincode-msg text-muted'; });
     });
 })();
-</script>
+</script> {% endcomment %}
 <script>
 (function(){
     if (typeof fbq !== 'function') return;

@@ -12,11 +12,72 @@ document.addEventListener('DOMContentLoaded', function() {
     initCheckoutDeliveryTotals();
 });
 
+function setInvalidField(el, msg) {
+    if (!el) return;
+    el.classList.add('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback text-danger small mt-1';
+        el.parentNode.insertBefore(feedback, el.nextSibling);
+    }
+    feedback.textContent = msg;
+    feedback.style.display = 'block';
+}
+
+function setValidField(el) {
+    if (!el) return;
+    el.classList.remove('is-invalid');
+    var feedback = el.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.style.display = 'none';
+    }
+}
+
+function validateCheckoutNewAddress() {
+    var form = document.getElementById('checkoutForm');
+    if (!form) return true;
+
+    var fields = [
+        { el: form.querySelector('[name="full_name"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid name (must contain letters).' },
+        { el: form.querySelector('[name="phone"]'), validate: val => { var p = val.replace(/[\s\-\+\(\)]/g, ''); return p.length >= 10 && !isNaN(p); }, msg: 'Please enter a valid 10-digit phone number.' },
+        { el: form.querySelector('[name="address_line"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid address (must contain letters).' },
+        { el: form.querySelector('[name="city"]'), validate: val => val.trim() !== '' && /[a-zA-Z]/.test(val), msg: 'Please enter a valid city (must contain letters).' },
+        { el: form.querySelector('[name="delivery_state"]'), validate: val => val !== '', msg: 'Please select a state.' },
+        { el: form.querySelector('[name="pincode"]'), validate: val => { var p = val.replace(/[\s\-]/g, ''); return p.length === 6 && !isNaN(p); }, msg: 'Please enter a valid 6-digit PIN code.' }
+    ];
+
+    var emailEl = form.querySelector('[name="email"]');
+    if (emailEl && (emailEl.hasAttribute('required') || emailEl.value.trim() !== '')) {
+        fields.push({
+            el: emailEl,
+            validate: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim()),
+            msg: 'Please enter a valid email address.'
+        });
+    }
+
+    var isValid = true;
+
+    fields.forEach(function(f) {
+        if (f.el) {
+            if (!f.validate(f.el.value)) {
+                setInvalidField(f.el, f.msg);
+                isValid = false;
+            } else {
+                setValidField(f.el);
+            }
+        }
+    });
+
+    return isValid;
+}
+
 function initCheckoutSubmit() {
     var form = document.getElementById('checkoutForm');
     var placeOrderBtn = document.getElementById('placeOrderBtn');
     if (!form || !placeOrderBtn) return;
 
+    form.setAttribute('novalidate', 'novalidate');
     applyCheckoutBlockedState();
 
     form.addEventListener('submit', function(e) {
@@ -25,6 +86,15 @@ function initCheckoutSubmit() {
             showCheckoutError(window.CHECKOUT_SUMMARY || window.CHECKOUT_STOCK_SUMMARY || 'Please fix cart issues before checkout.');
             return;
         }
+
+        if (isUsingNewAddress()) {
+            if (!validateCheckoutNewAddress()) {
+                e.preventDefault();
+                showCheckoutError('Please fill in all required address fields correctly.');
+                return;
+            }
+        }
+
         syncAddressToHidden();
         syncPaymentToHidden();
 
@@ -267,6 +337,13 @@ function getCheckoutCsrfToken() {
 
 function syncCheckoutQtyButtons(line, qty) {
     var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var qtyContainer = line.querySelector('[data-checkout-qty]');
+    if (qtyContainer && qtyContainer.getAttribute('data-max')) {
+        var itemMax = parseInt(qtyContainer.getAttribute('data-max'), 10);
+        if (!isNaN(itemMax)) {
+            maxQty = itemMax;
+        }
+    }
     var decBtn = line.querySelector('.js-checkout-qty-dec');
     var incBtn = line.querySelector('.js-checkout-qty-inc');
     if (decBtn) decBtn.disabled = qty <= 1;
@@ -347,6 +424,13 @@ function adjustCheckoutQty(itemId, delta) {
     if (!valEl) return;
 
     var maxQty = parseInt(window.CHECKOUT_MAX_QTY, 10) || 10;
+    var qtyContainer = line.querySelector('[data-checkout-qty]');
+    if (qtyContainer && qtyContainer.getAttribute('data-max')) {
+        var itemMax = parseInt(qtyContainer.getAttribute('data-max'), 10);
+        if (!isNaN(itemMax)) {
+            maxQty = itemMax;
+        }
+    }
     var current = parseInt(valEl.textContent, 10) || 1;
     var next = current + delta;
     if (next < 1 || next > maxQty) return;
@@ -355,6 +439,33 @@ function adjustCheckoutQty(itemId, delta) {
     var previousQty = current;
     valEl.textContent = String(next);
     syncCheckoutQtyButtons(line, next);
+    
+    if (next >= maxQty && qtyContainer) {
+        var actualStock = parseInt(qtyContainer.getAttribute('data-actual-stock'), 10) || 99;
+        var messageText = '';
+        if (next >= actualStock) {
+            messageText = 'Only ' + actualStock + ' left in stock';
+        } else {
+            messageText = 'Maximum ' + maxQty + ' items allowed';
+        }
+
+        var container = qtyContainer.parentElement;
+        if (!container.querySelector('.stock-limit-msg')) {
+            var msg = document.createElement('div');
+            msg.className = 'stock-limit-msg text-danger fw-bold';
+            msg.style.cssText = 'font-size:0.75rem; position:absolute; top:100%; left:0; width:max-content; margin-top:2px; z-index:10; transition: opacity 0.3s; pointer-events: none;';
+            msg.textContent = messageText;
+            container.style.position = 'relative';
+            container.appendChild(msg);
+            setTimeout(function() {
+                msg.style.opacity = '0';
+                setTimeout(function() {
+                    if (msg.parentNode) msg.parentNode.removeChild(msg);
+                }, 300);
+            }, 2200);
+        }
+    }
+
     syncCheckoutPackUpsell(null);
     setCheckoutLineBusy(line, true);
 

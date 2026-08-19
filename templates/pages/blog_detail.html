@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ post.title }} - {{ site_brand }}{% endblock %}
+{% block meta_description %}{{ post.excerpt|default:post.title }}{% endblock %}
+
+{% block content %}
+<section class="static-page">
+    <div class="container">
+        <div class="static-content" style="max-width: 800px; margin: 0 auto; padding: 0 15px;">
+            <div style="margin-bottom: 2rem;">
+                <a href="{% url 'store:blog_list' %}" style="color: var(--clr-grey-5); text-decoration: none; font-size: 0.95rem;">
+                    <i class="fas fa-arrow-left" style="margin-right: 0.5rem;"></i> Back to Blog
+                </a>
+            </div>
+
+            <div style="text-align: center; margin-bottom: clamp(2rem, 8vw, 3rem);">
+                <div style="color: var(--clr-grey-4); font-size: 0.95rem; margin-bottom: 1rem;">
+                    {{ post.published_at|date:"F d, Y" }}
+                </div>
+                <h1 style="font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 500; color: var(--clr-navy); letter-spacing: 0.02em; margin-bottom: 1.5rem; line-height: 1.2;">{{ post.title }}</h1>
+                
+                {% if post.cover_image %}
+                <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width: 100%; border-radius: 12px; margin-top: 1rem;">
+                {% endif %}
+            </div>
+
+            <div class="blog-body" style="font-size: clamp(1rem, 2.5vw, 1.125rem); line-height: 1.8; color: var(--clr-grey-5);">
+                {{ post.body|safe }}
+            </div>
+
+            <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--clr-cream-2); display: flex; justify-content: space-between; align-items: center;">
+                <div class="share-links">
+                    <span style="font-size: 0.9rem; color: var(--clr-grey-4); margin-right: 1rem;">Share:</span>
+                    <a href="https://api.whatsapp.com/send?text={{ request.build_absolute_uri|urlencode }}" target="_blank" style="color: var(--clr-grey-5); margin-right: 1rem;"><i class="fab fa-whatsapp"></i></a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" target="_blank" style="color: var(--clr-grey-5); margin-right: 1rem;"><i class="fab fa-facebook"></i></a>
+                    <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ post.title|urlencode }}" target="_blank" style="color: var(--clr-grey-5);"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.blog-body h2 {
+    font-family: var(--font-display); 
+    font-size: clamp(1.35rem, 4vw, 1.75rem); 
+    font-weight: 400; 
+    color: var(--clr-navy); 
+    margin: 2.5rem 0 1rem;
+}
+.blog-body h3 {
+    font-family: var(--font-display); 
+    font-size: clamp(1.2rem, 3vw, 1.5rem); 
+    font-weight: 400; 
+    color: var(--clr-navy); 
+    margin: 2rem 0 1rem;
+}
+.blog-body p {
+    margin-bottom: 1.5rem;
+}
+.blog-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+.blog-body ul, .blog-body ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+.blog-body li {
+    margin-bottom: 0.5rem;
+}
+.blog-body blockquote {
+    border-left: 4px solid var(--clr-beige);
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+    font-style: italic;
+    color: var(--clr-grey-4);
+}
+</style>
+{% endblock %}

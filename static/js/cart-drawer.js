@@ -107,6 +107,9 @@
       itemsEl.innerHTML = '';
       footerEl.hidden   = true;
       emptyEl.hidden    = false;
+      if (window.location.pathname.indexOf('/checkout') !== -1) {
+          window.location.reload();
+      }
       return;
     }
 
@@ -124,6 +127,9 @@
         ? '<p class="cd-item__variant">' + esc(item.variant_display) + '</p>'
         : '';
 
+      var maxQty = parseInt(item.max_quantity, 10) || 99;
+      var actualStock = parseInt(item.actual_stock, 10) || 99;
+
       html +=
         '<div class="cd-item" data-id="' + item.id + '">' +
           '<div class="cd-item__thumb">' + img + '</div>' +
@@ -132,12 +138,13 @@
             variant +
             '<p class="cd-item__price" data-unit="' + parseFloat(item.unit_price) + '">' + fmtPrice(parseFloat(item.unit_price) * item.quantity) + '</p>' +
             '<div class="cd-item__controls">' +
-              '<div class="cd-qty">' +
+              '<div class="cd-qty" data-max="' + maxQty + '" data-actual-stock="' + actualStock + '">' +
                 '<button class="cd-qty__btn js-cd-dec" data-id="' + item.id + '"' +
                   (item.quantity <= 1 ? ' disabled' : '') +
-                  ' aria-label="Decrease">−</button>' +
+                  ' aria-label="Decrease">&minus;</button>' +
                 '<span class="cd-qty__val">' + item.quantity + '</span>' +
                 '<button class="cd-qty__btn js-cd-inc" data-id="' + item.id + '"' +
+                  (item.quantity >= maxQty ? ' disabled' : '') +
                   ' aria-label="Increase">+</button>' +
               '</div>' +
               '<button class="cd-remove js-cd-del" data-id="' + item.id + '" aria-label="Remove item">' +
@@ -173,13 +180,43 @@
     if (!row) return;
     var valEl  = row.querySelector('.cd-qty__val');
     var decBtn = row.querySelector('.js-cd-dec');
+    var incBtn = row.querySelector('.js-cd-inc');
+    var qtyContainer = row.querySelector('.cd-qty');
+    var maxQty = parseInt(qtyContainer.getAttribute('data-max'), 10) || 99;
+    
     var current = parseInt(valEl.textContent, 10) || 1;
     var next    = current + delta;
-    if (next < 1) return;
+    if (next < 1 || next > maxQty) return;
 
-    
     valEl.textContent    = next;
     decBtn.disabled      = (next <= 1);
+    incBtn.disabled      = (next >= maxQty);
+    
+    if (next >= maxQty) {
+        var actualStock = parseInt(qtyContainer.getAttribute('data-actual-stock'), 10) || 99;
+        var messageText = '';
+        if (next >= actualStock) {
+            messageText = 'Only ' + actualStock + ' left in stock';
+        } else {
+            messageText = 'Maximum ' + maxQty + ' items allowed';
+        }
+
+        var container = qtyContainer.parentElement;
+        if (!container.querySelector('.stock-limit-msg')) {
+            var msg = document.createElement('div');
+            msg.className = 'stock-limit-msg text-danger fw-bold';
+            msg.style.cssText = 'font-size:0.75rem; position:absolute; top:100%; left:0; width:max-content; margin-top:2px; z-index:10; transition: opacity 0.3s; pointer-events: none;';
+            msg.textContent = messageText;
+            container.style.position = 'relative';
+            container.appendChild(msg);
+            setTimeout(function() {
+                msg.style.opacity = '0';
+                setTimeout(function() {
+                    if (msg.parentNode) msg.parentNode.removeChild(msg);
+                }, 300);
+            }, 2200);
+        }
+    }
 
     fetch('/cart/update/', {
       method: 'POST',
@@ -199,6 +236,12 @@
           return;
         }
         if (data.cart_count !== undefined) syncAllBadges(data.cart_count);
+        if (data.line_total !== undefined) {
+            var priceEl = row.querySelector('.cd-item__price');
+            if (priceEl) {
+                priceEl.textContent = fmtPrice(parseFloat(data.line_total));
+            }
+        }
         if (data.total !== undefined) {
           totalEl.textContent = fmtPrice(parseFloat(data.total));
         } else {

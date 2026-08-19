@@ -51,11 +51,23 @@ class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['slug'].required = False
-        # Avoid self as parent in edit form
         if self.instance and self.instance.pk:
             self.fields['parent'].queryset = Category.objects.exclude(pk=self.instance.pk).order_by('name')
         else:
             self.fields['parent'].queryset = Category.objects.all().order_by('name')
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if not name:
+            raise forms.ValidationError("Category name is required.")
+        
+        #case-insensitive unique check
+        qs = Category.objects.filter(name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("A category with this name already exists.")
+        return name
 
     def clean_image(self):
         image = self.cleaned_data.get('image')
@@ -79,7 +91,7 @@ class CategoryForm(forms.ModelForm):
 
     def clean_banner_image(self):
         image = self.cleaned_data.get('banner_image')
-        return _validate_image_file(image, required=False)
+        return _validate_banner_image(image, required=False)
 
 
 def _validate_banner_image(image, required=True):
@@ -97,6 +109,9 @@ def _validate_banner_image(image, required=True):
             width, height = img.size
             if width * height > 5000000:
                 raise forms.ValidationError('Image resolution cannot exceed 5 megapixels. Please resize or compress.')
+            ratio = width / height
+            if not (1.5 <= ratio <= 3.0):
+                raise forms.ValidationError(f'Banner image aspect ratio must be between 1.5:1 and 3.0:1. Uploaded image is {ratio:.2f}:1.')
             img.verify()
             image.seek(0)
         except forms.ValidationError:
@@ -215,6 +230,17 @@ class ProductBasicEditForm(forms.ModelForm):
         self.fields['hsn_code'].required = False
         self.fields['base_original_price'].required = False
         self.fields['care_instructions'].required = False
+        
+        #base field strict validation
+        self.fields['category'].required = True
+        self.fields['category'].error_messages = {'required': 'Category is required.'}
+        self.fields['name'].required = True
+        self.fields['name'].error_messages = {'required': 'Product name is required.'}
+        self.fields['base_price'].required = True
+        self.fields['base_price'].error_messages = {'required': 'Selling price is required.'}
+        self.fields['base_stock'].required = True
+        self.fields['base_stock'].error_messages = {'required': 'Stock is required.'}
+
         active = Category.objects.filter(is_active=True)
         if self.instance and self.instance.pk and self.instance.category_id:
             current = self.instance.category
@@ -236,14 +262,25 @@ class ProductBasicEditForm(forms.ModelForm):
                         self.add_error('gst_percentage', 'GST % must be between 0 and 28.')
                 except (TypeError, ValueError):
                     self.add_error('gst_percentage', 'Enter a valid number.')
+            if not cleaned.get('hsn_code'):
+                self.add_error('hsn_code', 'HSN Code is required when GST is applicable.')
         elif gst_pct is not None:
             cleaned['gst_percentage'] = None
+            
         base_price = cleaned.get('base_price')
         base_original_price = cleaned.get('base_original_price')
         if base_original_price and (not base_price):
             self.add_error('base_price', 'Selling price is required when original price is set.')
         if base_original_price and base_price and (base_original_price <= base_price):
             self.add_error('base_original_price', 'Original/MRP price must be greater than the selling price.')
+            
+        is_deal = cleaned.get('is_deal_of_day')
+        dod_start = cleaned.get('deal_of_day_start')
+        dod_end = cleaned.get('deal_of_day_end')
+        if is_deal:
+            if dod_start and dod_end and dod_end < dod_start:
+                self.add_error('deal_of_day_end', 'End date cannot be before start date.')
+                
         return cleaned
 
 
@@ -296,10 +333,69 @@ class ReelForm(forms.ModelForm):
         self.fields['poster_image'].required = False
         self.fields['display_order'].required = False
         self.fields['product'].queryset = Product.objects.filter(is_active=True).order_by('name')
+        self.fields['product'].required = True
+        self.fields['product'].empty_label = "Select a product..."
+        self.fields['product'].error_messages = {'required': 'A linked product is mandatory for storefront visibility.'}
 
     def clean_poster_image(self):
         image = self.cleaned_data.get('poster_image')
-        return _validate_image_file(image, required=False)
+        image = _validate_image_file(image, required=False)
+        if image:
+            from django.core.files.uploadedfile import UploadedFile
+            if isinstance(image, UploadedFile):
+                try:
+                    from PIL import Image as PILImage
+                    img = PILImage.open(image)
+                    width, height = img.size
+                    ratio = width / height
+                    if not (0.55 <= ratio <= 0.58):
+                        raise forms.ValidationError('Poster image must have an approximate 9:16 vertical ratio.')
+                    image.seek(0)
+                except forms.ValidationError:
+                    raise
+                except Exception:
+                    raise forms.ValidationError('Invalid poster image.')
+        return image
+
+    def clean_video(self):
+        video = self.cleaned_data.get('video')
+        from django.core.files.uploadedfile import UploadedFile
+        if not video or not isinstance(video, UploadedFile):
+            return video
+            
+        import tempfile
+        import subprocess
+        import os
+        
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+                for chunk in video.chunks():
+                    temp_video.write(chunk)
+                temp_path = temp_video.name
+            
+            cmd = [
+                'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0',
+                temp_path
+            ]
+            
+            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8').strip()
+            if 'x' in output:
+                width, height = map(int, output.split('x'))
+                ratio = width / height
+                if not (0.55 <= ratio <= 0.58):
+                    raise forms.ValidationError('Video must have an approximate 9:16 vertical ratio.')
+        except forms.ValidationError:
+            raise
+        except Exception as e:
+            logger.error(f"FFprobe failed to validate video: {str(e)}")
+            raise forms.ValidationError('Could not validate video format. Please ensure it is a valid video file.')
+        finally:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+            video.seek(0)
+            
+        return video
 
 
 class RentalConfigForm(forms.ModelForm):

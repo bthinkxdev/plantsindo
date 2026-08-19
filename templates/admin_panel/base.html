@@ -8,8 +8,8 @@
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
 </head>
@@ -160,7 +160,7 @@
                 {% if messages %}
                     <div class="messages-container" data-has-messages="1">
                         {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}" data-message-tag="{{ message.tags|default:'info' }}" data-message-text="{{ message|escapejs }}">
+                            <div class="alert alert-{{ message.tags }}" data-message-tag="{{ message.tags|default:'info' }}" data-message-text="{{ message }}">
                                 <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
                                 {{ message }}
                                 <button class="alert-close">&times;</button>
@@ -198,6 +198,15 @@
                 menuToggle && !menuToggle.contains(e.target)) {
                 sidebar.classList.remove('active');
                 body.classList.remove('sidebar-open');
+            }
+        });
+
+        // Scroll sidebar to active item on load
+        document.addEventListener('DOMContentLoaded', function() {
+            var activeNav = document.querySelector('.sidebar-nav .nav-item.active');
+            if (activeNav) {
+                // Using scrollIntoView to center the active item within its scrolling container (.sidebar-nav)
+                activeNav.scrollIntoView({ block: 'center', behavior: 'instant' });
             }
         });
 
@@ -266,7 +275,7 @@
         })();
     </script>
 
-    <script src="{% static 'js/admin-mobile.js' %}"></script>
+    <script src="{% static 'js/admin-mobile.js' %}?v=2"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

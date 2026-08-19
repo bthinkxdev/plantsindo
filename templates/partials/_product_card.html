@@ -10,10 +10,10 @@
         {% else %}
         <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="200" height="200">
         {% endif %}
+        <div class="p99-compact-card__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</div>
     </a>
     {% endwith %}
     <a href="{% url 'store:product_detail' product.slug %}?variant={{ v.id }}" class="p99-compact-card__name">{{ product.name }}</a>
-    <div class="p99-compact-card__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</div>
     <span class="p99-compact-card__price">₹{{ product.lowest_price|default:v.price|floatformat:0 }}</span>
 </div>
 {% else %}
@@ -93,10 +93,10 @@
         {% else %}
         <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="200" height="200">
         {% endif %}
+        <div class="p99-compact-card__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</div>
     </a>
     {% endwith %}
     <a href="{% url 'store:product_detail' product.slug %}" class="p99-compact-card__name">{{ product.name }}</a>
-    <div class="p99-compact-card__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</div>
     <span class="p99-compact-card__price">₹{{ product.base_price|floatformat:0 }}</span>
 </div>
 {% else %}

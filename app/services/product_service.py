@@ -1,4 +1,4 @@
-﻿"""Product detail (PDP) data loading and context building – optimized querysets, no template logic."""
+"""Product detail (PDP) data loading and context building – optimized querysets, no template logic."""
 
 from __future__ import annotations
 
@@ -59,18 +59,11 @@ def get_pdp_queryset():
 
 
 def resolve_variants_for_detail(product: Product, request) -> Tuple[List[Variant], Optional[Variant]]:
-    sellable_qs = (
-        product.variants.filter(is_active=True, stock_quantity__gt=0)
+    variants = list(
+        product.variants.filter(is_active=True)
         .prefetch_related('attribute_values__attribute', 'images')
         .order_by('display_order', 'id')
     )
-    variants = list(sellable_qs)
-    if not variants and product.variants.filter(is_active=True).exists():
-        variants = list(
-            product.variants.filter(is_active=True)
-            .prefetch_related('attribute_values__attribute', 'images')
-            .order_by('display_order', 'id')
-        )
     selected_variant = None
     variant_param = request.GET.get('variant')
     if variant_param:
@@ -84,20 +77,22 @@ def resolve_variants_for_detail(product: Product, request) -> Tuple[List[Variant
                     selected_variant = v
                     break
     if not selected_variant and variants:
-        selected_variant = variants[0]
+        in_stock = [v for v in variants if getattr(v, 'stock_quantity', 0) > 0]
+        selected_variant = in_stock[0] if in_stock else variants[0]
     return variants, selected_variant
 
 
 def build_attributes_grouped(product: Product, variants: List[Variant]) -> List[Dict[str, Any]]:
     used_value_ids = set()
     for v in variants:
-        for av_id in v.attribute_values.values_list('id', flat=True):
-            used_value_ids.add(av_id)
+        for av in v.attribute_values.all():
+            used_value_ids.add(av.id)
     attributes_grouped = []
     for attr in product.attributes.prefetch_related('values').order_by('display_order', 'name'):
+        sorted_values = sorted(attr.values.all(), key=lambda av: (av.display_order, av.value, av.id))
         values_for_attr = [
             {'id': av.id, 'value': av.value}
-            for av in attr.values.order_by('display_order', 'value')
+            for av in sorted_values
             if av.id in used_value_ids
         ]
         if not values_for_attr:

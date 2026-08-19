@@ -50,6 +50,20 @@
     }
 
     function replaceWithViewCart(btn, cartUrl) {
+        if (btn.id === 'pdpMainCartBtn') {
+            btn.className = "btn-add-cart btn btn-view-cart";
+            btn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>';
+            btn.disabled = false;
+            var formVariantId = document.getElementById('formVariantId');
+            if (formVariantId && window.cartVariantIds) {
+                var vid = String(formVariantId.value);
+                if (!window.cartVariantIds.includes(vid)) {
+                    window.cartVariantIds.push(vid);
+                }
+            }
+            return;
+        }
+
         var viewCart = document.createElement("a");
         viewCart.href = cartUrl;
         viewCart.className = (btn.className || "").replace(/\s*js-pdp-add-cart\s*/, " ").trim() + " btn-view-cart";
@@ -70,10 +84,17 @@
             if (!form || !form.classList.contains("product-add-form")) return;
             e.preventDefault();
 
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn && btn.classList.contains("btn-view-cart")) {
+                if (window.cartDrawer && typeof window.cartDrawer.open === "function") {
+                    window.cartDrawer.open();
+                }
+                return;
+            }
+
             var url = form.getAttribute("action");
             if (!url) return;
             var body = new FormData(form);
-            var btn = form.querySelector('button[type="submit"]');
             var origHtml = btn ? btn.innerHTML : "";
             if (btn) {
                 btn.disabled = true;
@@ -164,7 +185,12 @@
                 var fVariant = (form.querySelector('[name="variant_id"]') || {}).value || null;
                 var fProduct = (form.querySelector('[name="product_id"]') || {}).value || null;
 
-                var isMatch = (productId && fProduct && fProduct === productId);
+                var isMatch = false;
+                if (variantId && fVariant) {
+                    isMatch = (fVariant === variantId);
+                } else if (!variantId && !fVariant) {
+                    isMatch = (productId && fProduct && fProduct === productId);
+                }
 
                 if (!isMatch) return;
 

@@ -91,12 +91,15 @@ class OTPLoginView(View):
         otp = form.cleaned_data['otp']
         success, message, otp_request = OTPService.verify_otp(email, otp)
         if success:
+            old_session_key = request.session.session_key
             user, created = AuthenticationService.get_or_create_user(email)
             login(request, user)
             request.session.pop('otp_email', None)
             request.session.pop('otp_next', None)
-            CartService.merge_carts(user, request.session.session_key)
+            CartService.merge_carts(user, old_session_key)
             CartService.merge_session_wishlist_to_user(request, user)
+            from .services import OrderService
+            OrderService.link_guest_orders(user, email)
             messages.success(request, 'Login successful!')
             if next_url == '/cart/add/':
                 return redirect('/')
@@ -152,10 +155,13 @@ class OTPLoginAjaxView(View):
         otp = form.cleaned_data['otp']
         success, message, otp_request = OTPService.verify_otp(email, otp)
         if success:
+            old_session_key = request.session.session_key
             user, created = AuthenticationService.get_or_create_user(email)
             login(request, user)
-            CartService.merge_carts(user, request.session.session_key)
+            CartService.merge_carts(user, old_session_key)
             CartService.merge_session_wishlist_to_user(request, user)
+            from .services import OrderService
+            OrderService.link_guest_orders(user, email)
             request.session.pop('otp_email', None)
             next_url = request.POST.get('next', '/')
             return JsonResponse({'success': True, 'message': 'Login successful!', 'redirect': next_url})

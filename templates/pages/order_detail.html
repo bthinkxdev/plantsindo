@@ -1,7 +1,30 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 {% block title %}Order Details — {{ site_brand }}{% endblock %}
 {% block meta_description %}View your {{ site_brand }} order details, items, totals and live shipment tracking in one place.{% endblock %}
+
+{% block extra_css %}
+<style>
+@media (max-width: 767px) {
+    .success-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px !important;
+    }
+    
+    .success-header-text {
+        text-align: center;
+    }
+
+    .success-icon-badge {
+        margin-right: 0 !important;
+        margin-bottom: 0;
+    }
+}
+</style>
+{% endblock %}
 {% block content %}
 
 
@@ -13,7 +36,7 @@
                 <div class="checkout-card success-main-card wow fadeInLeft" data-wow-delay="0.1s">
                     <div class="success-header">
                         <div class="success-icon-badge">
-                            <span class="success-icon-check">âœ“</span>
+                            <span class="success-icon-check">&#10003;</span>
                         </div>
                         <div class="success-header-text">
                             <p class="success-pill">Order {{ order.get_status_display }}</p>
@@ -21,7 +44,7 @@
                                 Order #{{ order.order_number }}
                             </h2>
                             <p class="success-subtitle">
-                                Hereâ€™s a complete summary of your order, payment and delivery details.
+                                Here's a complete summary of your order, payment and delivery details.
                             </p>
                         </div>
                     </div>
@@ -33,13 +56,13 @@
                         </div>
                         <div class="success-meta-item">
                             <span class="label">Placed on</span>
-                            <span class="value">{{ order.created_at|date:"M d, Y Â· h:i A" }}</span>
+                            <span class="value">{{ order.created_at|date:"M d, Y" }} &middot; {{ order.created_at|date:"h:i A" }}</span>
                         </div>
                         <div class="success-meta-item">
                             <span class="label">Payment</span>
                             <span class="value">
                                 {% if order.payment %}
-                                    {{ order.payment.get_method_display }} Â· {{ order.payment.get_status_display }}
+                                    {{ order.payment.get_method_display }} &middot; {{ order.payment.get_status_display }}
                                 {% else %}
                                     {{ order.get_status_display }}
                                 {% endif %}
@@ -95,7 +118,7 @@
                         <div class="success-item-row">
                             <div class="item-main">
                                 <div class="item-title">{{ item.product_name }}</div>
-                                <div class="item-meta">{{ item.variant_snapshot }} Â· Qty: {{ item.quantity }}</div>
+                                <div class="item-meta">{{ item.variant_snapshot }} &middot; Qty: {{ item.quantity }}</div>
                             </div>
                             <div class="item-price">&#8377;{{ item.line_total }}</div>
                         </div>

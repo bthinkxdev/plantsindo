@@ -667,28 +667,49 @@ class CartService:
         return cart
 
     @classmethod
+    def get_or_create_buy_now_cart(cls, request):
+        user = getattr(request, 'user', None)
+        user = user if user and user.is_authenticated else None
+        if user:
+            cart, _ = Cart.objects.get_or_create(user=user, status=Cart.Status.BUY_NOW)
+            return cart
+        session_key = cls._ensure_session_key(request)
+        cart = Cart.objects.filter(session_key=session_key, status=Cart.Status.BUY_NOW, user__isnull=True).first()
+        if not cart:
+            cart = Cart.objects.create(session_key=session_key, status=Cart.Status.BUY_NOW)
+        return cart
+
+    @classmethod
+    def get_checkout_cart(cls, request):
+        mode = request.session.get('checkout_mode', 'cart')
+        if mode == 'buy_now':
+            return cls.get_or_create_buy_now_cart(request)
+        return cls.get_or_create_cart(request)
+
+    @classmethod
     def merge_carts(cls, user, session_key):
         if not user or not session_key:
             return
-        try:
-            session_cart = Cart.objects.get(session_key=session_key, status=Cart.Status.ACTIVE)
-        except Cart.DoesNotExist:
-            return
-        user_cart, _ = Cart.objects.get_or_create(user=user, status=Cart.Status.ACTIVE)
-        for item in session_cart.items.select_related('product', 'selected_variant', 'combo').all():
-            rb = item.rental_billing_period or None
-            ru = item.rental_period_count if item.line_type == CartItem.LineKind.RENTAL else None
-            gift = bool(item.is_gift)
-            rs = item.rental_start_date
-            re = item.rental_end_date
-            if item.combo_id:
-                cls.add_combo_item(user_cart, item.combo, item.quantity, line_type=item.line_type, is_gift=gift)
-            elif item.selected_variant_id:
-                cls.add_item(user_cart, item.selected_variant, item.quantity, line_type=item.line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=gift, selected_pot_id=item.selected_pot_id)
-            else:
-                cls.add_item(user_cart, item.product, item.quantity, line_type=item.line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=gift, selected_pot_id=item.selected_pot_id)
-        session_cart.status = Cart.Status.ABANDONED
-        session_cart.save(update_fields=['status'])
+        for status in [Cart.Status.ACTIVE, Cart.Status.BUY_NOW]:
+            try:
+                session_cart = Cart.objects.get(session_key=session_key, status=status)
+            except Cart.DoesNotExist:
+                continue
+            user_cart, _ = Cart.objects.get_or_create(user=user, status=status)
+            for item in session_cart.items.select_related('product', 'selected_variant', 'combo').all():
+                rb = item.rental_billing_period or None
+                ru = item.rental_period_count if item.line_type == CartItem.LineKind.RENTAL else None
+                gift = bool(item.is_gift)
+                rs = item.rental_start_date
+                re = item.rental_end_date
+                if item.combo_id:
+                    cls.add_combo_item(user_cart, item.combo, item.quantity, line_type=item.line_type, is_gift=gift)
+                elif item.selected_variant_id:
+                    cls.add_item(user_cart, item.selected_variant, item.quantity, line_type=item.line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=gift, selected_pot_id=item.selected_pot_id)
+                else:
+                    cls.add_item(user_cart, item.product, item.quantity, line_type=item.line_type, rental_billing=rb, rental_units=ru, rental_start_date=rs, rental_end_date=re, is_gift=gift, selected_pot_id=item.selected_pot_id)
+            session_cart.status = Cart.Status.ABANDONED
+            session_cart.save(update_fields=['status'])
 
     @staticmethod
     def merge_session_wishlist_to_user(request, user):
@@ -765,9 +786,28 @@ class CartService:
 
         try:
             items = list(
-                cart.items.select_related('product', 'combo')
+                cart.items.select_related('product', 'combo', 'selected_variant')
                 .prefetch_related('combo__items')
             )
+            for item in items:
+                if getattr(item, 'line_type', '') == 'rental':
+                    continue
+                updated = False
+                if item.combo_id and item.combo:
+                    if item.combo.price is not None and item.unit_price != item.combo.price:
+                        item.unit_price = item.combo.price
+                        updated = True
+                elif getattr(item, 'selected_variant_id', None) and getattr(item, 'selected_variant', None):
+                    if item.selected_variant.price is not None and item.unit_price != item.selected_variant.price:
+                        item.unit_price = item.selected_variant.price
+                        updated = True
+                elif item.product_id and item.product:
+                    if item.product.base_price is not None and item.unit_price != item.product.base_price:
+                        item.unit_price = item.product.base_price
+                        updated = True
+                if updated:
+                    item.save(update_fields=['unit_price'])
+
             subtotal = sum((item.line_total for item in items))
             gst_total = cart.gst_total
             breakdown = compute_cart_delivery_charges(items, state_id)
@@ -1087,9 +1127,75 @@ class OrderService:
                 return order_number
 
     @classmethod
+    def link_guest_orders(cls, user, email):
+        """Link any guest orders and their snapshot addresses to the given user."""
+        if not user or not email:
+            return
+            
+        from django.db import transaction
+        from ..models import Order, Address, UserProfile
+        
+        with transaction.atomic():
+            guest_addresses = list(Address.objects.filter(
+                email__iexact=email, 
+                user__isnull=True, 
+                is_snapshot=True
+            ).order_by('-created_at'))
+            
+            if guest_addresses:
+                latest_address = guest_addresses[0]
+                
+                profile_phone = getattr(user, 'profile', None)
+                phone_val = profile_phone.phone if profile_phone else ''
+                
+                user_updated = False
+                if not user.first_name and latest_address.full_name:
+                    parts = latest_address.full_name.split(' ', 1)
+                    user.first_name = parts[0][:150]
+                    if len(parts) > 1:
+                        user.last_name = parts[1][:150]
+                    user_updated = True
+                
+                if user_updated:
+                    user.save(update_fields=['first_name', 'last_name'])
+                    
+                if not phone_val and latest_address.phone:
+                    profile, _ = UserProfile.objects.get_or_create(user=user)
+                    profile.phone = latest_address.phone
+                    profile.save(update_fields=['phone'])
+                    
+                has_saved_address = Address.objects.filter(user=user, is_snapshot=False).exists()
+                if not has_saved_address:
+                    new_address = Address(
+                        user=user,
+                        is_snapshot=False,
+                        is_default=True,
+                        full_name=latest_address.full_name,
+                        phone=latest_address.phone,
+                        email=latest_address.email,
+                        address_line=latest_address.address_line,
+                        city=latest_address.city,
+                        state=latest_address.state,
+                        delivery_state=latest_address.delivery_state,
+                        pincode=latest_address.pincode,
+                    )
+                    new_address.save()
+
+            Address.objects.filter(
+                email__iexact=email, 
+                user__isnull=True, 
+                is_snapshot=True
+            ).update(user=user)
+            
+            Order.objects.filter(
+                address__email__iexact=email, 
+                user__isnull=True
+            ).update(user=user)
+
+    @classmethod
     @transaction.atomic
     def create_order(cls, cart, form_data, user=None, clear_cart=True):
-        if cart.status != Cart.Status.ACTIVE:
+        if cart.status not in (Cart.Status.ACTIVE, Cart.Status.BUY_NOW):
             raise CartError('This cart has already been used for an order.')
         items = (
             cart.items.select_related('selected_variant', 'product', 'combo', 'selected_pot')

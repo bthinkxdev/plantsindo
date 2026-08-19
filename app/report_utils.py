@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, time as dt_time
 from decimal import Decimal
-from django.db.models import Count, Sum, F, Value, CharField
+from django.db.models import Count, Sum, F, Value, CharField, Exists, OuterRef
 from django.utils import timezone
 from django.conf import settings
 from .models import Order, OrderItem, Product, Category, Payment, Variant
@@ -52,9 +52,9 @@ def apply_report_filters(qs, *, date_from=None, date_to=None, date_preset='this_
     if payment_method:
         qs = qs.filter(payment__method=payment_method)
     if product_id:
-        qs = qs.filter(items__product_id=product_id).distinct()
+        qs = qs.filter(Exists(OrderItem.objects.filter(order=OuterRef('pk'), product_id=product_id)))
     if category_id:
-        qs = qs.filter(items__product__category_id=category_id).distinct()
+        qs = qs.filter(Exists(OrderItem.objects.filter(order=OuterRef('pk'), product__category_id=category_id)))
     if user_id:
         qs = qs.filter(user_id=user_id)
     if guest_only:
@@ -88,7 +88,7 @@ def get_report_summary(qs, cache_key=None):
     total_orders = agg['total_orders'] or 0
     total_revenue = agg['total_revenue'] or Decimal('0')
     avg_order_value = total_revenue / total_orders if total_orders else Decimal('0')
-    top_row = OrderItem.objects.filter(order__in=qs).values('product_id', 'product_name').annotate(total_qty=Sum('quantity')).order_by('-total_qty').first()
+    top_row = OrderItem.objects.filter(order__in=qs.values('pk')).values('product_id', 'product_name').annotate(total_qty=Sum('quantity')).order_by('-total_qty').first()
     top_product_name = None
     if top_row:
         top_product_name = top_row.get('product_name') or ''
@@ -119,14 +119,14 @@ def get_sales_report_queryset(filters):
 def get_product_performance_queryset(filters):
     order_qs = get_base_order_queryset()
     order_qs = apply_report_filters(order_qs, **_filter_kwargs_for_report(filters))
-    return Product.objects.filter(order_items__order__in=order_qs).annotate(units_sold=Sum('order_items__quantity'), revenue=Sum(F('order_items__quantity') * F('order_items__unit_price')), order_count=Count('order_items__order', distinct=True)).filter(units_sold__gt=0).order_by('-units_sold').select_related('category').distinct()
+    return Product.objects.filter(order_items__order__in=order_qs.values('pk')).annotate(units_sold=Sum('order_items__quantity'), revenue=Sum(F('order_items__quantity') * F('order_items__unit_price')), order_count=Count('order_items__order', distinct=True)).filter(units_sold__gt=0).order_by('-units_sold').select_related('category').distinct()
 
 def get_customer_report_queryset(filters):
     order_qs = get_base_order_queryset()
     order_qs = apply_report_filters(order_qs, **_filter_kwargs_for_report(filters))
     from django.contrib.auth import get_user_model
     User = get_user_model()
-    users_qs = User.objects.filter(orders__in=order_qs).annotate(order_count=Count('orders', distinct=True), total_spent=Sum('orders__total')).distinct().order_by('-total_spent')
+    users_qs = User.objects.filter(orders__in=order_qs.values('pk')).annotate(order_count=Count('orders', distinct=True), total_spent=Sum('orders__total')).distinct().order_by('-total_spent')
     return users_qs
 
 def get_inventory_report_queryset(filters):

@@ -31,6 +31,65 @@
         background: #FFEBEE;
         color: #C62828;
     }
+    .reviews-filters {
+        align-items: flex-end !important;
+    }
+    .reviews-filters .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .filter-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2px;
+    }
+    .filter-actions .btn {
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .search-input-wrap {
+        position: relative;
+        width: 100%;
+    }
+    .search-input-wrap i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+    }
+    .search-input-wrap input {
+        padding-left: 2.2rem;
+        width: 100%;
+    }
+    .search-filter-group {
+        flex: 1.5;
+        min-width: 240px;
+    }
+    @media (max-width: 768px) {
+        .reviews-bulk-actions {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            justify-content: flex-start !important;
+        }
+        .reviews-action-select {
+            flex: 1;
+            min-width: 0 !important;
+        }
+        .reviews-apply-btn {
+            width: auto !important;
+            flex-shrink: 0;
+        }
+        .filter-actions {
+            width: 100%;
+        }
+        .filter-actions .btn {
+            flex: 1;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -48,15 +107,17 @@
 
         <div class="card-body">
             <form method="get" class="filters filters-inline reviews-filters mb-2">
-                <div class="search-box">
+                <div class="filter-group search-filter-group">
                     <label class="form-label" for="id_q">Search (product, user)</label>
-                    <i class="fas fa-search"></i>
-                    <input type="text"
-                           id="id_q"
-                           name="q"
-                           class="form-control"
-                           value="{{ filter_q }}"
-                           placeholder="Search by product or user">
+                    <div class="search-input-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text"
+                               id="id_q"
+                               name="q"
+                               class="form-control"
+                               value="{{ filter_q }}"
+                               placeholder="Search by product or user">
+                    </div>
                 </div>
 
                 <div class="filter-group">
@@ -108,15 +169,20 @@
                            value="{{ filter_date_to }}">
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-actions">
                     <button type="submit" class="btn btn-primary">Filter</button>
+                    {% if filter_q or filter_product or filter_rating or filter_status or filter_date_from or filter_date_to %}
+                        <a href="{% url 'admin_panel:review_list' %}" class="btn btn-secondary">
+                            Clear
+                        </a>
+                    {% endif %}
                 </div>
             </form>
 
-            <form method="post">
+            <form method="post" action="{% url 'admin_panel:review_bulk_action' %}">
                 {% csrf_token %}
-                <div class="reviews-bulk-actions d-flex gap-2 align-center mb-2" style="flex-wrap: wrap;">
-                    <select name="action" required class="form-control reviews-action-select">
+                <div class="reviews-bulk-actions d-flex gap-2 mb-3" style="flex-wrap: wrap; align-items: center;">
+                    <select name="action" required class="form-control reviews-action-select" style="width: auto; min-width: 180px;">
                         <option value="">Bulk actions</option>
                         <option value="approve">Approve</option>
                         <option value="unapprove">Unapprove</option>

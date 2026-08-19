@@ -42,9 +42,9 @@ def cart_context(request):
             if line_type != CartItem.LineKind.PURCHASE:
                 continue
             if variant_id is not None:
-                cart_variant_ids.add(variant_id)
+                cart_variant_ids.add(str(variant_id))
             else:
-                cart_simple_product_ids.add(product_id)
+                cart_simple_product_ids.add(str(product_id))
     except Exception:
         cart_count = 0
         cart_subtotal = 0
@@ -134,14 +134,27 @@ def search_typed_suggestions(request):
 
 def storefront_brand(request):
     tree = build_active_category_tree()
+    
+    #get IDs of categories that directly contain active and available (in-stock) products
+    active_product_category_ids = set(Product.objects.available().values_list('category_id', flat=True).distinct())
+    
+    def has_active_products(cid):
+        if cid in active_product_category_ids:
+            return True
+        for descendant_id in tree.descendants_of(cid):
+            if descendant_id in active_product_category_ids:
+                return True
+        return False
+
     root_ids = tree.children_ids.get(None, [])
-    roots = [tree.by_id[cid] for cid in root_ids if cid in tree.by_id]
+    roots = [tree.by_id[cid] for cid in root_ids if cid in tree.by_id and has_active_products(cid)]
     roots.sort(key=lambda c: (c.name.lower(), c.pk))
     nav = roots[:16]
+    
     nav_category_menu = []
     for parent in nav:
         child_ids = tree.children_ids.get(parent.pk, [])
-        children = [tree.by_id[cid] for cid in child_ids if cid in tree.by_id]
+        children = [tree.by_id[cid] for cid in child_ids if cid in tree.by_id and has_active_products(cid)]
         children.sort(key=lambda c: (c.name.lower(), c.pk))
         nav_category_menu.append({'parent': parent, 'children': children})
     return {
