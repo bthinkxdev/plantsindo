@@ -46,7 +46,7 @@
                 {% else %}<img src="{% static 'img/product-1.png' %}" alt="{{ variant.product.name }}" loading="lazy">{% endif %}
                 {% endwith %}
             </a>
-            <button type="button" class="product-wishlist js-wishlist-toggle {% if variant.id in wishlist_variant_ids %}in-wishlist{% endif %}" data-variant-id="{{ variant.id }}" title="Wishlist"><i class="far fa-heart"></i></button>
+            <button type="button" class="product-wishlist js-wishlist-toggle {% if variant.id in wishlist_variant_ids %}in-wishlist{% endif %}" data-variant-id="{{ variant.id }}" title="Wishlist"><i class="{% if variant.id in wishlist_variant_ids %}fas{% else %}far{% endif %} fa-heart"></i></button>
             <a href="{% url 'store:product_detail' variant.product.slug %}?variant={{ variant.id }}" class="product-quick-add">View Detail <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
         <div class="product-body">

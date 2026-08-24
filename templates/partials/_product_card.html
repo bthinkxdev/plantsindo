@@ -48,7 +48,7 @@
         <button type="button"
                 class="tpc-wishlist js-wishlist-toggle {% if v.id in wishlist_variant_ids %}in-wishlist{% endif %}"
                 data-variant-id="{{ v.id }}" title="Wishlist" aria-label="Wishlist">
-            <i class="far fa-heart"></i>
+            <i class="{% if v.id in wishlist_variant_ids %}fas{% else %}far{% endif %} fa-heart"></i>
         </button>
         {% endif %}
 
@@ -129,7 +129,7 @@
                 class="tpc-wishlist js-wishlist-toggle {% if product.id in wishlist_product_ids %}in-wishlist{% endif %}"
                 data-product-id="{{ product.id }}"
                 title="Wishlist" aria-label="Wishlist">
-            <i class="far fa-heart"></i>
+            <i class="{% if product.id in wishlist_product_ids %}fas{% else %}far{% endif %} fa-heart"></i>
         </button>
         {% endif %}
 

@@ -77,6 +77,16 @@
                     if (!data) return;
                     if (data.success) {
                         btn.classList.toggle("in-wishlist", data.added);
+                        var icon = btn.querySelector("i.fa-heart");
+                        if (icon) {
+                            if (data.added) {
+                                icon.classList.remove("far");
+                                icon.classList.add("fas");
+                            } else {
+                                icon.classList.remove("fas");
+                                icon.classList.add("far");
+                            }
+                        }
                         if (typeof data.count === "number") updateHeaderCount(data.count);
 
                         if (!data.added) {
