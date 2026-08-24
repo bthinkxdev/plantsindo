@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from .captcha import CaptchaError, captcha_required, extract_captcha_token, verify_captcha
 from .auth_views import get_client_ip
 import json
@@ -1970,6 +1972,7 @@ class RemoveCartItemView(View):
             })
         return _redirect_open_cart()
 
+@method_decorator(never_cache, name='dispatch')
 class CheckoutView(TemplateView):
     template_name = 'pages/checkout.html'
 
@@ -1982,7 +1985,7 @@ class CheckoutView(TemplateView):
 
         cart = CartService.get_checkout_cart(request)
         if not cart.items.exists():
-            return render(request, 'pages/checkout.html', {'cart_is_empty': True})
+            return redirect('store:home')
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
