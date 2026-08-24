@@ -1,0 +1,109 @@
+{% extends "admin_panel/base.html" %}
+{% load static %}
+
+{% block title %}Newsletter Subscribers{% endblock %}
+{% block page_title %}Newsletter Subscribers{% endblock %}
+
+{% block extra_css %}
+<style>
+    .mobile-date {
+        display: none;
+    }
+    .desktop-date {
+        display: table-cell;
+    }
+    
+    @media (max-width: 768px) {
+        .mobile-date {
+            display: block;
+            margin-top: 0.25rem;
+        }
+        .desktop-date {
+            display: none !important;
+        }
+        .table-responsive {
+            overflow-x: hidden;
+        }
+        .email-text {
+            word-break: break-all;
+            white-space: normal;
+            display: block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Newsletter Subscribers</h3>
+    </div>
+
+    <div class="card-body">
+        
+        {% if subscribers %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th class="desktop-date">Subscribed On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in subscribers %}
+                            <tr>
+                                <td>
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span class="email-text" style="color: var(--gray-800);">
+                                            <i class="fas fa-envelope text-muted" style="margin-right: 0.25rem;"></i> {{ sub.email }}
+                                        </span>
+                                        <span class="mobile-date" style="color: var(--gray-600); font-size: 0.8125rem;">
+                                            <i class="fas fa-clock text-muted" style="margin-right: 0.25rem;"></i> {{ sub.created_at|date:"d M, Y" }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="desktop-date" style="white-space: nowrap;">
+                                    <span style="color: var(--gray-600); font-size: 0.875rem;">
+                                        <i class="fas fa-clock text-muted" style="margin-right: 0.25rem;"></i> {{ sub.created_at|date:"d M, Y h:i A" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if sub.is_active %}
+                                        <span class="badge badge-success">Active</span>
+                                    {% else %}
+                                        <span class="badge badge-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+                <div class="pagination" style="margin-top: 1.5rem;">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1">First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                    {% endif %}
+
+                    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <div class="empty-state">
+                <p>No subscribers found</p>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

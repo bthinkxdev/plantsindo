@@ -820,9 +820,110 @@
   var noneCard = document.getElementById('pdpPotNone');
   if (noneCard) selectPot(noneCard);
  
-  // ── Hook into variant price changes (if your PDP JS fires a custom event) ──
+// Hook into variant price changes (if your PDP JS fires a custom event) ──
   // If your variant selector dispatches a custom event when price changes,
   // listen here to recalculate total. Example:
   // document.addEventListener('pdpPriceUpdated', updatePrice);
  
 })();
+
+//newsletter AJAX Submission
+document.addEventListener("DOMContentLoaded", function() {
+    function showToast(message, isError) {
+        var container = document.getElementById("add-to-cart-toast-container");
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "add-to-cart-toast-container";
+            container.setAttribute("aria-live", "polite");
+            container.style.cssText = "position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;";
+            document.body.appendChild(container);
+        }
+        var toast = document.createElement("div");
+        toast.style.cssText = "padding:0.75rem 1.25rem;border-radius:8px;font-size:0.9rem;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);white-space:nowrap;max-width:90vw;transition:opacity 0.25s ease;"
+            + (isError ? "background:#dc3545;color:#fff;" : "background:#000;color:#fff;");
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.style.opacity = "0";
+            setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+        }, 3000);
+    }
+
+    var newsletterForms = document.querySelectorAll('.p99-newsletter-form, .p99-subscribe-form, .pi-footer__newsletter-form');
+    newsletterForms.forEach(function(form) {
+        //ensure form is relative so we can absolutely position the error msg
+        form.style.position = 'relative';
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(form);
+            var url = form.getAttribute('action');
+            var btn = form.querySelector('button[type="submit"]');
+            var originalText = btn ? (btn.innerText || btn.textContent) : 'Join';
+            var input = form.querySelector('input[type="email"]');
+            
+            //clear existing error message
+            var existingError = form.querySelector('.newsletter-error-msg');
+            if (existingError) {
+                existingError.remove();
+            }
+            if (input) {
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            }
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Wait...';
+            }
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(function(response) {
+                return response.json().then(function(data) {
+                    return { status: response.status, data: data };
+                });
+            })
+            .then(function(result) {
+                if (result.status >= 200 && result.status < 300) {
+                    showToast(result.data.message || 'Newsletter subscription successful!', false);
+                    form.reset();
+                } else {
+                    if (input) {
+                        var errorDiv = document.createElement('div');
+                        errorDiv.className = 'newsletter-error-msg';
+                        errorDiv.style.color = '#ff6b6b';
+                        errorDiv.style.fontSize = '0.85rem';
+                        errorDiv.style.marginTop = '4px';
+                        errorDiv.style.textAlign = 'left';
+                        errorDiv.style.position = 'absolute';
+                        errorDiv.style.top = '100%';
+                        errorDiv.style.left = '0';
+                        errorDiv.style.fontWeight = '500';
+                        errorDiv.textContent = result.data.message || 'Failed to subscribe.';
+                        form.appendChild(errorDiv);
+                        
+                        input.style.borderColor = '#ff6b6b';
+                    } else {
+                        showToast(result.data.message || 'Failed to subscribe.', true);
+                    }
+                }
+            })
+            .catch(function(error) {
+                showToast('Network error. Please try again.', true);
+            })
+            .finally(function() {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            });
+        });
+    });
+});

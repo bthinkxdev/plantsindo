@@ -5,7 +5,7 @@
         <h2 class="p99-newsletter-title">Field notes</h2>
         <p class="p99-newsletter-sub">Restocks, styling prompts and humidity hacks — one thoughtful letter at a time.</p>
       </div>
-      <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="p99-newsletter-form">
+      <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="p99-newsletter-form" novalidate>
         {% csrf_token %}
         <input type="email" name="email" placeholder="Email address" required autocomplete="email" aria-label="Email address">
         <button type="submit">Join</button>

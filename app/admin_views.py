@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View
-from .models import Banner, BlogPost, CartItem, Category, Combo, ComboItem, ContactMessage, Coupon, CouponRedemption, HomeCategory, Order, OrderItem, Product, ProductAttributeValue, Reel, Review, Shipment, Variant, VariantImage, Testimonial
+from .models import Banner, BlogPost, CartItem, Category, Combo, ComboItem, ContactMessage, Coupon, CouponRedemption, HomeCategory, NewsletterSubscription, Order, OrderItem, Product, ProductAttributeValue, Reel, Review, Shipment, Variant, VariantImage, Testimonial
 from django.conf import settings
 from app.admin_forms import AdminLoginForm, BannerForm, BlogPostForm, CategoryForm, ComboForm, CouponForm, HomeCategoryForm, ProductBasicEditForm, ReelForm, RentalConfigForm, _validate_image_file, TestimonialForm
 from .utils.debug_trace import Trace
@@ -1041,6 +1041,20 @@ class MessageToggleResolvedView(StaffRequiredMixin, View):
         status_text = 'resolved' if message.is_resolved else 'unresolved'
         messages.success(request, f'Message marked as {status_text}.')
         return redirect('admin_panel:message_list')
+
+class NewsletterListView(StaffRequiredMixin, ListView):
+    model = NewsletterSubscription
+    template_name = 'admin/newsletter_list.html'
+    context_object_name = 'subscribers'
+    paginate_by = 50
+
+    def get_queryset(self):
+        return NewsletterSubscription.objects.all().order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['active_menu'] = 'newsletter'
+        return context
 
 class S3FileUploadView(StaffRequiredMixin, View):
 

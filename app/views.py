@@ -2315,29 +2315,47 @@ class StaticPageView(TemplateView):
             context['active_page'] = self.extra_context['active_page']
         return context
 
-class NewsletterSubscribeView(FormView):
-    form_class = NewsletterForm
-    success_url = reverse_lazy('store:home')
+class NewsletterSubscribeView(View):
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.headers.get('Accept') == 'application/json'
+        email = request.POST.get('email', '').strip().lower()
+        success_url = request.META.get('HTTP_REFERER', str(reverse_lazy('store:home')))
 
-    def get_success_url(self):
-        return self.request.META.get('HTTP_REFERER', str(self.success_url))
+        import re
+        email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        if not email or not re.match(email_regex, email):
+            error_msg = 'Enter valid email ID'
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': error_msg}, status=400)
+            messages.error(request, error_msg)
+            return redirect(success_url)
 
-    def form_valid(self, form):
         try:
-            email = form.cleaned_data['email'].lower()
-            subscription, created = form._meta.model.objects.get_or_create(email=email)
-            if not created and (not subscription.is_active):
-                subscription.is_active = True
-                subscription.save(update_fields=['is_active'])
-            messages.success(self.request, 'Thanks for subscribing!')
-        except Exception as e:
-            logger.error(f'Error in NewsletterSubscribeView.form_valid: {str(e)}', exc_info=True)
-            messages.error(self.request, 'Failed to subscribe. Please try again.')
-        return super().form_valid(form)
+            from .models import NewsletterSubscription
+            subscription, created = NewsletterSubscription.objects.get_or_create(email=email)
+            if not created:
+                if subscription.is_active:
+                    msg = 'Email ID already exists.'
+                    if is_ajax:
+                        return JsonResponse({'status': 'error', 'message': msg}, status=400)
+                    messages.error(request, msg)
+                    return redirect(success_url)
+                else:
+                    subscription.is_active = True
+                    subscription.save(update_fields=['is_active'])
 
-    def form_invalid(self, form):
-        messages.error(self.request, 'Please enter a valid email.')
-        return redirect(self.get_success_url())
+            msg = 'Newsletter subscription successful!'
+            if is_ajax:
+                return JsonResponse({'status': 'success', 'message': msg})
+            messages.success(request, msg)
+            return redirect(success_url)
+        except Exception as e:
+            logger.error(f'Error in NewsletterSubscribeView.post: {str(e)}', exc_info=True)
+            msg = 'Failed to subscribe. Please try again.'
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': msg}, status=500)
+            messages.error(request, msg)
+            return redirect(success_url)
 
 class RazorpayPaymentVerifyView(View):
 

@@ -67,6 +67,7 @@ urlpatterns = [
     path('orders/<slug:order_number>/shipment/refresh-tracking/', admin_views.OrderShipmentRefreshTrackingView.as_view(), name='order_shipment_refresh_tracking'),
     path('messages/', admin_views.MessageListView.as_view(), name='message_list'),
     path('messages/<int:pk>/toggle-resolved/', admin_views.MessageToggleResolvedView.as_view(), name='message_toggle_resolved'),
+    path('newsletter/', admin_views.NewsletterListView.as_view(), name='newsletter_list'),
     path('upload/s3/', admin_views.S3FileUploadView.as_view(), name='s3_upload'),
     path('reviews/', admin_views.ReviewListView.as_view(), name='review_list'),
     path('reviews/bulk-action/', admin_views.ReviewBulkActionView.as_view(), name='review_bulk_action'),

@@ -88,7 +88,7 @@
                     <h3>Notes from the greenhouse</h3>
                     <p>Restocks, styling ideas and care reminders — one relaxed email on occasion.</p>
                 </div>
-                <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="pi-footer__newsletter-form">
+                <form method="post" action="{% url 'store:newsletter_subscribe' %}" class="pi-footer__newsletter-form" novalidate>
                     {% csrf_token %}
                     <label class="visually-hidden" for="piFooterEmail">Email</label>
                     <input id="piFooterEmail" type="email" name="email" placeholder="you@example.com" required autocomplete="email" aria-label="Email for newsletter">

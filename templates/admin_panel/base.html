@@ -116,6 +116,10 @@
                         {% endif %}
                     </span>
                 </a>
+                <a href="{% url 'admin_panel:newsletter_list' %}" class="nav-item {% if active_menu == 'newsletter' %}active{% endif %}">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Newsletter</span>
+                </a>
                 <a href="{% url 'admin_panel:report_list' %}" class="nav-item {% if active_menu == 'reports' %}active{% endif %}">
                     <i class="fas fa-chart-bar"></i>
                     <span>Reports</span>
