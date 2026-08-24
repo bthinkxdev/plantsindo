@@ -134,4 +134,43 @@
                 });
         });
     });
+
+    window.addEventListener("pageshow", function(event) {
+        if (event.persisted) {
+            fetch("/api/wishlist/ids/", {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (!data) return;
+                if (typeof data.count === "number") updateHeaderCount(data.count);
+                
+                document.querySelectorAll(".js-wishlist-toggle").forEach(function(btn) {
+                    var vId = parseInt(btn.getAttribute("data-variant-id"), 10);
+                    var pId = parseInt(btn.getAttribute("data-product-id"), 10);
+                    
+                    var inWishlist = false;
+                    if (vId && data.variant_ids && data.variant_ids.includes(vId)) {
+                        inWishlist = true;
+                    } else if (pId && data.product_ids && data.product_ids.includes(pId)) {
+                        inWishlist = true;
+                    }
+                    
+                    btn.classList.toggle("in-wishlist", inWishlist);
+                    
+                    var icon = btn.querySelector("i.fa-heart");
+                    if (icon) {
+                        if (inWishlist) {
+                            icon.classList.remove("far");
+                            icon.classList.add("fas");
+                        } else {
+                            icon.classList.remove("fas");
+                            icon.classList.add("far");
+                        }
+                    }
+                });
+            })
+            .catch(function(err) { console.error(err); });
+        }
+    });
 })();

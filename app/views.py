@@ -1450,11 +1450,14 @@ class WishlistIdsView(View):
 
     def get(self, request):
         if not wishlist_enabled():
-            return JsonResponse({'variant_ids': [], 'product_ids': []})
+            return JsonResponse({'variant_ids': [], 'product_ids': [], 'count': 0})
         if not request.user.is_authenticated:
+            v_ids = get_guest_wishlist_variant_ids(request)
+            p_ids = get_guest_wishlist_product_ids(request)
             return JsonResponse({
-                'variant_ids': get_guest_wishlist_variant_ids(request),
-                'product_ids': get_guest_wishlist_product_ids(request),
+                'variant_ids': v_ids,
+                'product_ids': p_ids,
+                'count': len(v_ids) + len(p_ids)
             })
         try:
             variant_ids = list(
@@ -1467,10 +1470,10 @@ class WishlistIdsView(View):
                 .filter(product__is_active=True)
                 .values_list('product_id', flat=True)
             )
-            return JsonResponse({'variant_ids': variant_ids, 'product_ids': product_ids})
+            return JsonResponse({'variant_ids': variant_ids, 'product_ids': product_ids, 'count': len(variant_ids) + len(product_ids)})
         except Exception as e:
             logger.exception('WishlistIdsView: %s', e)
-            return JsonResponse({'variant_ids': [], 'product_ids': []})
+            return JsonResponse({'variant_ids': [], 'product_ids': [], 'count': 0})
 
 class WishlistPageView(TemplateView):
     template_name = 'pages/wishlist.html'
