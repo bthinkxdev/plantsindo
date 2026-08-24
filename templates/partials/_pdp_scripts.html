@@ -561,8 +561,13 @@
 
         if (qtyInput) {
             qtyInput.setAttribute('max', sq);
-            if (parseInt(qtyInput.value, 10) > sq) {
-                qtyInput.value = Math.max(1, sq);
+            var currVal = parseInt(qtyInput.value, 10) || 1;
+            if (sq === 0) {
+                qtyInput.value = 0;
+            } else if (currVal > sq) {
+                qtyInput.value = sq;
+            } else if (currVal === 0 && sq > 0) {
+                qtyInput.value = 1;
             }
             qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
         }

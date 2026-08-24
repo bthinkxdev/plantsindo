@@ -1905,9 +1905,9 @@ class UpdateCartItemView(View):
         try:
             CartService.update_item(item, quantity)
         except StockError as exc:
-            messages.error(request, str(exc))
             if is_ajax:
                 return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+            messages.error(request, str(exc))
             return _redirect_open_cart()
         if is_ajax:
             lines = list(
