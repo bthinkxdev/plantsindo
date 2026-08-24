@@ -128,6 +128,7 @@ def _variant_json_payload(product: Product, variants: List[Variant]) -> List[Dic
                 'stock': v.stock_quantity,
                 'stock_quantity': v.stock_quantity,
                 'attributes': attr_map,
+                'display_name': v.get_attribute_values_display() if hasattr(v, 'get_attribute_values_display') else '',
                 'attribute_value_ids': list(v.attribute_values.order_by('id').values_list('id', flat=True)),
                 'image': primary_image_url,
                 'is_gst_applicable': bool(product.is_gst_applicable),

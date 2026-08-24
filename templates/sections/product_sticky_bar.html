@@ -2,10 +2,26 @@
     <div class="container-fluid container-lg">
         <div class="pdp-sticky-inner d-flex align-items-center gap-3 py-2">
             <div class="flex-grow-1 min-w-0">
-                <div id="pdpStickyTitle" class="text-truncate fw-semibold small">{{ product.name }}</div>
+                <div id="pdpStickyTitle" class="text-truncate fw-semibold">
+                    {{ product.name }}<span id="pdpStickyVariantName">{% if not product.is_simple_product and selected_variant %} - {{ selected_variant.get_attribute_values_display }}{% endif %}</span>
+                </div>
                 <div id="pdpStickyPrice" class="small text-muted">{% if selected_variant %}&#8377;{{ selected_variant.price|floatformat:0 }}{% elif product.base_price %}&#8377;{{ product.base_price|floatformat:0 }}{% endif %}</div>
             </div>
-            <button type="button" class="btn btn-dark btn-sm flex-shrink-0" id="pdpStickyAdd" {% if product.is_simple_product %}{% if product.is_combo_product %}{% if not pdp_combo_available %}disabled{% endif %}{% elif not product.base_stock or product.base_stock <= 0 %}disabled{% endif %}{% else %}{% if not selected_variant or selected_variant.stock_quantity <= 0 %}disabled{% endif %}{% endif %}>Add to cart</button>
+            <button type="button" class="btn btn-dark btn-sm flex-shrink-0 {% if product.is_simple_product %}{% if product.id|stringformat:'s' in cart_simple_product_ids %}btn-view-cart{% endif %}{% else %}{% if selected_variant and selected_variant.id|stringformat:'s' in cart_variant_ids %}btn-view-cart{% endif %}{% endif %}" id="pdpStickyAdd" {% if product.is_simple_product %}{% if product.is_combo_product %}{% if not pdp_combo_available %}disabled{% endif %}{% elif not product.base_stock or product.base_stock <= 0 %}disabled{% endif %}{% else %}{% if not selected_variant or selected_variant.stock_quantity <= 0 %}disabled{% endif %}{% endif %}>
+                {% if product.is_simple_product %}
+                    {% if product.id|stringformat:"s" in cart_simple_product_ids %}
+                    <span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>
+                    {% else %}
+                    <span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>
+                    {% endif %}
+                {% else %}
+                    {% if selected_variant and selected_variant.id|stringformat:"s" in cart_variant_ids %}
+                    <span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>
+                    {% else %}
+                    <span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>
+                    {% endif %}
+                {% endif %}
+            </button>
         </div>
     </div>
 </div>

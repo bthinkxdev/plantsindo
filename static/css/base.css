@@ -1522,8 +1522,11 @@ body.storefront {
   transition: filter 0.35s cubic-bezier(0.33, 0.86, 0.52, 1), box-shadow 0.35s ease, transform 0.25s ease !important;
   box-shadow: 0 4px 18px rgba(var(--cta-rgb), 0.32) !important;
 }
-.product-detail-store .btn-add-cart:hover,
-.product-detail-store .btn-view-cart:hover {
+.product-detail-store .btn-add-cart:hover:not(:disabled),
+.product-detail-store .btn-view-cart:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--cta-green) 0%, #d4926a 100%) !important;
+  color: #fff !important;
+  border: none !important;
   filter: brightness(1.06) saturate(1.05) !important;
   box-shadow: 0 10px 30px rgba(var(--cta-rgb), 0.38) !important;
   transform: translateY(-2px) !important;

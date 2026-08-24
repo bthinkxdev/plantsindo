@@ -124,6 +124,12 @@
             var v = data.variant;
             if (priceBlock) priceBlock.innerHTML = '<span class="price-main">&#8377;' + parseFloat(v.price).toFixed(0) + '</span>';
             if (formVariantId) formVariantId.value = v.id;
+            
+            var variantNameSpan = document.getElementById('pdpStickyVariantName');
+            if (variantNameSpan) {
+                variantNameSpan.textContent = v.display_name ? (' - ' + v.display_name) : '';
+            }
+            
             var stockEl = document.querySelector('.stock-indicator');
             if (stockEl) stockEl.innerHTML = v.in_stock
                 ? '<i class="fas fa-check-circle me-1" style="color:#000;"></i> In Stock (' + v.stock_quantity + ')'
@@ -430,6 +436,8 @@
             if (formVariantId) {
                 formVariantId.value = '';
             }
+            var variantNameSpan = document.getElementById('pdpStickyVariantName');
+            if (variantNameSpan) variantNameSpan.textContent = '';
             if (addBtn) {
                 addBtn.disabled = true;
             }
@@ -511,6 +519,11 @@
 
         if (formVariantId) {
             formVariantId.value = variant.id;
+        }
+
+        var variantNameSpan = document.getElementById('pdpStickyVariantName');
+        if (variantNameSpan) {
+            variantNameSpan.textContent = variant.display_name ? (' - ' + variant.display_name) : '';
         }
 
         var inStock = ((variant.stock != null ? variant.stock : variant.stock_quantity) || 0) > 0;
@@ -1332,12 +1345,30 @@
                 if (total) stickyPrice.textContent = total.textContent.trim();
             }
         }
-        if (stickyAdd && addBtn) stickyAdd.disabled = addBtn.disabled;
+        var mainBtn = document.getElementById('pdpMainCartBtn');
+        if (stickyAdd && mainBtn) {
+            stickyAdd.disabled = mainBtn.disabled;
+            if (mainBtn.classList.contains('btn-view-cart')) {
+                stickyAdd.className = 'btn btn-dark btn-sm flex-shrink-0 btn-view-cart';
+            } else {
+                stickyAdd.className = 'btn btn-dark btn-sm flex-shrink-0';
+            }
+            stickyAdd.innerHTML = mainBtn.innerHTML;
+        }
     }
     window.addEventListener('scroll', function(){
         if (!sticky) return;
-        var y = window.scrollY || document.documentElement.scrollTop;
-        sticky.classList.toggle('is-visible', y > 400);
+        var mainBtn = document.getElementById('pdpMainCartBtn');
+        if (mainBtn) {
+            var rect = mainBtn.getBoundingClientRect();
+            //the button is visible if its top is above the bottom of the viewport 
+            //its bottom is below the top of the viewport
+            var isVisible = (rect.top <= (window.innerHeight || document.documentElement.clientHeight)) && (rect.bottom >= 0);
+            sticky.classList.toggle('is-visible', !isVisible);
+        } else {
+            var y = window.scrollY || document.documentElement.scrollTop;
+            sticky.classList.toggle('is-visible', y > 400);
+        }
         syncStickyFromDom();
     }, { passive: true });
     if (stickyAdd && addToCartForm) {
@@ -1347,6 +1378,12 @@
             else addToCartForm.submit();
         });
     }
+
+    document.addEventListener('cart:updated', function() {
+        setTimeout(function() {
+            syncStickyFromDom();
+        }, 850);
+    });
 })();
 
 (function () {
