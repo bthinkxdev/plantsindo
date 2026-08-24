@@ -1384,6 +1384,10 @@
             syncStickyFromDom();
         }, 850);
     });
+
+    document.addEventListener('cart:restored', function() {
+        syncStickyFromDom();
+    });
 })();
 
 (function () {

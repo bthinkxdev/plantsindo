@@ -2529,8 +2529,12 @@ class CartDrawerView(View):
                 else:
                     product_url = request.build_absolute_uri('/products/')
                 items_data.append({'id': item.id, 'name': item.product.name if item.product else '', 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
+            
+            cart_variant_ids = [str(item.selected_variant_id) for item in items_qs if item.selected_variant_id]
+            cart_simple_product_ids = [str(item.product_id) for item in items_qs if item.product_id and not item.selected_variant_id]
+            
             item_count = sum((i['quantity'] for i in items_data))
-            return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count})
+            return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count, 'cart_variant_ids': cart_variant_ids, 'cart_simple_product_ids': cart_simple_product_ids})
         except Exception as exc:
             logger.error('CartDrawerView error: %s', exc, exc_info=True)
             return JsonResponse({'success': False, 'items': [], 'total': '0', 'subtotal': '0', 'item_count': 0})

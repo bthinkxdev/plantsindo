@@ -102,6 +102,8 @@
     var count = data.item_count || 0;
 
     syncAllBadges(count);
+    
+    document.dispatchEvent(new CustomEvent('cart:synced', { detail: data }));
 
     if (!items.length) {
       itemsEl.innerHTML = '';
