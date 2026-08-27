@@ -201,13 +201,14 @@
                                        value="{{ address.pk }}"
                                        {% if default_address and address.pk == default_address.pk and not form.is_bound %}checked{% endif %}
                                        style="position:absolute;opacity:0;pointer-events:none;">
-                                <div class="address-card-content">
+                                <div class="address-card-content position-relative">
                                     <div class="address-checkmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-                                    <div class="address-info">
+                                    <div class="address-info text-break" style="padding-right: 40px;">
                                         <strong>{{ address.full_name }}</strong>
                                         <p>{{ address.phone }}</p>
                                         <p>{{ address.address_line }}, {{ address.city }}, {{ address.delivery_state.name|default:address.state }} — {{ address.pincode }}</p>
                                     </div>
+                                    <a href="{% url 'auth:address_edit' address.pk %}?next={% url 'store:checkout' %}" class="btn btn-sm btn-link text-decoration-none position-absolute top-0 p-0" style="z-index: 10; right: 0px;" onclick="event.stopPropagation();">Edit</a>
                                 </div>
                             </label>
                             {% endfor %}
