@@ -105,8 +105,8 @@ class OTPLoginView(View):
                 return redirect('/')
             return redirect(next_url or '/')
         else:
-            messages.error(request, message)
-            context = {'email_form': EmailOTPRequestForm(initial={'email': email}), 'otp_form': OTPVerificationForm(initial={'email': email}), 'show_otp_input': True, 'email': email, 'next': next_url}
+            form.add_error('otp', message)
+            context = {'email_form': EmailOTPRequestForm(initial={'email': email}), 'otp_form': form, 'show_otp_input': True, 'email': email, 'next': next_url}
             return render(request, self.template_name, context)
 
     def get_success_url(self):

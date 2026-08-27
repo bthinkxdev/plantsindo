@@ -283,7 +283,7 @@ class NewsletterForm(forms.ModelForm):
         fields = ["email"]
 
 class EmailOTPRequestForm(forms.Form):
-    email = forms.EmailField(max_length=254, required=True, validators=[EmailValidator()], widget=forms.EmailInput(attrs={"class": "form-input", "placeholder": "Enter your email address", "autocomplete": "email", "autofocus": True}))
+    email = forms.EmailField(max_length=254, required=True, validators=[RegexValidator(regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", message="Please enter a valid email address.")], widget=forms.EmailInput(attrs={"class": "form-input", "placeholder": "Enter your email address", "autocomplete": "email", "autofocus": True}))
 
     def clean_email(self):
         email = self.cleaned_data.get("email", "").lower().strip()

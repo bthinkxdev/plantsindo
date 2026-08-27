@@ -46,10 +46,10 @@ class OTPService:
     @classmethod
     def create_otp(cls, email, ip_address=None):
         email = email.lower().strip()
+        cls.invalidate_old_otps(email)
         if cls.is_rate_limited(email):
             remaining = cls.get_cooldown_remaining(email)
             raise RateLimitError(f'Please wait {remaining} seconds before requesting another OTP.')
-        cls.invalidate_old_otps(email)
         plain_otp = OTPRequest.generate_otp()
         otp_hash = OTPRequest.hash_otp(plain_otp)
         otp_request = OTPRequest.objects.create(email=email, otp_hash=otp_hash, expires_at=timezone.now() + timedelta(minutes=cls.OTP_EXPIRY_MINUTES), ip_address=ip_address)

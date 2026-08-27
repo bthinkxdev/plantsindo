@@ -76,7 +76,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 otpError.textContent = '';
             });
 
+            input.addEventListener('focus', function() {
+                this.select();
+            });
+
             input.addEventListener('keydown', function(e) {
+                
+                if (/^[0-9]$/.test(e.key) && this.value.length === 1) {
+                    this.value = '';
+                }
                 
                 if (e.key === 'Backspace' && this.value === '' && index > 0) {
                     otpDigits[index - 1].focus();
@@ -156,11 +164,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         
         resendOtpBtn.addEventListener('click', function() {
-            var nextInput = document.querySelector('input[name="next"]');
-            var nextUrl = (nextInput && nextInput.value) ? nextInput.value : '/';
-            var baseUrl = (typeof window.AUTH_LOGIN_URL === 'string' && window.AUTH_LOGIN_URL) ? window.AUTH_LOGIN_URL : '/auth/login/';
-            var sep = baseUrl.indexOf('?') >= 0 ? '&' : '?';
-            window.location.href = baseUrl + sep + 'next=' + encodeURIComponent(nextUrl);
+            const emailFormObj = document.getElementById('emailForm');
+            if (emailFormObj) {
+                resendOtpBtn.disabled = true;
+                resendOtpBtn.innerHTML = 'Resending...';
+                emailFormObj.submit();
+            }
         });
     }
 
@@ -192,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     
     function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return re.test(email);
     }
 
