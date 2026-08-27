@@ -354,7 +354,7 @@
 {% block extra_js %}
 {{ checkout_address_delivery|json_script:"checkout-address-delivery" }}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="{% static 'js/checkout.js' %}"></script>
+<script src="{% static 'js/checkout.js' %}?v=1.1"></script>
 <script>
 (function(){
     var form = document.getElementById('checkoutForm');

@@ -199,13 +199,22 @@
     
     var current = parseInt(valEl.textContent, 10) || 1;
     var next    = current + delta;
-    if (next < 1 || next > maxQty || (actualStock === 0 && delta > 0)) return;
+    if (next < 1 || (delta > 0 && next > maxQty) || (actualStock === 0 && delta > 0)) return;
 
     valEl.textContent    = next;
     decBtn.disabled      = (next <= 1);
     incBtn.disabled      = (next >= maxQty || actualStock === 0);
     
-    if (next >= maxQty) {
+    if (next <= actualStock) {
+        var staticWarnings = row.querySelectorAll('.text-danger');
+        staticWarnings.forEach(function(w) {
+            if (w.textContent.indexOf('available') > -1 || w.textContent.indexOf('Out of stock') > -1) {
+                w.style.display = 'none';
+            }
+        });
+    }
+    
+    if (delta > 0 && next >= maxQty) {
         var messageText = '';
         if (next >= actualStock) {
             messageText = 'Only ' + actualStock + ' left in stock';

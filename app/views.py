@@ -811,6 +811,7 @@ class ComboDetailView(DetailView):
         return ctx
 
 
+@method_decorator(never_cache, name='dispatch')
 class ProductDetailView(DetailView):
     template_name = 'pages/product.html'
     context_object_name = 'product'
@@ -1471,6 +1472,7 @@ class WishlistIdsView(View):
             logger.exception('WishlistIdsView: %s', e)
             return JsonResponse({'variant_ids': [], 'product_ids': [], 'count': 0})
 
+@method_decorator(never_cache, name='dispatch')
 class WishlistPageView(TemplateView):
     template_name = 'pages/wishlist.html'
 
@@ -2017,12 +2019,15 @@ class CheckoutView(TemplateView):
             checkout_totals = resolve_checkout_totals(
                 cart,
                 state_id=state_id,
-                items=list(items),
                 coupon_code=coupon_code,
                 user=user,
                 email=email,
                 phone=phone,
             )
+            # Re-fetch items after compute_totals (called in resolve_checkout_totals) 
+            # might have updated their prices.
+            items = list(_checkout_items_queryset(cart))
+            
             if coupon_code and not initial.get('coupon_code'):
                 initial['coupon_code'] = checkout_totals.coupon_code or coupon_code
             context.update({
@@ -2212,6 +2217,7 @@ class CreateRazorpayOrderView(View):
             logger.exception('CreateRazorpayOrderView error: %s', e)
             return JsonResponse({'status': 'error', 'message': 'Unable to create order. Please try again.'}, status=500)
 
+@method_decorator(never_cache, name='dispatch')
 class OrderSuccessView(DetailView):
     template_name = 'pages/success.html'
     context_object_name = 'order'
@@ -2470,6 +2476,7 @@ class RazorpayPaymentCancelView(View):
                 del request.session['pending_checkout_data']
             return JsonResponse({'status': 'success', 'message': 'Returning to cart...', 'redirect': '/?open_cart=1'})
 
+@method_decorator(never_cache, name='dispatch')
 class CartDrawerView(View):
 
     def get(self, request, *args, **kwargs):
@@ -2537,6 +2544,7 @@ class CartDrawerView(View):
             return JsonResponse({'success': False, 'items': [], 'total': '0', 'subtotal': '0', 'item_count': 0})
 
 
+@method_decorator(never_cache, name='dispatch')
 class CheckoutTotalsView(View):
     """
     Recalculate checkout totals for a delivery state (+ optional coupon).

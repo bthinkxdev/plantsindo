@@ -1055,7 +1055,7 @@ class CartService:
             c = item.combo
             if item.line_type == CartItem.LineKind.RENTAL:
                 raise CartError('Invalid cart item.')
-            if not combo_bundle_in_stock(c, multiplier=quantity):
+            if not combo_bundle_in_stock(c, multiplier=quantity) and quantity > item.quantity:
                 raise StockError('Requested quantity exceeds available stock.')
             item.quantity = quantity
             item.unit_price = c.price
@@ -1068,12 +1068,12 @@ class CartService:
                 if product.has_variants():
                     raise CartError('Invalid cart item.')
                 if product.is_combo_product:
-                    if not combo_is_in_stock(product, multiplier=quantity):
+                    if not combo_is_in_stock(product, multiplier=quantity) and quantity > item.quantity:
                         raise StockError('Requested quantity exceeds available stock.')
-                elif quantity > (product.base_stock or 0):
+                elif quantity > (product.base_stock or 0) and quantity > item.quantity:
                     raise StockError('Requested quantity exceeds available stock.')
             else:
-                if quantity > (v.stock_quantity or 0):
+                if quantity > (v.stock_quantity or 0) and quantity > item.quantity:
                     raise StockError('Requested quantity exceeds available stock.')
             item.quantity = quantity
             item.save(update_fields=['quantity', 'updated_at'])
@@ -1082,16 +1082,16 @@ class CartService:
             if product.has_variants():
                 raise CartError('Invalid cart item.')
             if product.is_combo_product:
-                if not combo_is_in_stock(product, multiplier=quantity):
+                if not combo_is_in_stock(product, multiplier=quantity) and quantity > item.quantity:
                     raise StockError('Requested quantity exceeds available stock.')
             else:
                 stock = product.base_stock or 0
-                if quantity > stock:
+                if quantity > stock and quantity > item.quantity:
                     raise StockError('Requested quantity exceeds available stock.')
             unit_price = product.base_price
         else:
             stock = v.stock_quantity
-            if quantity > stock:
+            if quantity > stock and quantity > item.quantity:
                 raise StockError('Requested quantity exceeds available stock.')
             unit_price = v.price
         if item.line_type == CartItem.LineKind.PURCHASE and item.selected_pot_id:
@@ -1104,13 +1104,13 @@ class CartService:
                     pot_stock, pot_name = int(pot[0] or 0), pot[1]
                     if pot_stock <= 0:
                         raise StockError(f'Pot "{pot_name}" is out of stock.')
-                    if quantity > pot_stock:
+                    if quantity > pot_stock and quantity > item.quantity:
                         raise StockError(f'Only {pot_stock} pots available for "{pot_name}".')
             else:
                 pot_stock = int(pot.base_stock or 0)
                 if pot_stock <= 0:
                     raise StockError(f'Pot "{pot.name}" is out of stock.')
-                if quantity > pot_stock:
+                if quantity > pot_stock and quantity > item.quantity:
                     raise StockError(f'Only {pot_stock} pots available for "{pot.name}".')
         item.quantity = quantity
         item.unit_price = unit_price

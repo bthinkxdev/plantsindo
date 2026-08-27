@@ -433,14 +433,23 @@ function adjustCheckoutQty(itemId, delta) {
     }
     var current = parseInt(valEl.textContent, 10) || 1;
     var next = current + delta;
-    if (next < 1 || next > maxQty) return;
+    if (next < 1 || (delta > 0 && next > maxQty)) return;
 
     var url = window.CHECKOUT_UPDATE_URL || '/cart/update/';
     var previousQty = current;
     valEl.textContent = String(next);
     syncCheckoutQtyButtons(line, next);
     
-    if (next >= maxQty && qtyContainer) {
+    var actualStock = qtyContainer ? parseInt(qtyContainer.getAttribute('data-actual-stock'), 10) || 99 : 99;
+    if (next <= actualStock) {
+        var staticWarning = line.querySelector('.order-line-stock-warn');
+        if (staticWarning) {
+            staticWarning.style.display = 'none';
+            staticWarning.classList.remove('d-block');
+        }
+    }
+    
+    if (delta > 0 && next >= maxQty && qtyContainer) {
         var actualStock = parseInt(qtyContainer.getAttribute('data-actual-stock'), 10) || 99;
         var messageText = '';
         if (next >= actualStock) {
@@ -688,6 +697,19 @@ function applyCheckoutTotalsPayload(data) {
     syncCheckoutLineDeliveryWarnings(data);
     syncCheckoutPackUpsell(data.pack_upsell_message);
 
+    //re-evaluate global stock block status based on visible warnings
+    var allWarnings = document.querySelectorAll('.order-line-stock-warn');
+    var anyVisible = false;
+    allWarnings.forEach(function(w) {
+        if (w.style.display !== 'none' && !w.hidden && document.body.contains(w)) {
+            anyVisible = true;
+        }
+    });
+    window.CHECKOUT_STOCK_BLOCKED = anyVisible;
+    if (!anyVisible) {
+        window.CHECKOUT_STOCK_SUMMARY = '';
+    }
+
     // Delivery/state blocks disable the button without duplicating the message
     // into #checkoutErrorMessage (status already lives on Delivery Charge).
     if (!window.CHECKOUT_STOCK_BLOCKED) {
@@ -698,8 +720,10 @@ function applyCheckoutTotalsPayload(data) {
             window.CHECKOUT_BLOCKED = false;
             window.CHECKOUT_SUMMARY = '';
         }
-        applyCheckoutBlockedState();
+    } else {
+        window.CHECKOUT_BLOCKED = true;
     }
+    applyCheckoutBlockedState();
 
     document.dispatchEvent(new CustomEvent('shippingRatesUpdated', {
         detail: {
