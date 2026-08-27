@@ -53,6 +53,7 @@
       data-user-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}">
 {{ search_typed_phrases|json_script:"storefront-search-typed-phrases" }}
 
+<div class="menu-backdrop d-lg-none" id="menuBackdrop"></div>
 {% include "partials/_header.html" %}
 
 {% if messages %}
@@ -175,12 +176,29 @@
         try { new ResizeObserver(syncSpacerHeight).observe(zone); } catch (e) { }
     }
     var collapseEl = document.getElementById('navbarCollapse');
+    var menuBackdrop = document.getElementById('menuBackdrop');
     if (collapseEl) {
         collapseEl.addEventListener('shown.bs.collapse', function () {
             zone.classList.remove('site-header-zone--scroll-hidden');
             syncSpacerHeight();
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            if (menuBackdrop) menuBackdrop.classList.add('show');
         });
-        collapseEl.addEventListener('hidden.bs.collapse', syncSpacerHeight);
+        collapseEl.addEventListener('hide.bs.collapse', function () {
+            if (menuBackdrop) menuBackdrop.classList.remove('show');
+        });
+        collapseEl.addEventListener('hidden.bs.collapse', function () {
+            syncSpacerHeight();
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+        });
+        if (menuBackdrop) {
+            menuBackdrop.addEventListener('click', function () {
+                var bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) bsCollapse.hide();
+            });
+        }
     }
     syncSpacerHeight();
     onScroll();

@@ -724,7 +724,9 @@ body.storefront {
   border-top: 1px solid var(--border-subtle);
   max-height: calc(100dvh - 120px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  background: #fff;
 }
 .site-mobile-nav a.site-mobile-nav__parent-link {
   font-weight: 700;
@@ -749,6 +751,23 @@ body.storefront {
 }
 .site-mobile-nav a:last-child {
   border-bottom: none;
+}
+
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 36, 32, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  touch-action: none;
+}
+.menu-backdrop.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 

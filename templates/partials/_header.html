@@ -87,7 +87,10 @@
         </nav>
     </div>
     <div class="collapse site-mobile-nav d-lg-none px-3" id="navbarCollapse">
-        <a href="{% url 'store:home' %}" class="{% if active_page == 'home' %}is-active{% endif %}">Home</a>
+        <div class="d-flex align-items-center justify-content-between" style="border-bottom: 1px solid var(--border-subtle);">
+            <a href="{% url 'store:home' %}" class="{% if active_page == 'home' %}is-active{% endif %}" style="flex: 1; border-bottom: none;">Home</a>
+            <button type="button" class="btn-close mb-1" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-label="Close menu"></button>
+        </div>
         <a href="{% url 'store:product_list' %}" class="{% if active_page == 'collection' and not request.GET.category and request.GET.combo != '1' and request.GET.offer != '1' %}is-active{% endif %}">Shop all</a>
         {% for item in nav_category_menu %}
         {% with p=item.parent ch=item.children %}
