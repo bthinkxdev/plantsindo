@@ -1,6 +1,13 @@
 {% load static %}
 <div class="col-lg-6 gallery-section">
-    <div class="gallery-main-wrap">
+    <div class="gallery-main-wrap" style="position: relative;">
+        {% if selected_variant %}
+            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; {% if selected_variant.discount_percent <= 0 %}display:none;{% endif %}">{{ selected_variant.discount_percent }}% OFF</span>
+        {% elif product.is_simple_product %}
+            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; {% if product.discount_percent <= 0 %}display:none;{% endif %}">{{ product.discount_percent }}% OFF</span>
+        {% else %}
+            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; display:none;"></span>
+        {% endif %}
         <div class="gallery-main wow fadeInLeft" data-wow-delay="0.1s">
             {% if selected_variant %}
                 {% with imgs=selected_variant.images.all %}

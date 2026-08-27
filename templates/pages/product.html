@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}{% load product_filters %}
 {% block title %}{{ product.name }} — {{ site_brand }}{% endblock %}
 {% block meta_description %}{{ product.description|truncatewords:20|default:product.name }}{% endblock %}
@@ -51,53 +51,7 @@
                 <h3 class="mb-4">You may also like</h3>
                 <div class="products-grid">
                     {% for rel in related_products %}
-                    {% if rel.is_simple_product %}
-                    <div class="product-card">
-                        <div class="product-img-wrap">
-                            {% include "partials/_rating_pill.html" with product=rel %}
-                            <a href="{% url 'store:product_detail' rel.slug %}">
-                                {% with imgs=rel.images.all %}{% if imgs %}<img src="{{ imgs.0.image.url }}" alt="{{ rel.name }}" loading="lazy">{% else %}<img src="{% static 'img/product-1.png' %}" alt="{{ rel.name }}" loading="lazy">{% endif %}{% endwith %}
-                            </a>
-                        </div>
-                        <div class="product-body">
-                            <a href="{% url 'store:product_detail' rel.slug %}" class="text-decoration-none"><h3 class="product-name">{{ rel.name }}</h3></a>
-                            <div class="product-price">
-                                {% if rel.base_original_price and rel.base_original_price > rel.base_price %}
-                                    <span class="price-mrp">&#8377;{{ rel.base_original_price|floatformat:0 }}</span>
-                                {% endif %}
-                                <span class="price-current">&#8377;{{ rel.base_price|floatformat:0 }}</span>
-                                {% if rel.discount_percent > 0 %}
-                                    <span class="price-off-badge" style="font-size:.65rem;">{{ rel.discount_percent }}% OFF</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    {% with fv=rel.variants.all|first %}
-                    {% if fv %}
-                    <div class="product-card">
-                        <div class="product-img-wrap">
-                            {% include "partials/_rating_pill.html" with product=rel %}
-                            <a href="{% url 'store:product_detail' rel.slug %}?variant={{ fv.id }}">
-                                {% with imgs=fv.images.all %}{% if imgs %}<img src="{{ imgs.0.image.url }}" alt="{{ rel.name }}" loading="lazy">{% else %}<img src="{% static 'img/product-1.png' %}" alt="{{ rel.name }}" loading="lazy">{% endif %}{% endwith %}
-                            </a>
-                        </div>
-                        <div class="product-body">
-                            <a href="{% url 'store:product_detail' rel.slug %}?variant={{ fv.id }}" class="text-decoration-none"><h3 class="product-name">{{ rel.name }}</h3></a>
-                            <div class="product-price">
-                                {% if fv.original_price and fv.original_price > fv.price %}
-                                    <span class="price-mrp">&#8377;{{ fv.original_price|floatformat:0 }}</span>
-                                {% endif %}
-                                <span class="price-current">&#8377;{{ fv.price|floatformat:0 }}</span>
-                                {% if fv.discount_percent > 0 %}
-                                    <span class="price-off-badge" style="font-size:.65rem;">{{ fv.discount_percent }}% OFF</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% endif %}
+                        {% include "partials/_product_card.html" with product=rel %}
                     {% endfor %}
                 </div>
             </div>

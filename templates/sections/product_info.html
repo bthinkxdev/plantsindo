@@ -14,10 +14,8 @@
             <div class="price-breakdown">
                 {% if selected_variant.original_price and selected_variant.original_price > selected_variant.price %}
                 <div class="mb-1">
+                    <span class="price-main price-selling">&#8377;{{ selected_variant.price|floatformat:0 }}</span>
                     <span class="price-mrp">&#8377;{{ selected_variant.original_price|floatformat:0 }}</span>
-                    {% if selected_variant.discount_percent > 0 %}
-                    <span class="price-off-badge">{{ selected_variant.discount_percent }}% OFF</span>
-                    {% endif %}
                 </div>
                 {% endif %}
                 <div>Base Price: <span class="price-main">&#8377;{{ selected_variant.price|floatformat:2 }}</span></div>
@@ -26,16 +24,11 @@
             </div>
             {% else %}
             <div class="price-block">
+                <span class="price-main price-selling" id="price-selling">&#8377;{{ selected_variant.price|floatformat:0 }}</span>
                 {% if selected_variant.original_price and selected_variant.original_price > selected_variant.price %}
                 <span class="price-mrp" id="price-mrp">&#8377;{{ selected_variant.original_price|floatformat:0 }}</span>
                 {% else %}
                 <span class="price-mrp" id="price-mrp" style="display:none;"></span>
-                {% endif %}
-                <span class="price-main price-selling" id="price-selling">&#8377;{{ selected_variant.price|floatformat:0 }}</span>
-                {% if selected_variant.discount_percent > 0 %}
-                <span class="price-off-badge" id="price-badge">{{ selected_variant.discount_percent }}% OFF</span>
-                {% else %}
-                <span class="price-off-badge" id="price-badge" style="display:none;"></span>
                 {% endif %}
             </div>
             {% endif %}
@@ -44,10 +37,8 @@
             <div class="price-breakdown">
                 {% if product.base_original_price and product.base_original_price > product.base_price %}
                 <div class="mb-1">
+                    <span class="price-main price-selling">&#8377;{{ product.base_price|floatformat:0 }}</span>
                     <span class="price-mrp">&#8377;{{ product.base_original_price|floatformat:0 }}</span>
-                    {% if product.discount_percent > 0 %}
-                    <span class="price-off-badge">{{ product.discount_percent }}% OFF</span>
-                    {% endif %}
                 </div>
                 {% endif %}
                 <div>Base Price: <span class="price-main">&#8377;{{ product.base_price|floatformat:2 }}</span></div>
@@ -56,12 +47,9 @@
             </div>
             {% else %}
             <div class="price-block">
+                <span class="price-main price-selling">&#8377;{{ product.base_price|floatformat:0 }}</span>
                 {% if product.base_original_price and product.base_original_price > product.base_price %}
                 <span class="price-mrp">&#8377;{{ product.base_original_price|floatformat:0 }}</span>
-                {% endif %}
-                <span class="price-main price-selling">&#8377;{{ product.base_price|floatformat:0 }}</span>
-                {% if product.discount_percent > 0 %}
-                <span class="price-off-badge">{{ product.discount_percent }}% OFF</span>
                 {% endif %}
             </div>
             {% endif %}
