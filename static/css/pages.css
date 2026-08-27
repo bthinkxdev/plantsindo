@@ -7669,13 +7669,22 @@ body.storefront .order-line .line-info {
   z-index: 1030;
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
-  transform: translateY(110%);
-  transition: transform 0.28s ease;
+  transform: translateY(150%);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.28s ease, opacity 0.28s ease, visibility 0.28s ease;
   border-top: 1px solid #e8ece9;
   pointer-events: none;
 }
+@media (max-width: 991.98px) {
+  body.has-bottom-bar .pdp-sticky-bar {
+    bottom: var(--bottom-bar-total, calc(56px + env(safe-area-inset-bottom, 0px)));
+  }
+}
 .pdp-sticky-bar.is-visible {
   transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 .product-detail-store .pdp-mini-card,
