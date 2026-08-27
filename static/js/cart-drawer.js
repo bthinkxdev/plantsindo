@@ -338,6 +338,13 @@ function removeItem(itemId) {
     document.querySelectorAll('.bottom-bar-badge.js-cart-count').forEach(function (el) {
       el.textContent  = count;
       el.style.display = count > 0 ? 'inline-flex' : 'none';
+      if (count > 0) {
+          el.classList.remove('bottom-bar-badge--hidden');
+          el.classList.add('bottom-bar-badge--visible');
+      } else {
+          el.classList.add('bottom-bar-badge--hidden');
+          el.classList.remove('bottom-bar-badge--visible');
+      }
     });
   }
 
@@ -369,5 +376,11 @@ function removeItem(itemId) {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
+
+  window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+      fetchCart();
+    }
+  });
 
 })();

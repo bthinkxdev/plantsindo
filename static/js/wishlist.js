@@ -21,9 +21,13 @@
             if (count > 0) {
                 badge.textContent = count;
                 badge.style.display = "";
+                badge.classList.remove("bottom-bar-badge--hidden");
+                badge.classList.add("bottom-bar-badge--visible");
             } else {
                 badge.textContent = "";
                 badge.style.display = "none";
+                badge.classList.add("bottom-bar-badge--hidden");
+                badge.classList.remove("bottom-bar-badge--visible");
             }
         });
     }

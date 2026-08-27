@@ -35,6 +35,13 @@
         document.querySelectorAll(".js-cart-count").forEach(function(el) {
             el.textContent = n;
             el.style.display = n > 0 ? "" : "none";
+            if (n > 0) {
+                el.classList.remove('bottom-bar-badge--hidden');
+                el.classList.add('bottom-bar-badge--visible');
+            } else {
+                el.classList.add('bottom-bar-badge--hidden');
+                el.classList.remove('bottom-bar-badge--visible');
+            }
         });
     }
 
