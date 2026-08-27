@@ -115,7 +115,31 @@
                 </div>
             </div>
 
-            
+            <div class="nested-block" style="margin-top: 1rem;">
+                <div class="nested-title">Plant characteristics &amp; Care guide</div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Sunlight</label>
+                        {{ basic_form.sunlight }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Watering</label>
+                        {{ basic_form.watering }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Difficulty</label>
+                        {{ basic_form.difficulty }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Plant Type</label>
+                        {{ basic_form.plant_type }}
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label class="form-label" for="basic-maintenance_notes">Maintenance notes</label>
+                    <textarea class="form-control" id="basic-maintenance_notes" rows="3" placeholder="Maintenance tips (Care guide section)">{{ product.maintenance_notes }}</textarea>
+                </div>
+            </div>
             <div class="form-group" style="margin-top: 1rem;">
                 <label class="toggle-wrap{% if product.is_gst_applicable %} checked{% endif %}" for="basic-is_gst_applicable">
                     <input type="checkbox" class="toggle-input" id="basic-is_gst_applicable" {% if product.is_gst_applicable %}checked{% endif %}>

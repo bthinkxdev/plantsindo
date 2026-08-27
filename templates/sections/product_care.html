@@ -1,22 +1,63 @@
-{% if product.sunlight or product.watering or product.maintenance_notes or product.care_instructions %}
+{% if product.difficulty or product.plant_type or product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.sunlight or product.watering or product.maintenance_notes or product.care_instructions %}
 <section class="pdp-section pdp-care pdp-card border rounded-2 p-4 mb-4" id="pdp-care">
     <h2 class="h5 mb-3">Care guide</h2>
+
+    {% if product.difficulty or product.plant_type or product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.sunlight or product.watering or product.maintenance_notes %}
     <div class="row g-3">
-        <div class="col-md-4">
+        {% if product.difficulty %}
+        <div class="col-6 col-lg-3">
+            <div class="text-muted small text-uppercase">Difficulty</div>
+            <div class="fw-semibold">{{ product.get_difficulty_display }}</div>
+        </div>
+        {% endif %}
+        {% if product.plant_type %}
+        <div class="col-6 col-lg-3">
+            <div class="text-muted small text-uppercase">Plant Type</div>
+            <div class="fw-semibold">{{ product.get_plant_type_display }}</div>
+        </div>
+        {% endif %}
+        {% if product.germination_time_display %}
+        <div class="col-6 col-lg-3">
+            <div class="text-muted small text-uppercase">Germination</div>
+            <div class="fw-semibold">{{ product.germination_time_display }}</div>
+        </div>
+        {% endif %}
+        {% if product.harvest_time_display %}
+        <div class="col-6 col-lg-3">
+            <div class="text-muted small text-uppercase">Harvest</div>
+            <div class="fw-semibold">{{ product.harvest_time_display }}</div>
+        </div>
+        {% endif %}
+        {% if product.sowing_season_display %}
+        <div class="col-6 col-lg-3">
+            <div class="text-muted small text-uppercase">Sowing season</div>
+            <div class="fw-semibold">{{ product.sowing_season_display }}</div>
+        </div>
+        {% endif %}
+        {% if product.sunlight %}
+        <div class="col-6 col-lg-3">
             <div class="text-muted small text-uppercase">Sunlight</div>
             <div class="fw-semibold">{{ product.get_sunlight_display }}</div>
         </div>
-        <div class="col-md-4">
+        {% endif %}
+        {% if product.watering %}
+        <div class="col-6 col-lg-3">
             <div class="text-muted small text-uppercase">Watering</div>
             <div class="fw-semibold">{{ product.get_watering_display }}</div>
         </div>
-        <div class="col-md-4">
-            <div class="text-muted small text-uppercase">Maintenance</div>
-            <div class="fw-semibold">{% if product.maintenance_notes %}{{ product.maintenance_notes|linebreaksbr }}{% else %}—{% endif %}</div>
+        {% endif %}
+        {% if product.maintenance_notes %}
+        <div class="col-12 mt-4">
+            <div class="text-muted small text-uppercase mb-1">Maintenance</div>
+            <div class="fw-semibold">{{ product.maintenance_notes|linebreaksbr }}</div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
+
     {% if product.care_instructions %}
-    <div class="mt-3 small text-secondary border-top pt-3">{{ product.care_instructions|linebreaks }}</div>
+    <div class="{% if product.difficulty or product.plant_type or product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.sunlight or product.watering or product.maintenance_notes %}mt-3 border-top pt-3{% endif %} small text-secondary">
+        {{ product.care_instructions|linebreaks }}</div>
     {% endif %}
 </section>
 {% endif %}

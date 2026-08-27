@@ -154,6 +154,11 @@
             purchase_enabled: purchaseEnabled,
             is_plant_combo: isPlantCombo,
             care_instructions: careInstEl ? careInstEl.value || "" : "",
+            sunlight: (document.querySelector('select[name="sunlight"]') && document.querySelector('select[name="sunlight"]').value) || "",
+            watering: (document.querySelector('select[name="watering"]') && document.querySelector('select[name="watering"]').value) || "",
+            difficulty: (document.querySelector('select[name="difficulty"]') && document.querySelector('select[name="difficulty"]').value) || "",
+            plant_type: (document.querySelector('select[name="plant_type"]') && document.querySelector('select[name="plant_type"]').value) || "",
+            maintenance_notes: (document.getElementById("basic-maintenance_notes") && document.getElementById("basic-maintenance_notes").value) || "",
         };
     }
 
@@ -181,7 +186,12 @@
             cur.is_rent_available !== basicInitial.is_rent_available ||
             cur.purchase_enabled !== basicInitial.purchase_enabled ||
             cur.is_plant_combo !== basicInitial.is_plant_combo ||
-            (cur.care_instructions || "") !== (basicInitial.care_instructions || "")
+            (cur.care_instructions || "") !== (basicInitial.care_instructions || "") ||
+            (cur.sunlight || "") !== (basicInitial.sunlight || "") ||
+            (cur.watering || "") !== (basicInitial.watering || "") ||
+            (cur.difficulty || "") !== (basicInitial.difficulty || "") ||
+            (cur.plant_type || "") !== (basicInitial.plant_type || "") ||
+            (cur.maintenance_notes || "") !== (basicInitial.maintenance_notes || "")
         );
     }
     function updateBasicSaveButton() {
