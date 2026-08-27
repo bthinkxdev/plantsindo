@@ -113,13 +113,16 @@
         el.addEventListener("mouseleave", function () { resetToFirst(el); }, { passive: true });
 
         
-        el.addEventListener("touchstart", function () {
+        el.addEventListener("touchstart", function (e) {
+            if (e.target.closest && e.target.closest('.tpc-arrow')) return;
             el._touchTimer = setTimeout(function () { startSliding(el); }, 400);
         }, { passive: true });
-        el.addEventListener("touchend",   function () {
+        el.addEventListener("touchend",   function (e) {
+            if (e.target.closest && e.target.closest('.tpc-arrow')) return;
             clearTimeout(el._touchTimer); resetToFirst(el);
         }, { passive: true });
-        el.addEventListener("touchcancel", function () {
+        el.addEventListener("touchcancel", function (e) {
+            if (e.target.closest && e.target.closest('.tpc-arrow')) return;
             clearTimeout(el._touchTimer); resetToFirst(el);
         }, { passive: true });
     }

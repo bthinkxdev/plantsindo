@@ -15,11 +15,11 @@
     {% else %}
     <span class="hc-pcard__badge">Shop now</span>
     {% endif %}
-    <span class="hc-pcard__img-wrap">
+    <span class="hc-pcard__img-wrap js-product-card-slider" data-card-images='[{% for img in imgs %}"{{ img.image.url }}"{% if not forloop.last %},{% endif %}{% endfor %}]'>
         {% if imgs %}
-        <img src="{{ imgs.0.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280">
+        <img src="{{ imgs.0.image.url }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280" class="card-slider-img">
         {% else %}
-        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280">
+        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280" class="card-slider-img">
         {% endif %}
     </span>
     <span class="hc-pcard__title">{{ product.name }}</span>
@@ -38,15 +38,15 @@
     {% else %}
     <span class="hc-pcard__badge">Shop now</span>
     {% endif %}
-    <span class="hc-pcard__img-wrap">
-        {% with urls=product.get_card_image_urls %}
+    {% with urls=product.get_card_image_urls %}
+    <span class="hc-pcard__img-wrap js-product-card-slider" {% if urls %}data-card-images='[{% for url in urls %}"{{ url }}"{% if not forloop.last %},{% endif %}{% endfor %}]'{% endif %}>
         {% if urls %}
-        <img src="{{ urls.0 }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280">
+        <img src="{{ urls.0 }}" alt="{{ product.name }}" loading="lazy" decoding="async" width="280" height="280" class="card-slider-img">
         {% else %}
-        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280">
+        <img src="{% static 'img/product-1.png' %}" alt="{{ product.name }}" loading="lazy" width="280" height="280" class="card-slider-img">
         {% endif %}
-        {% endwith %}
     </span>
+    {% endwith %}
     <span class="hc-pcard__title">{{ product.name }}</span>
     <span class="hc-pcard__rating-slot">{% include "partials/_rating_pill.html" with product=product %}</span>
     <span class="hc-pcard__cta">View product</span>
