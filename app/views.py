@@ -725,13 +725,7 @@ class ProductListView(ListView):
         self.object_list = self.get_queryset()
         context          = self.get_context_data()
 
-        #if user searched but got no results, redirect to Shop page
-        query = request.GET.get('q')
-        if query and query.strip() and not context.get('card_items') and not context.get('simple_products'):
-            from django.shortcuts import redirect
-            from django.contrib import messages
-            messages.warning(request, f"No products found for '{query}'. Showing all products.")
-            return redirect('store:product_list')
+
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             # ── AJAX / infinite-scroll request ──

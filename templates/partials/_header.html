@@ -18,7 +18,7 @@
                 <span class="site-brand-text ms-2 d-none d-lg-inline">{{ site_brand_part1 }}<span class="site-brand-text__tld">{{ site_brand_part2 }}.com</span></span>
             </a>
             <div class="site-header__search-slot">
-                <form class="site-search-pill" action="{% url 'store:product_list' %}" method="get" role="search" onsubmit="return this.q.value.trim() !== '';">
+                <form class="site-search-pill" action="{% url 'store:product_list' %}" method="get" role="search" onsubmit="return this.q.value.trim() !== '';" onclick="this.querySelector('input[name=q]').focus();">
                     <div class="typed-ghost-wrap" data-typed-ghost="search">
                         <div class="typed-ghost-hint" aria-hidden="true">
                             <span class="typed-ghost-prefix">Search</span>

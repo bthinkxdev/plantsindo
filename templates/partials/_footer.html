@@ -202,7 +202,7 @@
 </aside>
 
 <div id="mobileSearchOverlay" class="mobile-search-overlay" aria-hidden="true">
-    <form class="mobile-search-inner" action="{% url 'store:product_list' %}" method="get" onsubmit="return this.q.value.trim() !== '';">
+    <form class="mobile-search-inner" action="{% url 'store:product_list' %}" method="get" onsubmit="return this.q.value.trim() !== '';" onclick="this.querySelector('input[name=q]').focus();">
         <button type="button" id="mobileSearchClose" class="mobile-search-close" aria-label="Close">
             <i class="fas fa-arrow-left"></i>
         </button>
