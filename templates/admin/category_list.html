@@ -17,12 +17,20 @@
     <div class="card-body">
         
         <form method="get" class="filters" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;">
-            <div class="search-box" style="flex: 1; min-width: 200px;">
-                <i class="fas fa-search"></i>
-                <input type="text" name="search" class="form-control" placeholder="Search categories..." 
-                       value="{{ search_query }}">
+            <div class="search-box" style="flex: 1; min-width: 200px; position: relative;">
+                <input type="text" name="search" id="categorySearchInput" class="form-control" placeholder="Search categories..." 
+                       value="{{ search_query }}" style="padding-left: 1rem; padding-right: 4rem;" 
+                       oninput="document.getElementById('clearSearchBtn').style.display = this.value.trim() ? 'block' : 'none';">
+                <div style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); display: flex; gap: 0.75rem; align-items: center; color: var(--gray-500);">
+                    <button type="submit" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: flex; align-items: center;" title="Search">
+                        <i class="fas fa-search" style="position: static; transform: none; left: auto; top: auto;"></i>
+                    </button>
+                    <a href="{% url 'admin_panel:category_list' %}" id="clearSearchBtn" style="color: inherit; text-decoration: none; display: {% if search_query %}block{% else %}none{% endif %};" title="Clear search">
+                        <i class="fas fa-times" style="position: static; transform: none; left: auto; top: auto;"></i>
+                    </a>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; flex: 2; min-width: 250px;">
+            <div class="filter-group" style="display: flex; gap: 10px; flex: 2; min-width: 250px;">
                 <select name="status" class="form-control" style="flex: 1; min-width: 0;">
                     <option value="">All Statuses</option>
                     <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
@@ -36,7 +44,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div style="display: flex; gap: 10px; flex: 1; min-width: 200px;">
+            <div class="filter-group" style="display: flex; gap: 10px; flex: 1; min-width: 200px;">
                 <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.5rem; justify-content: center;"><i class="fas fa-filter"></i> Filter</button>
                 <a href="{% url 'admin_panel:category_list' %}" class="btn btn-secondary" style="flex: 1; padding: 0.5rem; justify-content: center;"><i class="fas fa-times"></i> Clear</a>
             </div>

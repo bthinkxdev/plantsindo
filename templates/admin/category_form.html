@@ -52,6 +52,7 @@
                 
                 
                 {{ form.image }}
+                <input type="hidden" name="clear_image" id="clear_image_input" value="false">
                 
                 {% if form.image.errors %}
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
@@ -85,11 +86,30 @@
                     <small style="color: var(--gray-500);">(wide image for shop page; optional — falls back to category image above)</small>
                 </label>
                 {{ form.banner_image }}
+                <input type="hidden" name="clear_banner_image" id="clear_banner_image_input" value="false">
                 {% if form.banner_image.errors %}
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
                         {{ form.banner_image.errors }}
                     </div>
                 {% endif %}
+                
+                <div id="banner-image-preview-container" style="margin-top: 1rem; {% if not form.instance.banner_image %}display: none;{% endif %}">
+                    <div style="position: relative; display: inline-block;">
+                        <img id="banner-image-preview" 
+                             src="{% if form.instance.banner_image %}{{ form.instance.banner_image.url }}{% endif %}" 
+                             alt="Banner image preview" 
+                             style="max-width: 300px; max-height: 150px; border-radius: 8px; border: 1px solid var(--gray-200); object-fit: cover;">
+                        <button type="button" 
+                                id="remove-banner-image-btn" 
+                                style="position: absolute; top: -8px; right: -8px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 14px; line-height: 1; padding: 0;"
+                                title="Remove banner image">
+                            ×
+                        </button>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--gray-600);">
+                        <span id="banner-image-filename">{% if form.instance.banner_image %}Current banner image{% endif %}</span>
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -166,6 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 // Show preview of selected file
                 showImagePreview(file);
+                document.getElementById('clear_image_input').value = 'false';
             }
         });
     }
@@ -178,6 +199,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (fileInput) {
                     fileInput.value = '';
                 }
+                document.getElementById('clear_image_input').value = 'true';
+            }
+        });
+    }
+    
+    //banner elements
+    const bannerFileInput = document.getElementById('{{ form.banner_image.id_for_label }}');
+    const bannerImagePreview = document.getElementById('banner-image-preview');
+    const bannerImagePreviewContainer = document.getElementById('banner-image-preview-container');
+    const bannerImageFilename = document.getElementById('banner-image-filename');
+    const removeBannerImageBtn = document.getElementById('remove-banner-image-btn');
+    
+    function hideBannerImagePreview() {
+        bannerImagePreview.src = '';
+        bannerImageFilename.textContent = '';
+        bannerImagePreviewContainer.style.display = 'none';
+    }
+    
+    if (bannerFileInput) {
+        bannerFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    bannerImagePreview.src = e.target.result;
+                    bannerImageFilename.textContent = file.name;
+                    bannerImagePreviewContainer.style.display = 'block';
+                    document.getElementById('clear_banner_image_input').value = 'false';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    if (removeBannerImageBtn) {
+        removeBannerImageBtn.addEventListener('click', function() {
+            if (confirm('Remove this banner image?')) {
+                hideBannerImagePreview();
+                if (bannerFileInput) {
+                    bannerFileInput.value = '';
+                }
+                document.getElementById('clear_banner_image_input').value = 'true';
             }
         });
     }

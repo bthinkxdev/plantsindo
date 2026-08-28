@@ -56,6 +56,14 @@ class CategoryForm(forms.ModelForm):
         else:
             self.fields['parent'].queryset = Category.objects.all().order_by('name')
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.data.get('clear_image') == 'true':
+            cleaned_data['image'] = False
+        if self.data.get('clear_banner_image') == 'true':
+            cleaned_data['banner_image'] = False
+        return cleaned_data
+
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()
         if not name:
