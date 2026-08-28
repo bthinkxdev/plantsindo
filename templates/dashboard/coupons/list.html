@@ -71,6 +71,7 @@
         </button>
       </form>
       <a href="{% url 'admin_panel:coupon_edit' c.pk %}" class="btn btn-sm btn-outline-primary" style="flex: 1; justify-content: center;">Edit</a>
+      <a href="{% url 'admin_panel:coupon_redemptions' c.pk %}" class="btn btn-sm btn-outline-secondary" style="flex: 1; justify-content: center;">History</a>
     </div>
   </div>
   {% endfor %}
