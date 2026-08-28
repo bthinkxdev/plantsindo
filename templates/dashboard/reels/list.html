@@ -22,9 +22,18 @@
 
   <div class="product-listing-toolbar">
     <form method="get" class="filters filters-inline product-listing-filters">
-      <div class="product-search-wrap">
-        <i class="fas fa-search"></i>
-        <input type="text" name="q" class="form-control" placeholder="Search reels…" value="{{ filter_q }}">
+      <div class="search-box" style="flex: 1; min-width: 200px; position: relative;">
+          <input type="text" name="q" id="reelSearchInput" class="form-control" placeholder="Search reels…" 
+                 value="{{ filter_q }}" style="padding-left: 1rem; padding-right: 4rem;" 
+                 oninput="document.getElementById('clearSearchBtn').style.display = this.value.trim() ? 'block' : 'none';">
+          <div style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); display: flex; gap: 0.75rem; align-items: center; color: var(--gray-500);">
+              <button type="submit" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: flex; align-items: center;" title="Search">
+                  <i class="fas fa-search" style="position: static; transform: none; left: auto; top: auto;"></i>
+              </button>
+              <a href="{% url 'admin_panel:reel_list' %}" id="clearSearchBtn" style="color: inherit; text-decoration: none; display: {% if filter_q %}block{% else %}none{% endif %};" title="Clear search">
+                  <i class="fas fa-times" style="position: static; transform: none; left: auto; top: auto;"></i>
+              </a>
+          </div>
       </div>
       <select name="status" class="form-control product-filter-select" onchange="this.form.submit()">
         <option value="">All</option>
@@ -43,6 +52,37 @@
   </div>
 
   <div class="product-listing-body">
+    <button type="button" class="btn btn-secondary filter-trigger mb-2" id="filterTrigger" aria-label="Open filters">
+        <i class="fas fa-filter"></i> Filters
+        {% if filter_q or filter_status %}<span class="product-count-badge" style="background:#1976D2;color:#fff;">!</span>{% endif %}
+    </button>
+
+    <div class="filter-overlay" id="filterOverlay" aria-hidden="true"></div>
+    <div class="filters-sheet" id="filtersSheet">
+        <div class="filters-sheet-header">
+            <strong>Filters</strong>
+            <button type="button" class="btn btn-sm btn-secondary" id="filterSheetClose" aria-label="Close">✕</button>
+        </div>
+        <form method="get" class="filters-sheet-body">
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input type="text" name="q" class="form-control" placeholder="Search reels…" value="{{ filter_q }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">All</option>
+                    <option value="active" {% if filter_status == "active" %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if filter_status == "inactive" %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="filters-sheet-footer">
+                <a href="{% url 'admin_panel:reel_list' %}" class="btn btn-secondary" id="filterClear">Clear</a>
+                <button type="submit" class="btn btn-primary">Apply</button>
+            </div>
+        </form>
+    </div>
+
     {% if reels %}
     <div class="list-cards">
       {% for reel in reels %}
@@ -179,4 +219,31 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var filterTrigger = document.getElementById('filterTrigger');
+    var filterOverlay = document.getElementById('filterOverlay');
+    var filtersSheet = document.getElementById('filtersSheet');
+    var filterSheetClose = document.getElementById('filterSheetClose');
+
+    if (filterTrigger && filterOverlay && filtersSheet && filterSheetClose) {
+        function openFilters() {
+            filtersSheet.classList.add('open');
+            filterOverlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFilters() {
+            filtersSheet.classList.remove('open');
+            filterOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        filterTrigger.addEventListener('click', openFilters);
+        filterSheetClose.addEventListener('click', closeFilters);
+        filterOverlay.addEventListener('click', closeFilters);
+    }
+});
+</script>
 {% endblock %}

@@ -13,8 +13,19 @@
 </div>
 
 <form method="get" class="mb-3 d-flex gap-2 align-items-center w-100 flex-nowrap" style="flex-direction: row !important;">
-  <input type="search" name="q" value="{{ q }}" class="form-control form-control-sm" style="flex: 1; min-width: 0;"
-         placeholder="Search code…">
+  <div class="search-box" style="flex: 1; min-width: 200px; position: relative;">
+      <input type="text" name="q" id="couponSearchInput" class="form-control form-control-sm" placeholder="Search code…" 
+             value="{{ q }}" style="padding-left: 1rem; padding-right: 4rem;" 
+             oninput="document.getElementById('clearSearchBtn').style.display = this.value.trim() ? 'block' : 'none';">
+      <div style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); display: flex; gap: 0.5rem; align-items: center; color: var(--gray-500);">
+          <button type="submit" style="background: none; border: none; padding: 0; color: inherit; cursor: pointer; display: flex; align-items: center;" title="Search">
+              <i class="fas fa-search" style="position: static; transform: none; left: auto; top: auto; font-size: 0.875rem;"></i>
+          </button>
+          <a href="{% url 'admin_panel:coupon_list' %}" id="clearSearchBtn" style="color: inherit; text-decoration: none; display: {% if q %}block{% else %}none{% endif %};" title="Clear search">
+              <i class="fas fa-times" style="position: static; transform: none; left: auto; top: auto; font-size: 0.875rem;"></i>
+          </a>
+      </div>
+  </div>
   <select name="status" class="form-control form-control-sm" style="width:auto; flex-shrink: 0;"
           onchange="this.form.submit()">
     <option value="">All</option>
