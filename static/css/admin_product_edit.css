@@ -199,6 +199,14 @@
     transition: background 0.15s, border-color 0.15s;
 }
 
+.btn:disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+}
+
 .btn-primary {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: #fff;
@@ -241,6 +249,7 @@
 .btn-outline:hover {
     background: #f9fafb;
     border-color: #9ca3af;
+    color: #374151;
 }
 
 
