@@ -2,29 +2,30 @@
 {% block title %}Testimonials{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
   <div>
     <h1 class="page-title">Testimonials</h1>
     <p class="text-muted mb-0">Manage customer reviews shown on the homepage.</p>
   </div>
-  <a href="{% url 'admin_panel:testimonial_create' %}" class="btn btn-primary">
-    <i class="fas fa-plus me-1"></i> Add Testimonial
-  </a>
+  
+  <div class="d-flex align-items-center justify-content-between justify-content-md-end mt-3 mt-md-0 w-100 w-md-auto" style="gap: 0.75rem; flex-direction: row !important; white-space: nowrap; flex-wrap: nowrap !important; overflow: hidden;">
+    <a href="{% url 'admin_panel:testimonial_create' %}" class="btn btn-primary text-nowrap flex-shrink-0" style="height: 38px; display: inline-flex; align-items: center; padding: 0 0.75rem;">
+      <i class="fas fa-plus me-1"></i> Add<span class="d-md-inline-block ms-1" style="display: none;">Testimonial</span>
+    </a>
+
+    <form method="get" class="m-0 d-flex align-items-center flex-nowrap flex-shrink-0" style="flex-direction: row !important; height: 38px;">
+      <select name="status" class="form-control" style="width: 155px !important; height: 100%; margin-right: 0.75rem; -webkit-appearance: none; appearance: none; background-image: url(&quot;data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E&quot;); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 12px; padding-right: 2.25rem !important;" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        <option value="active"   {% if filter_status == 'active'   %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <small class="text-muted text-nowrap flex-shrink-0">{{ paginator.count }} items</small>
+    </form>
+  </div>
 </div>
 
-<form method="get" class="mb-3 d-flex gap-2 align-items-center flex-wrap">
-  <select name="status" class="form-control form-control-sm" style="width:auto;"
-          onchange="this.form.submit()">
-    <option value="">All</option>
-    <option value="active"   {% if filter_status == 'active'   %}selected{% endif %}>Active</option>
-    <option value="inactive" {% if filter_status == 'inactive' %}selected{% endif %}>Inactive</option>
-  </select>
-  <small class="text-muted">{{ paginator.count }} testimonial{{ paginator.count|pluralize }}</small>
-</form>
-
 {% if testimonials %}
-<div class="card">
-  <div class="table-responsive">
+<div class="card testimonials-mobile-card-wrapper">
     <table class="table table-hover align-middle mb-0 testimonials-table">
       <thead class="table-light">
         <tr>
@@ -71,7 +72,7 @@
               <span class="badge bg-secondary">—</span>
             {% endif %}
           </td>
-          <td data-label="Order" class="text-center">{{ t.display_order }}</td>
+          <td data-label="Order" class="text-center"><span>{{ t.display_order }}</span></td>
           <td data-label="Status">
             <form method="post" action="{% url 'admin_panel:testimonial_toggle_active' t.pk %}">
               {% csrf_token %}
@@ -101,7 +102,6 @@
         {% endfor %}
       </tbody>
     </table>
-  </div>
 </div>
 
 {% if is_paginated %}
