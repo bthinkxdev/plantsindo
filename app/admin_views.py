@@ -927,8 +927,8 @@ class OrderUpdateStatusView(StaffRequiredMixin, View):
         if new_status not in dict(Order.Status.choices):
             messages.error(request, 'Invalid status.')
             return redirect('admin_panel:order_detail', order_number=order_number)
-        if new_status == Order.Status.CANCELLED and order.status == Order.Status.DELIVERED:
-            messages.error(request, 'Cannot cancel an order that has already been delivered.')
+        if old_status in [Order.Status.DELIVERED, Order.Status.CANCELLED]:
+            messages.error(request, f'Cannot change status of a {order.get_status_display().lower()} order.')
             return redirect('admin_panel:order_detail', order_number=order_number)
         if new_status == Order.Status.CANCELLED:
             shipment = getattr(order, 'shipment', None)

@@ -189,6 +189,9 @@
                 <div class="section-title">Bill To</div>
                 <div class="customer-details">
                     <div class="customer-name">{{ order.address.full_name }}</div>
+                    {{ order.address.address_line }}<br>
+                    {{ order.address.city }}, {{ order.address.state }}<br>
+                    PIN: {{ order.address.pincode }}<br>
                     {% if order.address.email %}Email: {{ order.address.email }}<br>{% endif %}
                     Phone: {{ order.address.phone }}
                 </div>
@@ -200,7 +203,9 @@
                     {{ order.address.address_line }}<br>
                     {{ order.address.city }}, {{ order.delivery_state|default:order.address.state }}<br>
                     PIN: {{ order.address.pincode }}
-                    {% if order.delivery_state %}<br>Delivery State: {{ order.delivery_state }}{% endif %}
+                    {% if order.delivery_state %}<br>Delivery State: {{ order.delivery_state }}{% endif %}<br>
+                    {% if order.address.email %}Email: {{ order.address.email }}<br>{% endif %}
+                    Phone: {{ order.address.phone }}
                 </div>
             </div>
         </div>
