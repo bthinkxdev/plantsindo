@@ -243,17 +243,17 @@ class AdminDashboardView(StaffRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        today = timezone.now().date()
+        today = timezone.localdate()
         last_7_days = today - timedelta(days=7)
         last_30_days = today - timedelta(days=30)
         total_orders = Order.objects.count()
         orders_today = Order.objects.filter(created_at__date=today).count()
         orders_this_week = Order.objects.filter(created_at__date__gte=last_7_days).count()
         orders_this_month = Order.objects.filter(created_at__date__gte=last_30_days).count()
-        total_revenue = Order.objects.aggregate(total=Sum('total'))['total'] or 0
-        revenue_today = Order.objects.filter(created_at__date=today).aggregate(total=Sum('total'))['total'] or 0
-        revenue_this_week = Order.objects.filter(created_at__date__gte=last_7_days).aggregate(total=Sum('total'))['total'] or 0
-        revenue_this_month = Order.objects.filter(created_at__date__gte=last_30_days).aggregate(total=Sum('total'))['total'] or 0
+        total_revenue = Order.objects.exclude(status=Order.Status.CANCELLED).aggregate(total=Sum('total'))['total'] or 0
+        revenue_today = Order.objects.filter(created_at__date=today).exclude(status=Order.Status.CANCELLED).aggregate(total=Sum('total'))['total'] or 0
+        revenue_this_week = Order.objects.filter(created_at__date__gte=last_7_days).exclude(status=Order.Status.CANCELLED).aggregate(total=Sum('total'))['total'] or 0
+        revenue_this_month = Order.objects.filter(created_at__date__gte=last_30_days).exclude(status=Order.Status.CANCELLED).aggregate(total=Sum('total'))['total'] or 0
         order_status = Order.objects.values('status').annotate(count=Count('id'))
         total_products = Product.objects.filter(is_active=True).count()
         _low = getattr(settings, 'LOW_STOCK_THRESHOLD', 5)
@@ -282,7 +282,7 @@ class AdminDashboardView(StaffRequiredMixin, TemplateView):
         chart_data = []
         for i in range(13, -1, -1):
             date = today - timedelta(days=i)
-            daily_revenue = Order.objects.filter(created_at__date=date).aggregate(total=Sum('total'))['total'] or 0
+            daily_revenue = Order.objects.filter(created_at__date=date).exclude(status=Order.Status.CANCELLED).aggregate(total=Sum('total'))['total'] or 0
             chart_data.append({'date': date.strftime('%d %b'), 'revenue': float(daily_revenue)})
         chart_data_json = json.dumps(chart_data)
         context.update({'total_orders': total_orders, 'orders_today': orders_today, 'orders_this_week': orders_this_week, 'orders_this_month': orders_this_month, 'total_revenue': total_revenue, 'revenue_today': revenue_today, 'revenue_this_week': revenue_this_week, 'revenue_this_month': revenue_this_month, 'order_status': order_status, 'total_products': total_products, 'low_stock_products': low_stock_products, 'out_of_stock_products': out_of_stock_products, 'recent_orders': recent_orders, 'top_products': top_products, 'unresolved_messages': unresolved_messages, 'chart_data': chart_data_json, 'active_menu': 'dashboard'})
