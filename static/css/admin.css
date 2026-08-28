@@ -2155,8 +2155,12 @@ body {
 }
 .sidebar-nav::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 4px;
+    height: 22px;
+    padding: 0 0.5rem;
+    background: var(--gray-200);
+    color: var(--gray-700);
+    font-weight: 600;
+    border-radius: 11px;
 }
-.sidebar-nav::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
+
+.order-items-mobile-cards { display: none !important; }

@@ -1252,11 +1252,8 @@
     .order-detail-contact { flex-direction: column; align-items: flex-start; }
 
     .order-items-table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -1rem;
+        display: none !important;
     }
-    .order-items-table-wrap .table { min-width: 400px; }
 
     .order-detail-page .d-flex.flex-wrap.gap-2 { flex-direction: column; }
     .order-detail-page .d-flex.flex-wrap.gap-2 form,
@@ -1623,4 +1620,5 @@
     }
     .testimonials-table td[data-label="Status"] form { flex: 1; display: flex; justify-content: flex-end; width: 100%; }
     .testimonials-table td[data-label="Status"] form .btn { width: 100%; max-width: 120px; justify-content: center; }
+    .order-items-mobile-cards { display: block !important; }
 }
