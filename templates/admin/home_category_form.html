@@ -1,6 +1,23 @@
 {% extends "admin_panel/base.html" %}
 {% block title %}{{ form_title|default:"Home Category" }}{% endblock %}
 {% block page_title %}{{ form_title|default:"Home Category" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-danger {
+        color: var(--danger) !important;
+    }
+    ul.errorlist {
+        list-style: none;
+        padding-left: 0;
+        margin-bottom: 0;
+        margin-top: 0;
+        color: var(--danger);
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="card p-4" style="max-width: 800px; margin: 40px auto;">
