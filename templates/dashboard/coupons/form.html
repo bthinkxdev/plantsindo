@@ -101,4 +101,38 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startsAtInput = document.getElementById('{{ form.starts_at.id_for_label }}');
+    const endsAtInput = document.getElementById('{{ form.ends_at.id_for_label }}');
+    
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000; 
+    const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0, 16);
+    
+    if (startsAtInput) {
+        if (!startsAtInput.value || startsAtInput.value >= localISOTime) {
+            startsAtInput.min = localISOTime;
+        }
+    }
+    
+    if (endsAtInput) {
+        if (!endsAtInput.value || endsAtInput.value >= localISOTime) {
+            endsAtInput.min = localISOTime;
+        }
+    }
+    
+    if (startsAtInput && endsAtInput) {
+        startsAtInput.addEventListener('change', function() {
+            if (this.value) {
+                endsAtInput.min = this.value;
+                if (endsAtInput.value && endsAtInput.value < this.value) {
+                    endsAtInput.value = this.value;
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

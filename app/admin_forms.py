@@ -756,4 +756,19 @@ class CouponForm(forms.ModelForm):
         ends = cleaned.get('ends_at')
         if starts and ends and ends < starts:
             self.add_error('ends_at', 'Expiry must be after the start date.')
+            
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if not self.instance.pk:
+            if starts and starts < now - timezone.timedelta(minutes=5):
+                self.add_error('starts_at', 'Start date cannot be in the past.')
+            if ends and ends < now - timezone.timedelta(minutes=5):
+                self.add_error('ends_at', 'Expiry date cannot be in the past.')
+        else:
+            if 'starts_at' in self.changed_data and starts and starts < now - timezone.timedelta(minutes=5):
+                self.add_error('starts_at', 'Start date cannot be changed to a past date.')
+            if 'ends_at' in self.changed_data and ends and ends < now - timezone.timedelta(minutes=5):
+                self.add_error('ends_at', 'Expiry date cannot be changed to a past date.')
+                
         return cleaned
