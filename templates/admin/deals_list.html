@@ -478,16 +478,22 @@ document.addEventListener("DOMContentLoaded", function () {
         filterForm.submit();
     }
 
-    // Search input with debounce
+    // Search input (only submit on 'search' e.g. clear button or Enter, removed 'input' to fix AD-010 focus issue)
     if (searchInput) {
-        searchInput.addEventListener("input", submitWithDelay);
-        searchInput.addEventListener("search", submitImmediate); // Handles clear button
+        searchInput.addEventListener("search", submitImmediate); 
     }
 
     // Toggle switch with immediate feedback
     if (currentDealsToggle) {
         currentDealsToggle.addEventListener("change", submitImmediate);
     }
+
+    // Set min date for Start and End Date inputs to prevent past dates
+    var today = new Date().toISOString().split('T')[0];
+    var dateInputs = document.querySelectorAll('.deals-date-input[type="date"]');
+    dateInputs.forEach(function(input) {
+        input.setAttribute('min', today);
+    });
 
     // Hide loading on page load
     if (loadingOverlay) {
