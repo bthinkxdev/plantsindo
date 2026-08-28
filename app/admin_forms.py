@@ -118,8 +118,8 @@ def _validate_banner_image(image, required=True):
             if width * height > 5000000:
                 raise forms.ValidationError('Image resolution cannot exceed 5 megapixels. Please resize or compress.')
             ratio = width / height
-            if not (1.5 <= ratio <= 3.0):
-                raise forms.ValidationError(f'Banner image aspect ratio must be between 1.5:1 and 3.0:1. Uploaded image is {ratio:.2f}:1.')
+            if not (1.5 <= ratio <= 3.5):
+                raise forms.ValidationError(f'Banner image aspect ratio must be between 1.5:1 and 3.5:1. Uploaded image is {ratio:.2f}:1.')
             img.verify()
             image.seek(0)
         except forms.ValidationError:
@@ -218,6 +218,17 @@ class BannerForm(forms.ModelForm):
         if url is not None and str(url).strip() == '':
             return None
         return url
+
+    def clean_is_active(self):
+        is_active = self.cleaned_data.get('is_active')
+        if is_active:
+            from .models import Banner
+            active_count = Banner.objects.filter(is_active=True).count()
+            if self.instance and self.instance.pk and self.instance.is_active:
+                pass
+            elif active_count >= Banner.MAX_ACTIVE:
+                raise forms.ValidationError(f"Maximum {Banner.MAX_ACTIVE} banners can be active at a time.")
+        return is_active
 BASIC_EDIT_FIELDS = ['category', 'name', 'slug', 'description', 'brand', 'base_price', 'base_original_price', 'base_stock', 'is_featured', 'is_bestseller', 'is_deal_of_day', 'deal_of_day_start', 'deal_of_day_end', 'is_active', 'is_gst_applicable', 'gst_percentage', 'hsn_code', 'is_rent_available', 'purchase_enabled', 'is_plant_combo', 'care_instructions', 'sunlight', 'watering', 'difficulty', 'plant_type', 'maintenance_notes']
 
 class ProductBasicEditForm(forms.ModelForm):

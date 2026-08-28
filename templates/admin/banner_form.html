@@ -41,12 +41,13 @@
             <div class="form-group">
                 <label class="form-label">Image * <small style="color: var(--gray-500);">(Max 5MB, JPG/PNG/GIF/WebP)</small></label>
                 {{ form.image }}
+                <div id="image-validation-error" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
                 {% if form.image.errors %}
                     <div style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">
                         {{ form.image.errors }}
                     </div>
                 {% endif %}
-                {% if form.instance.image %}
+                {% if form.instance.pk and form.instance.image %}
                     <div style="margin-top: 1rem;">
                         <img src="{{ form.instance.image.url }}" alt="Current banner"
                              style="max-width: 300px; max-height: 120px; object-fit: contain; border-radius: 8px; border: 1px solid var(--gray-200);">
@@ -94,11 +95,47 @@
                 <a href="{% url 'admin_panel:banner_list' %}" class="btn btn-secondary">
                     <i class="fas fa-times"></i> Cancel
                 </a>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary" id="save-banner-btn">
                     <i class="fas fa-save"></i> Save Banner
                 </button>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('{{ form.image.id_for_label }}');
+    const errorContainer = document.getElementById('image-validation-error');
+    const submitBtn = document.getElementById('save-banner-btn');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                errorContainer.style.display = 'none';
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = function() {
+                const ratio = img.width / img.height;
+                if (ratio < 1.5 || ratio > 3.5) {
+                    errorContainer.textContent = `Banner image aspect ratio must be between 1.5:1 and 3.5:1. Uploaded image is ${ratio.toFixed(2)}:1.`;
+                    errorContainer.style.display = 'block';
+                    submitBtn.disabled = true;
+                } else {
+                    errorContainer.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+                URL.revokeObjectURL(img.src);
+            };
+        });
+    }
+});
+</script>
 {% endblock %}
