@@ -84,11 +84,11 @@
                 c.id +
                 '" value="' +
                 c.display_order +
-                '"></td><td><button type="button" class="btn btn-sm btn-outline-secondary combo-row-save" data-row-id="' +
+                '"></td><td><div class="table-actions"><button type="button" class="btn btn-sm btn-outline-secondary combo-row-save" data-row-id="' +
                 c.id +
                 '">Save</button> <button type="button" class="btn btn-sm btn-outline-danger combo-row-remove" data-row-id="' +
                 c.id +
-                '">Remove</button></td>';
+                '">Remove</button></div></td>';
             comboTbody.appendChild(tr);
         });
     }
