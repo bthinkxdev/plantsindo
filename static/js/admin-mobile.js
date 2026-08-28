@@ -57,13 +57,47 @@
         if (overlay) overlay.addEventListener('click', close);
     }
 
+    function initSmartTopbar() {
+        var topbar = document.querySelector('.topbar');
+        if (!topbar) return;
+        
+        var lastScrollTop = 0;
+        var scrollThreshold = 10;
+        
+        window.addEventListener('scroll', function() {
+            if (window.innerWidth > 768) {
+                topbar.classList.remove('topbar-hidden');
+                return;
+            }
+            
+            var st = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (st <= 0) {
+                topbar.classList.remove('topbar-hidden');
+                lastScrollTop = st;
+                return;
+            }
+            
+            if (Math.abs(lastScrollTop - st) <= scrollThreshold) return;
+            
+            if (st > lastScrollTop && st > topbar.offsetHeight) {
+                topbar.classList.add('topbar-hidden');
+            } else {
+                topbar.classList.remove('topbar-hidden');
+            }
+            lastScrollTop = st;
+        }, { passive: true });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
             initFilterSheet();
             initReportFilterSheet();
+            initSmartTopbar();
         });
     } else {
         initFilterSheet();
         initReportFilterSheet();
+        initSmartTopbar();
     }
 })();
