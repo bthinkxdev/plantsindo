@@ -563,13 +563,15 @@
         }
 
         if (qtyInput) {
-            qtyInput.setAttribute('max', sq);
-            var currVal = parseInt(qtyInput.value, 10) || 1;
-            if (sq === 0) {
+            var safeSq = parseInt(sq, 10);
+            if (isNaN(safeSq)) safeSq = 99;
+            var maxCart = parseInt(qtyInput.getAttribute('data-max-cart'), 10) || 10;
+            var allowedMax = Math.min(safeSq, maxCart);
+            qtyInput.setAttribute('max', allowedMax);
+            qtyInput.setAttribute('data-stock', safeSq);
+            if (safeSq === 0) {
                 qtyInput.value = 0;
-            } else if (currVal > sq) {
-                qtyInput.value = sq;
-            } else if (currVal === 0 && sq > 0) {
+            } else {
                 qtyInput.value = 1;
             }
             qtyInput.dispatchEvent(new Event('change', { bubbles: true }));
