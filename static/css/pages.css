@@ -6634,6 +6634,8 @@ body.storefront .shop-page .toolbar-right .results-count {
 .wl-body .tpc-add-btn {
     background: linear-gradient(135deg, var(--clr-navy-light), var(--clr-navy)); 
     border-radius: 16px;
+    text-align: center;
+    justify-content: center;
 }
 .wl-body .tpc-add-btn:hover {
     background: linear-gradient(135deg, var(--clr-navy), var(--clr-navy-deep));
@@ -6718,7 +6720,7 @@ body.storefront .shop-page .toolbar-right .results-count {
 
 @media (max-width: 575px) {
     .wl-body { padding: 10px 8px 12px; gap: 3px; }
-    .wl-body .tpc-add-btn { min-height: 38px; font-size: 0.75rem; padding: 9px 10px; width: 100%; display: flex; align-items: center; justify-content: center; }
+    .wl-body .tpc-add-btn { min-height: 38px; font-size: 0.75rem; padding: 9px 10px; width: 100%; display: flex; align-items: center; justify-content: center !important; text-align: center !important; }
     .wl-section { padding: 28px 0 56px; }
 }
 

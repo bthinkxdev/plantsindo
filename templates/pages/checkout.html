@@ -352,6 +352,15 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        document.body.style.opacity = '0';
+        window.location.replace("{% url 'store:home' %}");
+    }
+});
+window.addEventListener('unload', function() {});
+</script>
 {{ checkout_address_delivery|json_script:"checkout-address-delivery" }}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script src="{% static 'js/checkout.js' %}?v=1.1"></script>
