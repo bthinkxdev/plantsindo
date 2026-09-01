@@ -179,5 +179,47 @@
         {% endif %}
     </div>
 </div>
-{% endblock %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('form.filters');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            const searchInput = document.getElementById('categorySearchInput');
+            const statusSelect = searchForm.querySelector('select[name="status"]');
+            const parentSelect = searchForm.querySelector('select[name="parent"]');
+            
+            if (searchInput && statusSelect && parentSelect) {
+                const searchValue = searchInput.value.trim();
+                const statusValue = statusSelect.value;
+                const parentValue = parentSelect.value;
+                
+                const currentSearch = "{{ search_query|default:''|escapejs }}";
+                const currentStatus = "{{ status_filter|default:''|escapejs }}";
+                const currentParent = "{{ parent_filter|default:''|escapejs }}";
+                
+                if (searchValue === currentSearch && statusValue === currentStatus && parentValue === currentParent) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.pageLoader) window.pageLoader.hide();
+                }
+            }
+        });
+    }
 
+    const clearBtns = document.querySelectorAll(`a[href="{% url 'admin_panel:category_list' %}"]`);
+    clearBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            const currentSearch = "{{ search_query|default:''|escapejs }}";
+            const currentStatus = "{{ status_filter|default:''|escapejs }}";
+            const currentParent = "{{ parent_filter|default:''|escapejs }}";
+            
+            if (!currentSearch && !currentStatus && !currentParent) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.pageLoader) window.pageLoader.hide();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
