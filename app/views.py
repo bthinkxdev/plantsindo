@@ -2327,7 +2327,7 @@ class NewsletterSubscribeView(View):
         success_url = request.META.get('HTTP_REFERER', str(reverse_lazy('store:home')))
 
         import re
-        email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not email or not re.match(email_regex, email):
             error_msg = 'Enter valid email ID'
             if is_ajax:
