@@ -20,7 +20,9 @@
                            value="{{ search_query }}">
                 </div>
                 <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 15px;">Search</button>
+                {% if search_query or filter_status %}
                 <a href="?" class="btn btn-secondary" style="height: 38px; padding: 0 15px; display: flex; align-items: center; text-decoration: none;">Clear</a>
+                {% endif %}
             </div>
             <div class="filter-group">
                 <select name="status" class="form-control" onchange="this.form.submit()">
@@ -176,3 +178,25 @@
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('form.filters-inline');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            const searchInput = this.querySelector('input[name="search"]');
+            if (searchInput) {
+                const searchValue = searchInput.value.trim();
+                const currentSearch = "{{ search_query|default:''|escapejs }}";
+                
+                if (searchValue === '' && currentSearch === '') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.pageLoader) window.pageLoader.hide();
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

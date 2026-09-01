@@ -407,5 +407,24 @@
 
     document.querySelectorAll('.product-active-toggle').forEach(syncToggleWrap);
 })();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('form.filters-inline.product-listing-filters');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            const searchInput = this.querySelector('input[name="search"]');
+            if (searchInput) {
+                const searchValue = searchInput.value.trim();
+                const currentSearch = "{{ search_query|default:''|escapejs }}";
+                
+                if (searchValue === '' && currentSearch === '') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (window.pageLoader) window.pageLoader.hide();
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
