@@ -61,9 +61,27 @@
             btn.className = "btn-add-cart btn btn-view-cart";
             btn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>';
             btn.disabled = false;
-            var formVariantId = document.getElementById('formVariantId');
-            if (formVariantId && window.cartVariantIds) {
-                var vid = String(formVariantId.value);
+            
+            var form = btn.closest('form');
+            var fVariant = form ? (form.querySelector('[name="variant_id"]') || {}).value : (document.getElementById('formVariantId') || {}).value;
+            var fProduct = form ? (form.querySelector('[name="product_id"]') || {}).value : window.productId;
+            var fPotInput = form ? form.querySelector('[name="selected_pot_id"]') : document.getElementById('formSelectedPotId');
+            var fPot = fPotInput ? fPotInput.value : '';
+            
+            if (window.cartItemKeys) {
+                var key = "";
+                if (fVariant) {
+                    key = "v_" + String(fVariant) + "_p_" + fPot;
+                } else if (fProduct) {
+                    key = "s_" + String(fProduct) + "_p_" + fPot;
+                }
+                if (key && !window.cartItemKeys.includes(key)) {
+                    window.cartItemKeys.push(key);
+                }
+            }
+            
+            if (fVariant && window.cartVariantIds) {
+                var vid = String(fVariant);
                 if (!window.cartVariantIds.includes(vid)) {
                     window.cartVariantIds.push(vid);
                 }
@@ -139,11 +157,13 @@
 
                         var productId = body.get('product_id');
                         var variantId = body.get('variant_id');
+                        var potId = body.get('selected_pot_id') || '';
                         form.setAttribute('data-cart-added', '1'); 
                         document.dispatchEvent(new CustomEvent('cart:updated', {
                             detail: Object.assign({}, result.data, {
                                 added_product_id: productId,
-                                added_variant_id: variantId
+                                added_variant_id: variantId,
+                                added_pot_id: potId
                             })
                         }));
 
@@ -181,6 +201,7 @@
             var detail = (e && e.detail) || {};
             var variantId = detail.added_variant_id ? String(detail.added_variant_id) : null;
             var productId = detail.added_product_id ? String(detail.added_product_id) : null;
+            var potId = detail.added_pot_id ? String(detail.added_pot_id) : '';
             if (!variantId && !productId) return;
 
             var cartUrl = (document.body && document.body.getAttribute('data-cart-url')) || '#';
@@ -191,12 +212,15 @@
 
                 var fVariant = (form.querySelector('[name="variant_id"]') || {}).value || null;
                 var fProduct = (form.querySelector('[name="product_id"]') || {}).value || null;
+                var fPotInput = form.querySelector('[name="selected_pot_id"]');
+                var hasPotInput = fPotInput !== null;
+                var fPotValue = hasPotInput ? fPotInput.value : '';
 
                 var isMatch = false;
                 if (variantId && fVariant) {
-                    isMatch = (fVariant === variantId);
+                    isMatch = hasPotInput ? (fVariant === variantId && fPotValue === potId) : (fVariant === variantId);
                 } else if (!variantId && !fVariant) {
-                    isMatch = (productId && fProduct && fProduct === productId);
+                    isMatch = hasPotInput ? (productId && fProduct && fProduct === productId && fPotValue === potId) : (productId && fProduct && fProduct === productId);
                 }
 
                 if (!isMatch) return;
@@ -221,7 +245,8 @@
             document.querySelectorAll('form.product-add-form').forEach(function(form) {
                 var fVariant = (form.querySelector('[name="variant_id"]') || {}).value || null;
                 var fProduct = (form.querySelector('[name="product_id"]') || {}).value || null;
-                var fPot = (form.querySelector('[name="selected_pot_id"]') || {}).value || '';
+                var fPotInput = form.querySelector('[name="selected_pot_id"]');
+                var fPot = fPotInput ? fPotInput.value : '';
                 
                 var inCart = false;
                 var itemKey = "";
