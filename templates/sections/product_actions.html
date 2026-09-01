@@ -179,6 +179,7 @@
 <script>
     window.productId = {{ product.id }};
     window.cartVariantIds = [{% for vid in cart_variant_ids %}"{{ vid }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    window.cartItemKeys = [{% for k in cart_item_keys %}"{{ k }}"{% if not forloop.last %},{% endif %}{% endfor %}];
 </script>
 
     {% if product.is_simple_product %}

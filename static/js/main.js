@@ -805,6 +805,32 @@
     if (potInput) potInput.value = potId || '';
  
     updatePrice();
+
+    var pdpMainCartBtn = document.getElementById('pdpMainCartBtn');
+    if (pdpMainCartBtn && window.cartItemKeys) {
+        var isSimpleProduct = document.getElementById('addToCartForm') && document.getElementById('addToCartForm').getAttribute('data-simple-product') === 'true';
+        var variantId = document.getElementById('formVariantId') ? document.getElementById('formVariantId').value : '';
+        var key = "";
+        
+        if (isSimpleProduct) {
+            key = "s_" + window.productId + "_p_" + potId;
+        } else {
+            if (variantId) {
+                key = "v_" + variantId + "_p_" + potId;
+            }
+        }
+        
+        if (key) {
+            if (window.cartItemKeys.includes(key)) {
+                pdpMainCartBtn.className = "btn-add-cart btn btn-view-cart";
+                pdpMainCartBtn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>';
+                pdpMainCartBtn.disabled = false;
+            } else {
+                pdpMainCartBtn.className = "btn-add-cart btn js-pdp-add-cart";
+                pdpMainCartBtn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>';
+            }
+        }
+    }
   }
  
   // ── Wire cards ─────────────────────────────────────────────────────────────

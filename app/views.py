@@ -2495,7 +2495,7 @@ class CartDrawerView(View):
                     except Exception:
                         pass
                     variant_display = item.variant_display or 'Bundle'
-                    unit_price = item.unit_price
+                    unit_price = item.unit_price + (item.pot_unit_price or 0)
                     product_url = request.build_absolute_uri(reverse('store:combo_detail', kwargs={'slug': item.combo.slug}))
                     items_data.append({'id': item.id, 'name': item.combo.name, 'variant_display': variant_display, 'unit_price': str(unit_price or 0), 'quantity': item.quantity, 'image': image_url or '', 'product_url': product_url, 'max_quantity': item.max_allowed_quantity, 'actual_stock': item.actual_stock})
                     continue
@@ -2525,7 +2525,7 @@ class CartDrawerView(View):
                             variant_display = item.selected_variant.get_attribute_values_display()
                         except Exception:
                             pass
-                unit_price = item.unit_price
+                unit_price = item.unit_price + (item.pot_unit_price or 0)
                 if item.product and item.selected_variant_id:
                     product_url = request.build_absolute_uri(f'/products/{item.product.slug}/?variant={item.selected_variant_id}')
                 elif item.product:
@@ -2536,9 +2536,16 @@ class CartDrawerView(View):
             
             cart_variant_ids = [str(item.selected_variant_id) for item in items_qs if item.selected_variant_id]
             cart_simple_product_ids = [str(item.product_id) for item in items_qs if item.product_id and not item.selected_variant_id]
+            cart_item_keys = []
+            for item in items_qs:
+                p_id = str(item.selected_pot_id) if item.selected_pot_id else ""
+                if item.selected_variant_id:
+                    cart_item_keys.append(f"v_{item.selected_variant_id}_p_{p_id}")
+                elif item.product_id:
+                    cart_item_keys.append(f"s_{item.product_id}_p_{p_id}")
             
             item_count = sum((i['quantity'] for i in items_data))
-            return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count, 'cart_variant_ids': cart_variant_ids, 'cart_simple_product_ids': cart_simple_product_ids})
+            return JsonResponse({'success': True, 'items': items_data, 'total': str(totals.subtotal), 'subtotal': str(totals.subtotal), 'item_count': item_count, 'cart_variant_ids': cart_variant_ids, 'cart_simple_product_ids': cart_simple_product_ids, 'cart_item_keys': cart_item_keys})
         except Exception as exc:
             logger.error('CartDrawerView error: %s', exc, exc_info=True)
             return JsonResponse({'success': False, 'items': [], 'total': '0', 'subtotal': '0', 'item_count': 0})

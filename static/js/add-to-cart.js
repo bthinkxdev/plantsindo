@@ -212,19 +212,33 @@
             var detail = (e && e.detail) || {};
             var vIds = detail.cart_variant_ids || [];
             var pIds = detail.cart_simple_product_ids || [];
+            var kIds = detail.cart_item_keys || [];
 
             if (window.cartVariantIds) window.cartVariantIds = vIds;
             if (window.cartSimpleProductIds) window.cartSimpleProductIds = pIds;
+            if (window.cartItemKeys) window.cartItemKeys = kIds;
 
             document.querySelectorAll('form.product-add-form').forEach(function(form) {
                 var fVariant = (form.querySelector('[name="variant_id"]') || {}).value || null;
                 var fProduct = (form.querySelector('[name="product_id"]') || {}).value || null;
+                var fPot = (form.querySelector('[name="selected_pot_id"]') || {}).value || '';
                 
                 var inCart = false;
+                var itemKey = "";
                 if (fVariant) {
-                    inCart = vIds.includes(String(fVariant));
+                    itemKey = "v_" + String(fVariant) + "_p_" + fPot;
                 } else if (fProduct) {
-                    inCart = pIds.includes(String(fProduct));
+                    itemKey = "s_" + String(fProduct) + "_p_" + fPot;
+                }
+                
+                if (itemKey && window.cartItemKeys) {
+                    inCart = window.cartItemKeys.includes(itemKey);
+                } else {
+                    if (fVariant) {
+                        inCart = vIds.includes(String(fVariant));
+                    } else if (fProduct) {
+                        inCart = pIds.includes(String(fProduct));
+                    }
                 }
 
                 var btn = form.querySelector('button[type="submit"]');
@@ -232,6 +246,9 @@
                     form.removeAttribute('data-cart-added');
                     btn.className = "btn-add-cart btn js-pdp-add-cart";
                     btn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-bag me-2"></i> Add to Cart</span>';
+                } else if (inCart && btn && !btn.classList.contains('btn-view-cart')) {
+                    var cartUrl = form.getAttribute("data-cart-url") || (document.body && document.body.getAttribute("data-cart-url")) || "#";
+                    replaceWithViewCart(btn, cartUrl);
                 }
             });
 

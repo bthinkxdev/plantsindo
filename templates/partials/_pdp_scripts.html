@@ -529,8 +529,11 @@
         var inStock = ((variant.stock != null ? variant.stock : variant.stock_quantity) || 0) > 0;
         
         var pdpMainCartBtn = document.getElementById('pdpMainCartBtn');
-        if (pdpMainCartBtn && window.cartVariantIds) {
-            if (window.cartVariantIds.includes(String(variant.id))) {
+        if (pdpMainCartBtn && window.cartItemKeys) {
+            var potInput = document.getElementById('formSelectedPotId');
+            var selectedPotId = potInput ? potInput.value : '';
+            var key = "v_" + String(variant.id) + "_p_" + selectedPotId;
+            if (window.cartItemKeys.includes(key)) {
                 pdpMainCartBtn.className = "btn-add-cart btn btn-view-cart";
                 pdpMainCartBtn.innerHTML = '<span class="btn-add-cart-text"><i class="fas fa-shopping-cart me-2"></i> View Cart</span>';
                 pdpMainCartBtn.disabled = false;

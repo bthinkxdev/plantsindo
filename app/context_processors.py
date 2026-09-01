@@ -38,19 +38,25 @@ def cart_context(request):
         cart_subtotal = totals.subtotal
         cart_variant_ids = set()
         cart_simple_product_ids = set()
-        for product_id, variant_id, line_type in cart.items.values_list('product_id', 'selected_variant_id', 'line_type'):
+        cart_item_keys = set()
+        for product_id, variant_id, line_type, pot_id in cart.items.values_list('product_id', 'selected_variant_id', 'line_type', 'selected_pot_id'):
             if line_type != CartItem.LineKind.PURCHASE:
                 continue
+            
+            p_str = str(pot_id) if pot_id else ""
             if variant_id is not None:
                 cart_variant_ids.add(str(variant_id))
+                cart_item_keys.add(f"v_{variant_id}_p_{p_str}")
             else:
                 cart_simple_product_ids.add(str(product_id))
+                cart_item_keys.add(f"s_{product_id}_p_{p_str}")
     except Exception:
         cart_count = 0
         cart_subtotal = 0
         cart_variant_ids = set()
         cart_simple_product_ids = set()
-    return {'cart_count': cart_count, 'cart_subtotal': cart_subtotal, 'cart_variant_ids': cart_variant_ids, 'cart_simple_product_ids': cart_simple_product_ids}
+        cart_item_keys = set()
+    return {'cart_count': cart_count, 'cart_subtotal': cart_subtotal, 'cart_variant_ids': cart_variant_ids, 'cart_simple_product_ids': cart_simple_product_ids, 'cart_item_keys': cart_item_keys}
 
 def wishlist_context(request):
     enabled = wishlist_enabled()
