@@ -1371,12 +1371,19 @@ class DashboardReelCreateView(StaffRequiredMixin, CreateView):
     template_name = 'dashboard/reels/form.html'
     success_url = reverse_lazy('admin_panel:reel_list')
 
+    def form_invalid(self, form):
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+        return super().form_invalid(form)
+
     def form_valid(self, form):
         form.save()
         from django.core.cache import caches
         _cache = caches['locmem'] if 'locmem' in caches else caches['default']
         _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel created.')
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'redirect_url': str(self.success_url)})
         return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
@@ -1392,12 +1399,19 @@ class DashboardReelUpdateView(StaffRequiredMixin, UpdateView):
     template_name = 'dashboard/reels/form.html'
     success_url = reverse_lazy('admin_panel:reel_list')
 
+    def form_invalid(self, form):
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+        return super().form_invalid(form)
+
     def form_valid(self, form):
         form.save()
         from django.core.cache import caches
         _cache = caches['locmem'] if 'locmem' in caches else caches['default']
         _cache.delete('home_reels_v1')
         messages.success(self.request, 'Reel updated.')
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'redirect_url': str(self.success_url)})
         return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):

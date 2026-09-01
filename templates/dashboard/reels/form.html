@@ -14,7 +14,7 @@
   </div>
 
   <div class="product-listing-body" style="padding: 1.5rem;">
-    <form method="post" enctype="multipart/form-data" class="admin-form">
+    <form method="post" enctype="multipart/form-data" class="admin-form" id="reel-form">
       {% csrf_token %}
       {% if form.non_field_errors %}
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
@@ -81,5 +81,114 @@
     </form>
   </div>
 </div>
-{% endblock %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const posterInput = document.getElementById('id_poster_image');
+    const videoInput = document.getElementById('id_video');
+
+    function showError(input, message) {
+        const existingError = input.parentElement.querySelector('.custom-client-error');
+        if (existingError) existingError.remove();
+        
+        if (message) {
+            const errorHtml = `<div class="form-error-message custom-client-error" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">${message}</div>`;
+            input.insertAdjacentHTML('afterend', errorHtml);
+            input.value = ''; 
+        }
+    }
+
+    if (posterInput) {
+        posterInput.addEventListener('change', function(e) {
+            showError(posterInput, null);
+            const file = this.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const img = new Image();
+                img.onload = function() {
+                    const pixels = this.width * this.height;
+                    if (pixels > 5000000) {
+                        showError(posterInput, 'Image resolution cannot exceed 5 megapixels. Please resize or compress.');
+                    }
+                };
+                img.src = URL.createObjectURL(file);
+            }
+        });
+    }
+
+    if (videoInput) {
+        videoInput.addEventListener('change', function(e) {
+            showError(videoInput, null);
+            const file = this.files[0];
+            if (file && file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = function() {
+                    URL.revokeObjectURL(video.src);
+                    const ratio = this.videoHeight / this.videoWidth;
+                    if (ratio < 1.5 || ratio > 2.0) {
+                        showError(videoInput, 'Video must have an approximate 9:16 vertical ratio.');
+                    }
+                };
+                video.src = URL.createObjectURL(file);
+            }
+        });
+    }
+
+    const form = document.getElementById('reel-form');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        form.querySelectorAll('.form-error-message, .alert-danger, .custom-client-error').forEach(el => el.remove());
+
+        const formData = new FormData(form);
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+
+                if (data.errors) {
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        const errorHtml = errors.map(err => `<div class="form-error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem;">${err}</div>`).join('');
+                        
+                        if (field === '__all__') {
+                            const alertHtml = `<div class="alert alert-danger">${errors.join('<br>')}</div>`;
+                            form.insertAdjacentHTML('afterbegin', alertHtml);
+                        } else {
+                            const inputElement = form.querySelector(`[name="${field}"]`);
+                            if (inputElement) {
+                                const container = inputElement.closest('.form-group') || inputElement.parentElement;
+                                container.insertAdjacentHTML('beforeend', errorHtml);
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting form:', error);
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+            alert('An unexpected error occurred. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}
