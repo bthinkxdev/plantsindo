@@ -8,8 +8,8 @@
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}">
-    <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=6">
-    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}?v=12">
+    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=12">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_css %}{% endblock %}
 </head>
@@ -180,19 +180,22 @@
 
     <script>
         // Mobile menu toggle
-        const menuToggle = document.getElementById('menuToggle');
         const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
         const sidebarClose = document.getElementById('sidebarClose');
         const body = document.body;
+        const html = document.documentElement;
 
         menuToggle?.addEventListener('click', () => {
             sidebar.classList.toggle('active');
             body.classList.toggle('sidebar-open');
+            html.classList.toggle('sidebar-open');
         });
 
         sidebarClose?.addEventListener('click', () => {
             sidebar.classList.remove('active');
             body.classList.remove('sidebar-open');
+            html.classList.remove('sidebar-open');
         });
 
         // Close sidebar when clicking outside
@@ -202,6 +205,7 @@
                 menuToggle && !menuToggle.contains(e.target)) {
                 sidebar.classList.remove('active');
                 body.classList.remove('sidebar-open');
+                html.classList.remove('sidebar-open');
             }
         });
 

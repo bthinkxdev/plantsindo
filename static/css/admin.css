@@ -1342,6 +1342,7 @@ body {
 @media (max-width: 1024px) {
     .sidebar {
         transform: translateX(-100%);
+        z-index: 1050;
     }
 
     .sidebar.active {
@@ -1360,6 +1361,11 @@ body {
         display: block;
     }
 
+    html.sidebar-open,
+    body.sidebar-open {
+        overflow: hidden !important;
+    }
+
     body.sidebar-open::before {
         content: '';
         position: fixed;
@@ -1368,7 +1374,8 @@ body {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+        z-index: 1040;
+        touch-action: none;
     }
 }
 
