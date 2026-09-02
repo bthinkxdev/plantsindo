@@ -20,16 +20,19 @@
         }
         /* Single A4 - compact layout */
         .invoice-container {
-            width: 210mm;
-            max-height: 297mm;
+            width: 100%;
+            max-width: 210mm;
             padding: 12mm;
             background: white;
             page-break-inside: avoid;
+            margin: 0 auto;
         }
         .invoice-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #6D4C41;
             margin-bottom: 12px;
@@ -38,17 +41,27 @@
         .company-tagline { font-size: 9pt; color: #8D6E63; margin-bottom: 6px; }
         .company-details { font-size: 9pt; color: #666; line-height: 1.5; }
         .invoice-meta { text-align: right; }
+        @media screen and (max-width: 480px) {
+            body { padding: 8px !important; overflow-x: hidden; }
+            .invoice-container { padding: 16px !important; }
+            .invoice-meta { text-align: left; }
+            .items-table { font-size: 8pt; }
+            .items-table th, .items-table td { padding: 4px 2px !important; }
+            .totals-table { width: 100%; }
+        }
         .invoice-title { font-size: 16pt; font-weight: bold; color: #3E2723; margin-bottom: 4px; }
         .invoice-number { font-size: 12pt; color: #6D4C41; font-weight: bold; margin-bottom: 2px; }
         .invoice-date { font-size: 9pt; color: #666; }
         .info-section {
             display: flex;
             justify-content: space-between;
+            flex-wrap: wrap;
             margin-bottom: 12px;
             gap: 12px;
         }
         .bill-to, .ship-to {
             flex: 1;
+            min-width: 200px;
             padding: 8px 10px;
             background: #F5F5F3;
             border-radius: 6px;
@@ -56,6 +69,7 @@
         .section-title { font-size: 9pt; font-weight: bold; color: #6D4C41; margin-bottom: 6px; text-transform: uppercase; }
         .customer-details { font-size: 9pt; line-height: 1.5; }
         .customer-name { font-weight: bold; font-size: 10pt; color: #3E2723; margin-bottom: 4px; }
+        .table-responsive { width: 100%; overflow-x: auto; }
         .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -211,36 +225,38 @@
             </div>
         </div>
 
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="width: 28%;">Item</th>
-                    <th style="width: 8%; text-align: center;">Qty</th>
-                    <th style="width: 14%;">Unit Price</th>
-                    <th style="width: 14%;">Delivery / Unit</th>
-                    <th style="width: 14%;">Delivery Total</th>
-                    <th style="width: 22%;">Line Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in order.items.all %}
-                <tr>
-                    <td>
-                        <div class="item-name">{{ item.product_name }}</div>
-                        <div class="item-variant">{{ item.variant_snapshot }}</div>
-                    </td>
-                    <td style="text-align: center;">{{ item.quantity }}</td>
-                    <td>
-                        ₹{{ item.unit_price }}
-                        {% if item.pot_unit_price %}<br><small>+ ₹{{ item.pot_unit_price }} pot</small>{% endif %}
-                    </td>
-                    <td>₹{{ item.delivery_charge_per_unit }}</td>
-                    <td>₹{{ item.total_delivery_charge }}</td>
-                    <td>₹{{ item.line_grand_total }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 28%;">Item</th>
+                        <th style="width: 8%; text-align: center;">Qty</th>
+                        <th style="width: 14%;">Unit Price</th>
+                        <th style="width: 14%;">Delivery / Unit</th>
+                        <th style="width: 14%;">Delivery Total</th>
+                        <th style="width: 22%;">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td>
+                            <div class="item-name">{{ item.product_name }}</div>
+                            <div class="item-variant">{{ item.variant_snapshot }}</div>
+                        </td>
+                        <td style="text-align: center;">{{ item.quantity }}</td>
+                        <td>
+                            ₹{{ item.unit_price }}
+                            {% if item.pot_unit_price %}<br><small>+ ₹{{ item.pot_unit_price }} pot</small>{% endif %}
+                        </td>
+                        <td>₹{{ item.delivery_charge_per_unit }}</td>
+                        <td>₹{{ item.total_delivery_charge }}</td>
+                        <td>₹{{ item.line_grand_total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="totals-section">
             <table class="totals-table">
