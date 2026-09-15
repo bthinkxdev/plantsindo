@@ -33,7 +33,9 @@
         {% include "sections/featured_pick_rail.html" with products=featured_products banner_link=shop_url view_all_url=shop_url %}
     {% endif %}
 
+    {% comment %} Combos disabled for this storefront — re-enable when needed.
     <div id="home-combos-container"></div>
+    {% endcomment %}
 
     {% if HOME_DEAL_OF_DAY_ENABLED and deal_of_day_products %}
         {% include "sections/deal_of_the_day.html" with products=deal_of_day_products banner_link=shop_url view_all_url=shop_url %}
@@ -103,7 +105,6 @@
   const LAZY_SECTIONS = {
     'home-reels-container':        '{% url "store:home_reels" %}',
     'home-testimonials-container': '{% url "store:home_testimonials" %}',
-    'home-combos-container':       '{% url "store:home_combos" %}',
   };
   function observeSection(containerId, url) {
     const el = document.getElementById(containerId);
