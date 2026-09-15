@@ -7,7 +7,7 @@ from django.db.models import Count, Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, View
-from .models import Product, ProductAttribute, ProductAttributeValue, ProductComboItem, ProductImage, RentalConfig, Variant, VariantAttributeValue, VariantImage
+from .models import Product, ProductAttribute, ProductAttributeValue, ProductComboItem, ProductHighlight, ProductImage, RentalConfig, Variant, VariantAttributeValue, VariantImage
 from .admin_forms import ProductBasicEditForm, RentalConfigForm, _validate_image_file, ProductDeliveryStateForm
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,8 @@ def _normalize_payload(data):
         data['hsn_code'] = None
     if data.get('care_instructions') == '':
         data['care_instructions'] = ''
+    if data.get('weight') in ('', None):
+        data['weight'] = 0
     return data
 
 class ProductCreateBasicView(View):
@@ -60,7 +62,9 @@ class ProductEditView(DetailView):
         context['active_menu'] = 'products'
         context['form_title'] = 'Edit Product'
         context['basic_form'] = ProductBasicEditForm(instance=self.object)
-        context['base_images'] = list(ProductImage.objects.filter(product=self.object).order_by('display_order', '-is_primary', 'id')[:3])
+        max_images = _max_base_images()
+        context['max_base_images'] = max_images
+        context['base_images'] = list(ProductImage.objects.filter(product=self.object).order_by('display_order', '-is_primary', 'id')[:max_images])
         cfg, _ = RentalConfig.objects.get_or_create(product=self.object)
         context['rental_form'] = RentalConfigForm(instance=cfg)
         context['delivery_form'] = ProductDeliveryStateForm(product=self.object)
@@ -219,6 +223,114 @@ class ProductAttributeValueDeleteApiView(View):
         av.delete()
         return JsonResponse({'success': True})
 
+
+def _highlight_payload(h):
+    return {
+        'id': h.id,
+        'title': h.title,
+        'text': h.text,
+        'icon': h.icon,
+        'is_active': h.is_active,
+        'display_order': h.display_order,
+    }
+
+
+class ProductHighlightsListApiView(View):
+    """GET /admin/products/<pk>/highlights/ — PDP feature-highlight cards for this product."""
+
+    def get(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        highlights = product.highlights.order_by('display_order', 'id')
+        return JsonResponse({'highlights': [_highlight_payload(h) for h in highlights]})
+
+
+class ProductHighlightCreateApiView(View):
+    """POST /admin/products/<pk>/highlights/add/ — Body: {title, text, icon, is_active}."""
+
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': {'__all__': ['Invalid JSON']}}, status=400)
+        text = (data.get('text') or '').strip()
+        if not text:
+            return JsonResponse({'success': False, 'errors': {'text': ['Card text is required.']}}, status=400)
+        title = (data.get('title') or '').strip()
+        icon = (data.get('icon') or '').strip()
+        is_active = data.get('is_active', True)
+        display_order = data.get('display_order')
+        if display_order is None:
+            display_order = product.highlights.count()
+        try:
+            display_order = int(display_order)
+        except (TypeError, ValueError):
+            display_order = product.highlights.count()
+        h = ProductHighlight.objects.create(
+            product=product, title=title, text=text, icon=icon,
+            is_active=bool(is_active), display_order=display_order,
+        )
+        return JsonResponse({'success': True, 'highlight': _highlight_payload(h)})
+
+
+class ProductHighlightUpdateApiView(View):
+    """POST /admin/highlights/<highlight_id>/update/ — Body: any of {title, text, icon, is_active, display_order}."""
+
+    def post(self, request, highlight_id):
+        h = get_object_or_404(ProductHighlight, pk=highlight_id)
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': {'__all__': ['Invalid JSON']}}, status=400)
+        update_kw = {}
+        if 'text' in data:
+            text = (data.get('text') or '').strip()
+            if not text:
+                return JsonResponse({'success': False, 'errors': {'text': ['Card text is required.']}}, status=400)
+            update_kw['text'] = text
+        if 'title' in data:
+            update_kw['title'] = (data.get('title') or '').strip()
+        if 'icon' in data:
+            update_kw['icon'] = (data.get('icon') or '').strip()
+        if 'is_active' in data:
+            update_kw['is_active'] = bool(data.get('is_active'))
+        if 'display_order' in data:
+            try:
+                update_kw['display_order'] = int(data['display_order'])
+            except (TypeError, ValueError):
+                pass
+        if update_kw:
+            ProductHighlight.objects.filter(pk=h.pk).update(**update_kw)
+        return JsonResponse({'success': True})
+
+
+class ProductHighlightDeleteApiView(View):
+    """POST /admin/highlights/<highlight_id>/delete/"""
+
+    def post(self, request, highlight_id):
+        h = get_object_or_404(ProductHighlight, pk=highlight_id)
+        h.delete()
+        return JsonResponse({'success': True})
+
+
+class ProductHighlightsReorderApiView(View):
+    """POST /admin/products/<pk>/highlights/reorder/ — Body: {order: [id1, id2, ...]}."""
+
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': {'__all__': ['Invalid JSON']}}, status=400)
+        order = data.get('order')
+        if not isinstance(order, list):
+            return JsonResponse({'success': False, 'errors': {'order': ['Must be a list of IDs.']}}, status=400)
+        valid_ids = set(product.highlights.values_list('id', flat=True))
+        for display_order, highlight_id in enumerate(order):
+            if highlight_id in valid_ids:
+                ProductHighlight.objects.filter(pk=highlight_id, product=product).update(display_order=display_order)
+        return JsonResponse({'success': True})
+
 def _decimal_from_data(data, key, default=0):
     from decimal import Decimal
     val = data.get(key)
@@ -232,7 +344,7 @@ def _decimal_from_data(data, key, default=0):
 
 def _variant_payload(v):
     values = [{'id': av.id, 'attribute_id': av.attribute_id, 'attribute_name': av.attribute.name, 'value': av.value} for av in v.attribute_values.select_related('attribute').order_by('attribute__display_order', 'display_order')]
-    images = [{'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order} for img in v.images.order_by('display_order', '-is_primary', 'id')]
+    images = [{'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order, 'title': img.title, 'alt_text': img.alt_text} for img in v.images.order_by('display_order', '-is_primary', 'id')]
     return {'id': v.id, 'attribute_values': values, 'price': str(v.price), 'original_price': str(v.original_price) if v.original_price else '', 'discount_percent': v.discount_percent, 'stock_quantity': v.stock_quantity, 'sku': v.sku or '', 'is_active': v.is_active, 'display_order': v.display_order, 'weight': str(getattr(v, 'weight', 0) or 0), 'length': str(getattr(v, 'length', 0) or 0), 'breadth': str(getattr(v, 'breadth', 0) or 0), 'height': str(getattr(v, 'height', 0) or 0), 'images': images}
 
 class ProductVariantsListApiView(View):
@@ -408,10 +520,24 @@ class VariantUploadImageView(View):
             _validate_image_file(image_file, required=True)
         except forms.ValidationError as e:
             return JsonResponse({'success': False, 'errors': {'image': [str(m) for m in e.messages]}}, status=400)
+        title = (request.POST.get('title') or '').strip()[:100]
         is_primary = v.images.count() == 0
         display_order = v.images.count()
-        img = VariantImage.objects.create(variant=v, image=image_file, is_primary=is_primary, display_order=display_order)
-        return JsonResponse({'success': True, 'image': {'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order}})
+        img = VariantImage.objects.create(variant=v, image=image_file, is_primary=is_primary, display_order=display_order, title=title)
+        return JsonResponse({'success': True, 'image': {'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order, 'title': img.title}})
+
+class VariantImageUpdateMetaView(View):
+    """POST /admin/variant-images/<image_id>/meta/ — Body: {title}. Editable caption shown under the PDP thumbnail."""
+
+    def post(self, request, image_id):
+        img = get_object_or_404(VariantImage, pk=image_id)
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': {'__all__': ['Invalid JSON']}}, status=400)
+        img.title = (data.get('title') or '').strip()[:100]
+        img.save(update_fields=['title'])
+        return JsonResponse({'success': True, 'title': img.title})
 
 class VariantImageDeleteView(View):
 
@@ -453,14 +579,22 @@ class VariantImageReorderView(View):
             VariantImage.objects.filter(variant=variant, pk=image_id).update(display_order=display_order)
         return JsonResponse({'success': True})
 
+def _max_base_images():
+    from django.conf import settings
+    try:
+        return max(1, int(getattr(settings, 'PRODUCT_MAX_BASE_IMAGES', 5)))
+    except (TypeError, ValueError):
+        return 5
+
 class ProductImageUploadView(View):
 
     def post(self, request, product_id):
         product = get_object_or_404(Product, pk=product_id)
         if product.variants.exists():
             return JsonResponse({'success': False, 'errors': {'__all__': ['Base images are ignored when variants exist.']}}, status=400)
-        if product.images.count() >= 3:
-            return JsonResponse({'success': False, 'errors': {'image': ['You can upload a maximum of 3 images for a simple product.']}}, status=400)
+        max_images = _max_base_images()
+        if product.images.count() >= max_images:
+            return JsonResponse({'success': False, 'errors': {'image': [f'You can upload a maximum of {max_images} images for a simple product.']}}, status=400)
         image_file = request.FILES.get('image')
         if not image_file:
             return JsonResponse({'success': False, 'errors': {'image': ['No file provided.']}}, status=400)
@@ -468,10 +602,32 @@ class ProductImageUploadView(View):
             _validate_image_file(image_file, required=True)
         except forms.ValidationError as e:
             return JsonResponse({'success': False, 'errors': {'image': [str(m) for m in e.messages]}}, status=400)
+        alt_text = (request.POST.get('alt_text') or '').strip()[:200]
+        title = (request.POST.get('title') or '').strip()[:100]
         is_primary = product.images.count() == 0
         display_order = product.images.count()
-        img = ProductImage.objects.create(product=product, image=image_file, is_primary=is_primary, display_order=display_order)
-        return JsonResponse({'success': True, 'image': {'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order}})
+        img = ProductImage.objects.create(product=product, image=image_file, is_primary=is_primary, display_order=display_order, alt_text=alt_text, title=title)
+        return JsonResponse({'success': True, 'image': {'id': img.id, 'url': img.image.url if img.image else None, 'is_primary': img.is_primary, 'display_order': img.display_order, 'alt_text': img.alt_text, 'title': img.title}})
+
+class ProductImageUpdateAltTextView(View):
+    """POST /admin/products/base-images/<image_id>/alt-text/ — Body: {alt_text, title}."""
+
+    def post(self, request, image_id):
+        img = get_object_or_404(ProductImage, pk=image_id)
+        try:
+            data = json.loads(request.body) if request.body else {}
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'errors': {'__all__': ['Invalid JSON']}}, status=400)
+        update_fields = []
+        if 'alt_text' in data:
+            img.alt_text = (data.get('alt_text') or '').strip()[:200]
+            update_fields.append('alt_text')
+        if 'title' in data:
+            img.title = (data.get('title') or '').strip()[:100]
+            update_fields.append('title')
+        if update_fields:
+            img.save(update_fields=update_fields)
+        return JsonResponse({'success': True, 'alt_text': img.alt_text, 'title': img.title})
 
 class ProductImageDeleteView(View):
 

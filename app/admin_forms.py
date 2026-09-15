@@ -229,19 +229,21 @@ class BannerForm(forms.ModelForm):
             elif active_count >= Banner.MAX_ACTIVE:
                 raise forms.ValidationError(f"Maximum {Banner.MAX_ACTIVE} banners can be active at a time.")
         return is_active
-BASIC_EDIT_FIELDS = ['category', 'name', 'slug', 'description', 'brand', 'base_price', 'base_original_price', 'base_stock', 'is_featured', 'is_bestseller', 'is_deal_of_day', 'deal_of_day_start', 'deal_of_day_end', 'is_active', 'is_gst_applicable', 'gst_percentage', 'hsn_code', 'is_rent_available', 'purchase_enabled', 'is_plant_combo', 'care_instructions', 'sunlight', 'watering', 'difficulty', 'plant_type', 'maintenance_notes']
+BASIC_EDIT_FIELDS = ['category', 'name', 'slug', 'description', 'short_tagline', 'short_description', 'brand', 'base_price', 'base_original_price', 'base_stock', 'weight', 'is_featured', 'is_bestseller', 'is_deal_of_day', 'deal_of_day_start', 'deal_of_day_end', 'is_active', 'is_gst_applicable', 'gst_percentage', 'hsn_code', 'is_rent_available', 'purchase_enabled', 'is_plant_combo', 'care_instructions', 'sunlight', 'watering', 'difficulty', 'plant_type', 'maintenance_notes']
 
 class ProductBasicEditForm(forms.ModelForm):
 
     class Meta:
         model = Product
         fields = BASIC_EDIT_FIELDS
-        widgets = {'category': forms.Select(attrs={'class': 'form-control'}), 'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product Name'}), 'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'product-slug'}), 'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}), 'brand': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Brand'}), 'base_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00', 'id': 'basic-base_price'}), 'base_original_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'MRP / Original price (optional)', 'id': 'basic-base_original_price'}), 'base_stock': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0', 'id': 'basic-base_stock'}), 'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_bestseller': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_deal_of_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'deal_of_day_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}), 'deal_of_day_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}), 'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_gst_applicable': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-is_gst_applicable'}), 'gst_percentage': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0–28', 'min': 0, 'max': 28, 'step': '0.01'}), 'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 8517', 'maxlength': 20}), 'is_rent_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'purchase_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-purchase_enabled'}), 'is_plant_combo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-is_plant_combo'}), 'care_instructions': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'id': 'basic-care_instructions', 'placeholder': 'What is included, assembly, delivery notes…'}), 'sunlight': forms.Select(attrs={'class': 'form-control'}), 'watering': forms.Select(attrs={'class': 'form-control'}), 'difficulty': forms.Select(attrs={'class': 'form-control'}), 'plant_type': forms.Select(attrs={'class': 'form-control'}), 'maintenance_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Maintenance tips (Care guide section)'})}
+        widgets = {'category': forms.Select(attrs={'class': 'form-control'}), 'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product Name'}), 'slug': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'product-slug'}), 'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}), 'short_tagline': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Compact • Colourful • Perfect for Indoors', 'maxlength': 160}), 'short_description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Compact intro shown near the top of the PDP. Leave blank to use the full description.', 'maxlength': 300}), 'brand': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Brand'}), 'base_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00', 'id': 'basic-base_price'}), 'base_original_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': 'MRP / Original price (optional)', 'id': 'basic-base_original_price'}), 'base_stock': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0', 'id': 'basic-base_stock'}), 'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'min': '0', 'placeholder': '0.000', 'id': 'basic-weight'}), 'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_bestseller': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_deal_of_day': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'deal_of_day_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}), 'deal_of_day_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}), 'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'is_gst_applicable': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-is_gst_applicable'}), 'gst_percentage': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0–28', 'min': 0, 'max': 28, 'step': '0.01'}), 'hsn_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 8517', 'maxlength': 20}), 'is_rent_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}), 'purchase_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-purchase_enabled'}), 'is_plant_combo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'basic-is_plant_combo'}), 'care_instructions': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'id': 'basic-care_instructions', 'placeholder': 'What is included, assembly, delivery notes…'}), 'sunlight': forms.Select(attrs={'class': 'form-control'}), 'watering': forms.Select(attrs={'class': 'form-control'}), 'difficulty': forms.Select(attrs={'class': 'form-control'}), 'plant_type': forms.Select(attrs={'class': 'form-control'}), 'maintenance_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Maintenance tips (Care guide section)'})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['slug'].required = False
         self.fields['description'].required = False
+        self.fields['short_tagline'].required = False
+        self.fields['short_description'].required = False
         self.fields['brand'].required = False
         self.fields['deal_of_day_start'].required = False
         self.fields['deal_of_day_end'].required = False
@@ -264,6 +266,7 @@ class ProductBasicEditForm(forms.ModelForm):
         self.fields['base_price'].error_messages = {'required': 'Selling price is required.'}
         self.fields['base_stock'].required = True
         self.fields['base_stock'].error_messages = {'required': 'Stock is required.'}
+        self.fields['weight'].required = False
 
         active = Category.objects.filter(is_active=True)
         if self.instance and self.instance.pk and self.instance.category_id:
@@ -554,8 +557,9 @@ class ProductDeliveryStateForm(forms.Form):
 
 class StateDeliveryChargeForm(forms.Form):
     """
-    One fixed delivery charge per state, applied to every product.
-    Rendered as a grouped-by-region list of charge inputs (charge_<state_id>).
+    Delivery charge per kg for this state, applied to every product based on
+    total order weight. Rendered as a grouped-by-region list of charge
+    inputs (charge_<state_id>).
     """
 
     def __init__(self, *args, **kwargs):
@@ -575,7 +579,7 @@ class StateDeliveryChargeForm(forms.Form):
                     "min": "0",
                     "step": "0.01",
                     "inputmode": "decimal",
-                    "placeholder": "0.00",
+                    "placeholder": "0.00 /kg",
                 }),
             )
             if not self.is_bound and state.delivery_charge is not None:

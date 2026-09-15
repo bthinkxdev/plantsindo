@@ -16,26 +16,26 @@ else:
 INSTALLED_APPS = ['storages', 'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes', 'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'app']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware', 'app.middleware.DebugTraceMiddleware', 'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.common.CommonMiddleware', 'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware', 'app.middleware.EnsureGuestSessionMiddleware', 'django.contrib.messages.middleware.MessageMiddleware', 'django.middleware.clickjacking.XFrameOptionsMiddleware']
 ROOT_URLCONF = 'ecom.urls'
-TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [BASE_DIR / 'templates'], 'APP_DIRS': True, 'OPTIONS': {'context_processors': ['django.template.context_processors.request', 'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages', 'app.context_processors.site_contact_context', 'app.context_processors.cart_context', 'app.context_processors.wishlist_context', 'app.context_processors.admin_message_badge', 'app.context_processors.delivery_settings', 'app.context_processors.home_section_flags', 'app.context_processors.admin_product_settings', 'app.context_processors.storefront_brand', 'app.context_processors.search_typed_suggestions']}}]
+TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates', 'DIRS': [BASE_DIR / 'templates'], 'APP_DIRS': True, 'OPTIONS': {'context_processors': ['django.template.context_processors.request', 'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages', 'app.context_processors.site_contact_context', 'app.context_processors.cart_context', 'app.context_processors.wishlist_context', 'app.context_processors.admin_message_badge', 'app.context_processors.delivery_settings', 'app.context_processors.pdp_settings', 'app.context_processors.home_section_flags', 'app.context_processors.admin_product_settings', 'app.context_processors.storefront_brand', 'app.context_processors.search_typed_suggestions']}}]
 WSGI_APPLICATION = 'ecom.wsgi.application'
 
-DATABASES = {
-        "default": {
-            "ENGINE": os.getenv("DB_ENGINE"),
-            "NAME": os.getenv("DB_NAME"),
-            "USER": os.getenv("DB_USER"),
-            "PASSWORD": os.getenv("DB_PASSWORD"),
-            "HOST": os.getenv("DB_HOST"),
-            "PORT": os.getenv("DB_PORT"),
-        }
-}
-
 # DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
+#         "default": {
+#             "ENGINE": os.getenv("DB_ENGINE"),
+#             "NAME": os.getenv("DB_NAME"),
+#             "USER": os.getenv("DB_USER"),
+#             "PASSWORD": os.getenv("DB_PASSWORD"),
+#             "HOST": os.getenv("DB_HOST"),
+#             "PORT": os.getenv("DB_PORT"),
+#         }
 # }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
 
 
 # DATABASES = {
@@ -66,8 +66,11 @@ HOME_BESTSELLER_ENABLED = True
 HOME_RECENTLY_ADDED_ENABLED = True
 ALLOW_ATTRIBUTES_AND_VARIANTS = True
 REVIEW_ENABLED = True
-FLAT_DELIVERY_CHARGE = 60
-DELIVERY_PACK_SIZE = 2  # pieces sharing one state delivery charge (~500g–1kg)
+FLAT_DELIVERY_CHARGE = 60  # fallback total when a state rate or a product weight isn't configured yet
+DELIVERY_MIN_BILLABLE_KG = 1  # minimum billed weight per order, even for a single light item
+PRODUCT_MAX_BASE_IMAGES = 5  # max gallery images for a simple (no-variant) product
+PDP_DELIVERY_ESTIMATE_TEXT = 'Estimated delivery: 3-7 days'  # site-wide PDP delivery-time copy
+PDP_LIVE_ARRIVAL_TEXT = 'Live arrival guaranteed'  # site-wide PDP callout shown under Buy Now
 MAX_CART_QTY = 10
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'

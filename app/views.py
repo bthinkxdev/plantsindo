@@ -1699,12 +1699,12 @@ def _checkout_lines(cart, items, delivery_issues=None):
     ]
 
 
-def _cart_pack_upsell_message(items):
-    """Cart-wide upsell tip: quantity is pooled across every line, not per item."""
-    from app.services.state_delivery_service import delivery_pack_upsell_message
+def _cart_delivery_upsell_message(items):
+    """Cart-wide upsell tip: weight is pooled across every line, not per item."""
+    from app.services.state_delivery_service import cart_total_weight, delivery_weight_upsell_message
 
-    total_qty = sum((item.quantity for item in items))
-    return delivery_pack_upsell_message(total_qty)
+    total_weight, _ = cart_total_weight(items)
+    return delivery_weight_upsell_message(total_weight)
 
 
 class CartPageGoneRedirect(View):
@@ -1914,9 +1914,10 @@ class UpdateCartItemView(View):
             item_count = sum((line.quantity for line in lines))
             totals = CartService.compute_totals(cart)
             updated = next((line for line in lines if line.pk == item_id), None)
-            from app.services.state_delivery_service import delivery_pack_upsell_message
+            from app.services.state_delivery_service import cart_total_weight, delivery_weight_upsell_message
 
             qty = updated.quantity if updated else 0
+            total_weight, _ = cart_total_weight(lines)
             return JsonResponse({
                 'success': True,
                 'total': str(totals.subtotal),
@@ -1926,7 +1927,7 @@ class UpdateCartItemView(View):
                 'quantity': qty,
                 'line_total': str(updated.line_total) if updated else None,
                 # Pooled across the whole cart, not just this line.
-                'pack_upsell_message': delivery_pack_upsell_message(item_count),
+                'delivery_upsell_message': delivery_weight_upsell_message(total_weight),
             })
         return _redirect_open_cart()
 
@@ -2039,7 +2040,7 @@ class CheckoutView(TemplateView):
                     items,
                     delivery_issues=checkout_totals.delivery_issues,
                 ),
-                'pack_upsell_message': _cart_pack_upsell_message(items),
+                'delivery_upsell_message': _cart_delivery_upsell_message(items),
                 'totals': checkout_totals.as_cart_totals(),
                 'form': CheckoutForm(**_checkout_form_kwargs(self.request, cart, user, initial=initial)),
                 'addresses': addresses,
@@ -2114,7 +2115,7 @@ class OrderCreateView(FormView):
                 items,
                 delivery_issues=checkout_totals.delivery_issues,
             ),
-            'pack_upsell_message': _cart_pack_upsell_message(items),
+            'delivery_upsell_message': _cart_delivery_upsell_message(items),
             'totals': checkout_totals.as_cart_totals(),
             'addresses': addresses,
             'default_address': default_address,

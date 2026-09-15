@@ -161,7 +161,7 @@
                         <p class="order-line-pack-tip"
                            id="cart-pack-tip"
                            data-checkout-pack-tip
-                           {% if not pack_upsell_message %}hidden{% endif %}>{{ pack_upsell_message }}</p>
+                           {% if not delivery_upsell_message %}hidden{% endif %}>{{ delivery_upsell_message }}</p>
 
                         {% if DELIVERY_INTEGRATED %}
                         <div class="order-total-row" id="codChargeRow" style="display:none;">
@@ -384,7 +384,6 @@ window.addEventListener('unload', function() {});
     window.CHECKOUT_REMOVE_URL_TEMPLATE = "{% url 'store:cart_remove' item_id=0 %}";
     window.CHECKOUT_UPDATE_URL = "{% url 'store:cart_update' %}";
     window.CHECKOUT_MAX_QTY = {{ max_cart_qty|default:10 }};
-    window.DELIVERY_PACK_SIZE = {{ DELIVERY_PACK_SIZE|default:2 }};
 })();
 </script>
 

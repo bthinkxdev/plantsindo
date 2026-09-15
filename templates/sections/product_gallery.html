@@ -1,24 +1,17 @@
 {% load static %}
 <div class="col-lg-6 gallery-section">
     <div class="gallery-main-wrap" style="position: relative;">
-        {% if selected_variant %}
-            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; {% if selected_variant.discount_percent <= 0 %}display:none;{% endif %}">{{ selected_variant.discount_percent }}% OFF</span>
-        {% elif product.is_simple_product %}
-            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; {% if product.discount_percent <= 0 %}display:none;{% endif %}">{{ product.discount_percent }}% OFF</span>
-        {% else %}
-            <span class="price-off-badge" id="price-badge" style="position: absolute; top: 12px; left: 12px; z-index: 10; display:none;"></span>
-        {% endif %}
         <div class="gallery-main wow fadeInLeft" data-wow-delay="0.1s">
             {% if selected_variant %}
                 {% with imgs=selected_variant.images.all %}
                 {% if imgs %}
-                <img id="mainProductImg" src="{{ imgs.0.image.url }}" alt="{{ product.name }}">
+                <img id="mainProductImg" src="{{ imgs.0.image.url }}" alt="{{ imgs.0.alt_text|default:product.name }}">
                 {% else %}
                 <img id="mainProductImg" src="{% static 'img/product-1.png' %}" alt="{{ product.name }}">
                 {% endif %}
                 {% endwith %}
-            {% elif product.is_simple_product and product_display_image_urls %}
-                <img id="mainProductImg" src="{{ product_display_image_urls.0 }}" alt="{{ product.name }}">
+            {% elif product.is_simple_product and product.images.all %}
+                <img id="mainProductImg" src="{{ product.images.all.0.image.url }}" alt="{{ product.images.all.0.alt_text|default:product.name }}">
             {% else %}
                 <img id="mainProductImg" src="{% static 'img/product-1.png' %}" alt="{{ product.name }}">
             {% endif %}
@@ -49,21 +42,36 @@
             </svg>
         </button>
     </div>
-    <div class="gallery-thumbs mt-3">
-        {% if selected_variant %}
-            {% for img in selected_variant.images.all %}
-            <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
-                <img src="{{ img.image.url }}" alt="{{ product.name }}" loading="lazy" data-full="{{ img.image.url }}">
-            </div>
-            {% endfor %}
-        {% elif product.is_simple_product and product_display_image_urls %}
-            {% for url in product_display_image_urls %}
-            <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
-                <img src="{{ url }}" alt="{{ product.name }}" loading="lazy" data-full="{{ url }}">
-            </div>
-            {% endfor %}
-        {% endif %}
+    <div class="gallery-thumbs-row mt-3" id="galleryThumbsRow">
+        <button type="button" class="gallery-thumb-nav js-gallery-thumb-prev" aria-label="Scroll thumbnails left" hidden><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+        <div class="gallery-thumbs" id="galleryThumbs">
+            {% if selected_variant %}
+                {% for img in selected_variant.images.all %}
+                <div class="gallery-thumb-item">
+                    <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
+                        <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}" loading="lazy" data-full="{{ img.image.url }}">
+                    </div>
+                    {% if img.title %}<span class="gallery-thumb-caption">{{ img.title }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            {% elif product.is_simple_product and product.images.all %}
+                {% for img in product.images.all %}
+                <div class="gallery-thumb-item">
+                    <div class="gallery-thumb {% if forloop.first %}active{% endif %}">
+                        <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}" loading="lazy" data-full="{{ img.image.url }}">
+                    </div>
+                    {% if img.title %}<span class="gallery-thumb-caption">{{ img.title }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <button type="button" class="gallery-thumb-nav js-gallery-thumb-next" aria-label="Scroll thumbnails right" hidden><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
     </div>
+    {% if pdp_trust_text %}
+    <div class="pdp-gallery-trust-badge">
+        <i class="fas fa-seedling" aria-hidden="true"></i> {{ pdp_trust_text }}
+    </div>
+    {% endif %}
     {% if product.video_url %}
     <div class="pdp-video mt-3">
         <a href="{{ product.video_url }}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener noreferrer">Watch product video</a>

@@ -5,9 +5,24 @@ from .product import Product
 
 
 class ProductHighlight(TimeStampedModel):
+    """
+    One row = one PDP feature-highlight card (icon + short title + text).
+
+    `text` is the original field (used as the card's description/body, and
+    still consumed as a plain bullet by the "About this product" section).
+    `title` and `icon` are additive — existing rows created before they
+    existed just render with an empty title and the default fallback icon.
+    """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='highlights')
-    text = models.CharField(max_length=400)
+    title = models.CharField(max_length=120, blank=True, help_text='Short heading, e.g. "Perfect for".')
+    text = models.CharField(max_length=400, help_text='Card body, e.g. "Home & Office".')
+    icon = models.CharField(
+        max_length=40,
+        blank=True,
+        help_text='Font Awesome solid icon name without the "fa-" prefix, e.g. "house", "wind", "gear", "seedling".',
+    )
     display_order = models.PositiveIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True, help_text='Uncheck to hide without deleting.')
 
     class Meta:
         ordering = ['display_order', 'id']

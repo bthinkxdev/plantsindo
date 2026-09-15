@@ -97,7 +97,21 @@ def admin_message_badge(request):
 def delivery_settings(request):
     return {
         'DELIVERY_INTEGRATED': delivery_enabled(),
-        'DELIVERY_PACK_SIZE': int(getattr(settings, 'DELIVERY_PACK_SIZE', 2) or 2),
+    }
+
+def pdp_settings(request):
+    """Global PDP merchandising copy — configurable via settings.py, not hardcoded in templates."""
+    default_benefits = [
+        {'icon': 'truck', 'title': 'All India', 'subtitle': 'Delivery'},
+        {'icon': 'box', 'title': 'Safe Plant', 'subtitle': 'Packaging'},
+        {'icon': 'shield-alt', 'title': 'Healthy Plant', 'subtitle': 'Guarantee'},
+        {'icon': 'headset', 'title': 'Dedicated', 'subtitle': 'Support'},
+    ]
+    return {
+        'pdp_trust_text': getattr(settings, 'PDP_TRUST_TEXT', 'Trusted by 10,000+ Plant Lovers'),
+        'pdp_benefits': getattr(settings, 'PDP_BENEFITS', default_benefits),
+        'pdp_delivery_estimate_text': getattr(settings, 'PDP_DELIVERY_ESTIMATE_TEXT', 'Estimated delivery: 3-7 days'),
+        'pdp_live_arrival_text': getattr(settings, 'PDP_LIVE_ARRIVAL_TEXT', 'Live arrival guaranteed'),
     }
 
 def home_section_flags(request):

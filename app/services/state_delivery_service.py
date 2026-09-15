@@ -1,11 +1,11 @@
 """
 State-based delivery serviceability and charge service.
 
-Delivery charge is centralized on DeliveryState.delivery_charge — one fixed
-charge per state, applied to every product. ProductDeliveryState only records
-serviceability (which states a product ships to). Pack rounding is pooled
-across the whole cart: ceil(total_cart_qty / DELIVERY_PACK_SIZE) packs,
-billed once at the selected state's charge.
+Delivery charge is centralized on DeliveryState.delivery_charge — a ₹/kg
+rate per state, applied to every product. ProductDeliveryState only records
+serviceability (which states a product ships to). Weight is pooled across
+the whole cart: max(1, ceil(total_cart_weight_kg)) kg, billed once at the
+selected state's ₹/kg rate.
 
 Public API
 ----------
@@ -18,18 +18,21 @@ set_state_delivery_charges(charges)  → None
 get_state_delivery_charge(state_id) → Decimal | None
 get_product_delivery_charge(product_id, state_id) → Decimal | None
 get_combo_delivery_charge(combo_id, state_id) → Decimal | None
+cart_total_weight(items) → (Decimal, bool)  # (total_kg, has_unweighted_line)
+billed_kg(total_weight) → int
 compute_cart_delivery_charges(items, state_id) → CartDeliveryBreakdown
-  total = state_charge × ceil(total_cart_qty / DELIVERY_PACK_SIZE)  # pooled across cart
-delivery_pack_upsell_message(quantity) → str
+  total = state_rate_per_kg × max(1, ceil(total_cart_weight_kg))  # pooled across cart
+delivery_weight_upsell_message(total_weight_kg) → str
 serviceability_payload(*, product_id, state_id)  → dict
 get_deliverable_states_payload(product_id) → list[dict]
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
 from django.db import transaction
@@ -43,49 +46,35 @@ def _flat_fallback() -> Decimal:
     return Decimal(str(getattr(settings, 'FLAT_DELIVERY_CHARGE', 60)))
 
 
-def _pack_size() -> int:
-    """Pieces that share one state delivery charge, pooled across the whole cart."""
+def _min_billable_kg() -> int:
     try:
-        size = int(getattr(settings, 'DELIVERY_PACK_SIZE', 2) or 1)
+        size = int(getattr(settings, 'DELIVERY_MIN_BILLABLE_KG', 1) or 1)
     except (TypeError, ValueError):
-        size = 2
+        size = 1
     return max(1, size)
 
 
-def delivery_packs_for_quantity(quantity: int) -> int:
-    """ceil(qty / DELIVERY_PACK_SIZE) — packs billed for this quantity."""
-    qty = int(quantity or 0)
-    if qty <= 0:
+def billed_kg(total_weight) -> int:
+    """max(DELIVERY_MIN_BILLABLE_KG, ceil(total_weight)) — 0 when there's nothing to ship."""
+    weight = _as_decimal(total_weight)
+    if weight <= 0:
         return 0
-    size = _pack_size()
-    return (qty + size - 1) // size
+    return max(_min_billable_kg(), math.ceil(weight))
 
 
-def delivery_pack_free_slots(quantity) -> int:
-    """Pieces that can still be added without starting a new delivery pack."""
-    size = _pack_size()
-    qty = int(quantity or 0)
-    if qty <= 0 or size <= 1:
-        return 0
-    rem = qty % size
-    return 0 if rem == 0 else size - rem
-
-
-def delivery_pack_upsell_message(quantity, max_quantity=None) -> str:
-    """Short checkout tip when another piece fits the current pack for free."""
-    qty = int(quantity or 0)
-    if max_quantity is not None:
-        try:
-            if qty >= int(max_quantity):
-                return ''
-        except (TypeError, ValueError):
-            pass
-    slots = delivery_pack_free_slots(qty)
-    if slots == 1:
-        return 'Add 1 more - no extra delivery'
-    if slots > 1:
-        return f'Add {slots} more - no extra delivery'
-    return ''
+def delivery_weight_upsell_message(total_weight_kg) -> str:
+    """Short checkout tip when more weight still fits under the current kg for free."""
+    weight = _as_decimal(total_weight_kg)
+    if weight <= 0:
+        return ''
+    billed = billed_kg(weight)
+    slack_kg = Decimal(billed) - weight
+    if slack_kg <= 0:
+        return ''
+    grams = int((slack_kg * 1000).to_integral_value())
+    if grams <= 0:
+        return ''
+    return f'Add up to {grams}g more - no extra delivery'
 
 
 def _as_decimal(value) -> Decimal:
@@ -217,10 +206,9 @@ def get_states_by_region() -> Dict[str, List]:
 
 def get_state_delivery_charge(state_id: int) -> Optional[Decimal]:
     """
-    Centralized per-pack delivery charge for a state (applies to every product).
+    Centralized ₹/kg delivery rate for a state (applies to every product).
 
-    One pack covers up to DELIVERY_PACK_SIZE pieces (default 2).
-    Returns None when the state has no configured charge yet (flat-rate fallback
+    Returns None when the state has no configured rate yet (flat-rate fallback
     applies) — a configured value of 0 means explicitly free.
     """
     from app.models import DeliveryState
@@ -236,10 +224,10 @@ def get_state_delivery_charge(state_id: int) -> Optional[Decimal]:
 
 def get_product_delivery_charge(product_id: int, state_id: int) -> Optional[Decimal]:
     """
-    Centralized per-pack delivery charge, if this product ships to this state.
+    Centralized ₹/kg delivery rate, if this product ships to this state.
 
     Returns None when the product doesn't ship to this state, or the state has
-    no configured charge yet (caller falls back to flat rate).
+    no configured rate yet (caller falls back to flat rate).
     """
     if not is_state_deliverable_for_product(product_id, state_id):
         return None
@@ -248,12 +236,68 @@ def get_product_delivery_charge(product_id: int, state_id: int) -> Optional[Deci
 
 def get_combo_delivery_charge(combo_id: int, state_id: int) -> Optional[Decimal]:
     """
-    Centralized per-pack delivery charge, if every component product in the
-    combo ships to this state (single state charge, not summed per component).
+    Centralized ₹/kg delivery rate, if every component product in the
+    combo ships to this state (single state rate, not summed per component).
     """
     if not is_state_deliverable_for_combo(combo_id, state_id):
         return None
     return get_state_delivery_charge(state_id)
+
+
+# ── Weight resolution ───────────────────────────────────────────────────────────
+
+def _product_representative_weight(product) -> Decimal:
+    """
+    A product's weight for delivery-charge purposes: its own weight for a
+    simple product, or its cheapest active variant's weight otherwise
+    (mirrors Product.get_price()'s "cheapest variant" convention).
+    """
+    if product is None:
+        return ZERO
+    if product.has_variants():
+        variant = product.variants.filter(is_active=True).order_by('price').only('weight').first()
+        return _as_decimal(variant.weight) if variant else ZERO
+    return _as_decimal(getattr(product, 'weight', 0))
+
+
+def _combo_unit_weight(combo) -> Decimal:
+    """Sum of (component representative weight × component quantity) for one combo unit."""
+    if combo is None:
+        return ZERO
+    total = ZERO
+    for combo_item in combo.items.select_related('product').all():
+        total += _product_representative_weight(combo_item.product) * Decimal(combo_item.quantity)
+    return total
+
+
+def _item_weight(item) -> Decimal:
+    """Per-unit weight (kg) for one cart/order line item."""
+    if getattr(item, 'combo_id', None):
+        return _combo_unit_weight(item.combo)
+    variant = getattr(item, 'selected_variant', None)
+    if variant is not None:
+        return _as_decimal(variant.weight)
+    return _product_representative_weight(getattr(item, 'product', None))
+
+
+def cart_total_weight(items) -> Tuple[Decimal, bool]:
+    """
+    Total weight (kg) pooled across the whole cart, plus whether any
+    contributing line resolved to 0kg (unconfigured — caller should fall
+    back to the flat rate rather than under-charge).
+    """
+    total = ZERO
+    has_unweighted_line = False
+    for item in items:
+        qty = int(getattr(item, 'quantity', 0) or 0)
+        if qty <= 0:
+            continue
+        weight = _item_weight(item)
+        if weight <= 0:
+            has_unweighted_line = True
+            continue
+        total += weight * Decimal(qty)
+    return total, has_unweighted_line
 
 
 @dataclass
@@ -276,12 +320,13 @@ def compute_cart_delivery_charges(items, state_id: Optional[int] = None) -> Cart
 
     Rules:
     - No state selected → ₹0 (checkout must prompt to select a state).
-    - State selected → pool every line's quantity into one cart-wide total,
-      bill ceil(total_qty / DELIVERY_PACK_SIZE) packs at the state's charge.
-      Two products with qty 1 each share one pack, same as one product with
-      qty 2. Callers are expected to have already blocked checkout for any
+    - State selected → pool every line's weight into one cart-wide total,
+      bill max(1, ceil(total_weight_kg)) kg at the state's ₹/kg rate.
+      Callers are expected to have already blocked checkout for any
       undeliverable line (get_cart_delivery_issues), so every item here counts.
-    - State has no configured charge → flat fallback once per order.
+    - Any line with unconfigured (0kg) weight, or a state with no configured
+      rate → flat fallback once per order, so delivery is never silently
+      under-charged while product weights are still being filled in.
 
     Per-line charges are always zeroed in the returned breakdown — the pooled
     total isn't attributable to a single line, so it's carried at the order
@@ -298,14 +343,15 @@ def compute_cart_delivery_charges(items, state_id: Optional[int] = None) -> Cart
         if getattr(item, 'id', None) is not None
     }
 
-    total_qty = sum((int(getattr(item, 'quantity', 0) or 0) for item in items))
-    packs = delivery_packs_for_quantity(total_qty)
-
-    charge = get_state_delivery_charge(state_id)
-    if charge is None:
+    total_weight, has_unweighted_line = cart_total_weight(items)
+    if has_unweighted_line:
         return CartDeliveryBreakdown(total=_flat_fallback(), used_flat_fallback=True, lines=lines)
 
-    total = charge * Decimal(packs)
+    charge_per_kg = get_state_delivery_charge(state_id)
+    if charge_per_kg is None:
+        return CartDeliveryBreakdown(total=_flat_fallback(), used_flat_fallback=True, lines=lines)
+
+    total = charge_per_kg * Decimal(billed_kg(total_weight))
     return CartDeliveryBreakdown(total=total, used_flat_fallback=False, lines=lines)
 
 
@@ -350,14 +396,19 @@ def set_state_delivery_charges(charges: Dict[int, Any]) -> None:
 
 
 def _state_list_with_charges(product_id: int, states) -> List[Dict[str, Any]]:
+    """Per-state estimated delivery charge for ONE unit of this product (rate × billed kg)."""
+    from app.models import Product
+
     charge_map = get_all_state_charges_map()
+    product = Product.objects.filter(pk=product_id).first()
+    unit_kg = billed_kg(_product_representative_weight(product))
     return [
         {
             'id': s.id,
             'name': s.name,
             'code': s.code,
             'region': s.region,
-            'delivery_charge': str(charge_map.get(s.id, ZERO)),
+            'delivery_charge': str(charge_map.get(s.id, ZERO) * Decimal(unit_kg)),
         }
         for s in states
     ]
@@ -391,7 +442,12 @@ def serviceability_payload(
 
     selected = next((s for s in deliverable_qs if s.id == state_id), None)
     if selected:
-        charge = get_product_delivery_charge(product_id, state_id)
+        from app.models import Product
+
+        rate = get_product_delivery_charge(product_id, state_id)
+        product = Product.objects.filter(pk=product_id).first()
+        unit_kg = billed_kg(_product_representative_weight(product))
+        charge = (rate * Decimal(unit_kg)) if rate is not None else None
         return {
             'serviceable': True,
             'state_id': selected.id,
@@ -462,14 +518,22 @@ def serviceability_payload_for_combo(
             .order_by('display_order', 'name')
         )
 
-    charge_for_state = get_combo_delivery_charge(combo_id, state_id) if state_id else None
+    from app.models import Combo
+
+    combo = Combo.objects.filter(pk=combo_id).first()
+    unit_kg = billed_kg(_combo_unit_weight(combo))
+
+    def _estimated(rate):
+        return (rate * Decimal(unit_kg)) if rate is not None else None
+
+    charge_for_state = _estimated(get_combo_delivery_charge(combo_id, state_id)) if state_id else None
     deliverable_list = [
         {
             'id': s.id,
             'name': s.name,
             'code': s.code,
             'region': s.region,
-            'delivery_charge': str(get_combo_delivery_charge(combo_id, s.id) or ZERO),
+            'delivery_charge': str(_estimated(get_combo_delivery_charge(combo_id, s.id)) or ZERO),
         }
         for s in deliverable_qs
     ]

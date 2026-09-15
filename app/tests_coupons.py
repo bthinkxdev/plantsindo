@@ -132,7 +132,7 @@ class CouponValidityTests(TestCase):
         self.assertFalse(coupon_service.is_currently_valid(c)[0])
 
 
-@override_settings(FLAT_DELIVERY_CHARGE=60, DELIVERY_PACK_SIZE=2)
+@override_settings(FLAT_DELIVERY_CHARGE=60, DELIVERY_MIN_BILLABLE_KG=1)
 class CouponCheckoutAndOrderTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -146,6 +146,7 @@ class CouponCheckoutAndOrderTests(TestCase):
             category=cls.cat,
             base_price=Decimal('200.00'),
             base_stock=50,
+            weight=Decimal('0.500'),
             is_active=True,
         )
         set_state_delivery_charges({cls.kerala.pk: Decimal('50')})
@@ -191,7 +192,7 @@ class CouponCheckoutAndOrderTests(TestCase):
         )
         self.assertEqual(result.discount_amount, Decimal('40.00'))
         self.assertEqual(result.coupon_code, 'TEN')
-        # shipping = ceil(2/2)*50 = 50; total = 400 + gst + 50 - 40
+        # shipping = 2 x 0.5kg = 1kg billed x ₹50 = 50; total = 400 + gst + 50 - 40
         expected = (
             result.subtotal + result.gst_total + result.shipping - result.discount_amount
         )

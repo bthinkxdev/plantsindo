@@ -2,8 +2,14 @@
 {% load static %}{% load product_filters %}
 {% block title %}{{ product.name }} — {{ site_brand }}{% endblock %}
 {% block meta_description %}{{ product.description|truncatewords:20|default:product.name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product_detail.css' %}?v=3">
+{% endblock %}
 {% block content %}
-<section class="product-detail-main product-detail-store">
+{% if product_json_ld %}
+<script type="application/ld+json">{{ product_json_ld }}</script>
+{% endif %}
+<section class="product-detail-main product-detail-store pdp-v2">
     <div class="container">
         {% include "sections/product_breadcrumb.html" %}
 
@@ -21,7 +27,6 @@
         <div class="row mt-5 pt-2">
             <div class="col-12 col-xl-10 mx-auto">
                 {% include "sections/product_about.html" %}
-                {% include "sections/product_info_cards.html" %}
                 {% include "sections/product_care.html" %}
                 {% include "sections/product_box.html" %}
                 {% include "sections/product_specs.html" %}

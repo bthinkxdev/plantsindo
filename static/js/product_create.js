@@ -89,6 +89,7 @@
         var basePriceEl = document.getElementById("basic-base_price");
         var baseOriginalEl = document.getElementById("basic-base_original_price");
         var baseStockEl = document.getElementById("basic-base_stock");
+        var weightEl = document.getElementById("basic-weight");
         var purchaseEl = document.getElementById("basic-purchase_enabled");
         var plantComboEl = document.getElementById("basic-is_plant_combo");
         var careEl = document.getElementById("basic-care_instructions");
@@ -109,6 +110,7 @@
             base_price: basePriceEl && basePriceEl.value.trim() !== "" ? basePriceEl.value.trim() : null,
             base_original_price: baseOriginalEl && baseOriginalEl.value.trim() !== "" ? baseOriginalEl.value.trim() : null,
             base_stock: baseStockEl && baseStockEl.value.trim() !== "" ? parseInt(baseStockEl.value.trim(), 10) || 0 : null,
+            weight: weightEl && weightEl.value.trim() !== "" ? weightEl.value.trim() : "0",
             purchase_enabled: purchaseEl ? purchaseEl.checked : true,
             is_plant_combo: plantComboEl ? plantComboEl.checked : false,
             care_instructions: careEl ? (careEl.value || "").trim() : "",

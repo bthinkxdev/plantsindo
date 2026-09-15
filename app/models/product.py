@@ -51,6 +51,16 @@ class Product(TimeStampedModel):
     name = models.CharField(max_length=200, db_index=True)
     slug = models.SlugField(max_length=220, unique=True)
     description = models.TextField(blank=True)
+    short_tagline = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text='Short marketing line shown under the title, e.g. "Compact • Colourful • Perfect for Indoors".',
+    )
+    short_description = models.CharField(
+        max_length=300,
+        blank=True,
+        help_text='Compact PDP intro line. Falls back to a truncated "description" when blank.',
+    )
     brand = models.CharField(max_length=120, blank=True, db_index=True)
     is_featured = models.BooleanField(default=False, db_index=True)
     is_bestseller = models.BooleanField(default=False, db_index=True)
@@ -66,6 +76,13 @@ class Product(TimeStampedModel):
     base_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     base_original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='MRP/Original price for simple products. Used for discount display.')
     base_stock = models.PositiveIntegerField(null=True, blank=True)
+    weight = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text='Shipping weight in kg for this simple product (no variants). Used to calculate delivery charge.',
+    )
     sunlight = models.CharField(max_length=16, choices=Sunlight.choices, null=True, blank=True, db_index=True)
     watering = models.CharField(max_length=16, choices=Watering.choices, null=True, blank=True, db_index=True)
     difficulty = models.CharField(max_length=16, choices=Difficulty.choices, null=True, blank=True, db_index=True)
@@ -322,6 +339,12 @@ class Variant(TimeStampedModel):
         except (TypeError, ValueError, ZeroDivisionError):
             return 0
 
+    @property
+    def discount_amount(self):
+        if not self.original_price or not self.price or self.original_price <= self.price:
+            return 0
+        return self.original_price - self.price
+
 
 class VariantAttributeValue(TimeStampedModel):
     variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name='variant_attr_values')
@@ -336,6 +359,7 @@ class VariantImage(TimeStampedModel):
     image = models.ImageField(upload_to='products/variant_images/')
     is_primary = models.BooleanField(default=False, db_index=True)
     alt_text = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=100, blank=True, help_text='Optional caption shown under this thumbnail on the PDP, e.g. "Leaf Detail".')
     display_order = models.PositiveIntegerField(default=0, db_index=True)
 
     class Meta:
@@ -351,6 +375,8 @@ class ProductImage(TimeStampedModel):
     image = models.ImageField(upload_to='products/base_images/')
     is_primary = models.BooleanField(default=False)
     display_order = models.PositiveIntegerField(default=0)
+    alt_text = models.CharField(max_length=200, blank=True, help_text='Falls back to the product name when blank.')
+    title = models.CharField(max_length=100, blank=True, help_text='Optional caption shown under this thumbnail on the PDP, e.g. "Leaf Detail".')
 
     class Meta:
         ordering = ['display_order', '-is_primary', 'id']

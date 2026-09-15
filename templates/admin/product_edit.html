@@ -28,7 +28,13 @@
      data-url-variant-upload-image="{% url 'admin_panel:variant_upload_image' 0 %}"
      data-url-variant-image-delete="{% url 'admin_panel:variant_image_delete' 0 %}"
      data-url-variant-image-set-primary="{% url 'admin_panel:variant_image_set_primary' 0 %}"
-     data-url-variant-image-reorder="{% url 'admin_panel:variant_image_reorder' %}">
+     data-url-variant-image-reorder="{% url 'admin_panel:variant_image_reorder' %}"
+     data-url-variant-image-meta="{% url 'admin_panel:variant_image_meta' 0 %}"
+     data-url-highlights="{% url 'admin_panel:product_highlights_list' product.pk %}"
+     data-url-highlight-add="{% url 'admin_panel:product_highlight_add' product.pk %}"
+     data-url-highlights-reorder="{% url 'admin_panel:product_highlights_reorder' product.pk %}"
+     data-url-highlight-update="{% url 'admin_panel:product_highlight_update' 0 %}"
+     data-url-highlight-delete="{% url 'admin_panel:product_highlight_delete' 0 %}">
     {% csrf_token %}
 
     
@@ -87,6 +93,17 @@
             <div class="form-group">
                 <label class="form-label" for="basic-description">Description</label>
                 <textarea class="form-control" id="basic-description" rows="5">{{ product.description }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="basic-short_tagline">PDP tagline</label>
+                <input type="text" class="form-control" id="basic-short_tagline" maxlength="160"
+                       value="{{ product.short_tagline|default:'' }}" placeholder="e.g. Compact • Colourful • Perfect for Indoors">
+                <span class="form-hint">Optional short marketing line shown right under the product title.</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="basic-short_description">PDP short description</label>
+                <textarea class="form-control" id="basic-short_description" rows="2" maxlength="300" placeholder="Compact intro shown near the top of the PDP.">{{ product.short_description }}</textarea>
+                <span class="form-hint">Optional. Leave blank to show a truncated version of the full description instead.</span>
             </div>
 
             <div class="nested-block" style="margin-top: 1rem;">
@@ -169,7 +186,8 @@
                  data-url-upload-base-image="{% url 'admin_panel:product_image_upload' product.pk %}"
                  data-url-delete-base-image="{% url 'admin_panel:product_image_delete' 0 %}"
                  data-url-set-primary-base-image="{% url 'admin_panel:product_image_set_primary' 0 %}"
-                 data-url-reorder-base-image="{% url 'admin_panel:product_image_reorder' %}">
+                 data-url-reorder-base-image="{% url 'admin_panel:product_image_reorder' %}"
+                 data-url-alt-text-base-image="{% url 'admin_panel:product_image_alt_text' 0 %}">
                 <h5 class="section-subheading">Simple product settings</h5>
                 <p class="section-hint">
                     When this product has no variants, these fields control price and stock.
@@ -201,7 +219,7 @@
                             value="{{ product.base_stock|default_if_none:'' }}" placeholder="0">
                     </div>
                     <div class="form-group">
-                        
+
                         {% if product.base_original_price and product.base_price and product.base_original_price > product.base_price %}
                         <label class="form-label">Discount</label>
                         <div style="padding:.6rem .9rem;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;font-size:.875rem;font-weight:600;color:#dc2626;">
@@ -210,23 +228,47 @@
                         {% endif %}
                     </div>
                 </div>
+                <div class="grid-2" style="margin-top:-.25rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="basic-weight">Weight (kg)</label>
+                        <input type="number" class="form-control" id="basic-weight"
+                            step="0.001" min="0"
+                            value="{{ product.weight|default_if_none:'' }}" placeholder="0.000">
+                        <span class="form-hint">Used to calculate the delivery charge for this product.</span>
+                    </div>
+                    <div class="form-group">
+                        <div id="basic-weight-warning"
+                             style="{% if product.weight %}display:none;{% endif %} padding:.6rem .9rem;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;font-size:.8rem;font-weight:600;color:#92400e;">
+                            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                            Weight not set — delivery will use the flat-rate fallback until this is filled in.
+                        </div>
+                    </div>
+                </div>
                 <p class="section-hint">
-                    You can upload up to 3 base images for simple products below. Once variants exist, variant images take over.
+                    You can upload up to {{ max_base_images|default:5 }} base images for simple products below. Once variants exist, variant images take over.
                 </p>
-                <div id="simple-product-images" data-max-images="3">
+                <div id="simple-product-images" data-max-images="{{ max_base_images|default:5 }}">
                     <div class="nested-block">
                         <div class="nested-title">Base images</div>
                         <div class="variant-images-list" id="simple-product-images-list">
                             {% for img in base_images %}
                                 <div class="image-item" data-image-id="{{ img.id }}">
                                     {% if img.image %}
-                                        <img class="image-thumb" src="{{ img.image.url }}" alt="{{ product.name }}">
+                                        <img class="image-thumb" src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}">
                                     {% else %}
                                         <span class="image-thumb" style="width:72px;height:72px;background:#eee;border-radius:6px;display:block;"></span>
                                     {% endif %}
                                     {% if img.is_primary %}
                                         <span class="image-primary-badge">Primary</span>
                                     {% endif %}
+                                    <input type="text" class="form-control image-title" data-image-id="{{ img.id }}"
+                                           value="{{ img.title|default:'' }}" data-initial="{{ img.title|default:'' }}"
+                                           placeholder="Image title, e.g. Leaf Detail"
+                                           style="font-size:.75rem;padding:.25rem .4rem;margin-top:.35rem;">
+                                    <input type="text" class="form-control image-alt-text" data-image-id="{{ img.id }}"
+                                           value="{{ img.alt_text|default:'' }}" data-initial="{{ img.alt_text|default:'' }}"
+                                           placeholder="Alt text (defaults to product name)"
+                                           style="font-size:.75rem;padding:.25rem .4rem;margin-top:.25rem;">
                                     <div class="image-actions">
                                         {% if not img.is_primary %}
                                         <button type="button" class="btn btn-sm btn-outline base-image-set-primary" data-image-id="{{ img.id }}">Primary</button>
@@ -433,6 +475,21 @@
             <div id="pot-candidates-grid" style="display:flex;flex-wrap:wrap;gap:10px;">
             <span style="color:#9ca3af;font-size:.85rem;">Loading…</span>
             </div>
+        </div>
+    </div>
+
+    <div class="edit-section" id="highlights-section">
+        <h4 class="section-heading"><span class="section-num">1D</span> PDP Highlights</h4>
+        <p class="section-hint">
+            Feature cards shown on the product page (icon + short title + text), e.g.
+            "Perfect for / Home &amp; Office". Shown in this order; hidden entirely when empty.
+        </p>
+        <div id="highlights-container">
+            <p id="highlights-loading" class="loading-msg">Loading…</p>
+            <div id="highlights-list"></div>
+            <button type="button" id="highlight-add-btn" class="btn btn-secondary btn-sm">
+                <i class="fas fa-plus"></i> Add highlight
+            </button>
         </div>
     </div>
 

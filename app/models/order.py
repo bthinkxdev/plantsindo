@@ -156,14 +156,14 @@ class OrderItem(TimeStampedModel):
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text='State delivery charge per pack at time of order.',
+        help_text='Unused — delivery is a pooled cart-wide total, see Order.shipping.',
     )
     total_delivery_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
         validators=[MinValueValidator(0)],
-        help_text='per-pack charge × ceil(qty / DELIVERY_PACK_SIZE) (persisted).',
+        help_text='Unused — delivery is a pooled cart-wide total, see Order.shipping.',
     )
 
     @property

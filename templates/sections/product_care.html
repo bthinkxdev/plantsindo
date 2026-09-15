@@ -56,7 +56,7 @@
     {% endif %}
 
     {% if product.care_instructions %}
-    <div class="{% if product.difficulty or product.plant_type or product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.sunlight or product.watering or product.maintenance_notes %}mt-3 border-top pt-3{% endif %} small text-secondary">
+    <div class="pdp-prose {% if product.difficulty or product.plant_type or product.germination_time_display or product.harvest_time_display or product.sowing_season_display or product.sunlight or product.watering or product.maintenance_notes %}mt-3 border-top pt-3{% endif %} small">
         {{ product.care_instructions|linebreaks }}</div>
     {% endif %}
 </section>

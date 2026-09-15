@@ -351,41 +351,14 @@ function syncCheckoutQtyButtons(line, qty) {
 }
 
 
-function checkoutCartTotalQty() {
-    var total = 0;
-    document.querySelectorAll('[data-checkout-qty-val]').forEach(function(el) {
-        total += parseInt(el.textContent, 10) || 0;
-    });
-    return total;
-}
-
-
-function checkoutPackUpsellMessage(quantity) {
-    var packSize = parseInt(window.DELIVERY_PACK_SIZE, 10);
-    if (isNaN(packSize) || packSize < 1) packSize = 2;
-    var qty = parseInt(quantity, 10) || 0;
-    if (qty <= 0 || packSize <= 1) return '';
-    var rem = qty % packSize;
-    if (rem === 0) return '';
-    var slots = packSize - rem;
-    if (slots === 1) return 'Add 1 more - no extra delivery';
-    return 'Add ' + slots + ' more - no extra delivery';
-}
-
-
-function syncCheckoutPackUpsell(message) {
+function syncCheckoutDeliveryUpsell(message) {
     // Cart-wide: one tip near the Delivery Charge summary row, not per line.
+    // Weight isn't known client-side, so there's nothing to guess optimistically —
+    // just show the server-provided message (cart_update / totals AJAX), or clear it.
     var tip = document.getElementById('cart-pack-tip');
     if (!tip) return;
 
-    var text;
-    if (message == null) {
-        // Optimistic: mirror server formula from current pooled quantity
-        text = checkoutPackUpsellMessage(checkoutCartTotalQty());
-    } else {
-        // Server authority from cart_update / totals AJAX
-        text = String(message).trim();
-    }
+    var text = message == null ? '' : String(message).trim();
 
     tip.textContent = text;
     if (text) tip.removeAttribute('hidden');
@@ -475,7 +448,7 @@ function adjustCheckoutQty(itemId, delta) {
         }
     }
 
-    syncCheckoutPackUpsell(null);
+    syncCheckoutDeliveryUpsell(null);
     setCheckoutLineBusy(line, true);
 
     fetch(url, {
@@ -499,7 +472,7 @@ function adjustCheckoutQty(itemId, delta) {
         if (!result.ok || !result.data.success) {
             valEl.textContent = String(previousQty);
             syncCheckoutQtyButtons(line, previousQty);
-            syncCheckoutPackUpsell(null);
+            syncCheckoutDeliveryUpsell(null);
             showCheckoutError(
                 (result.data && result.data.error) || 'Could not update quantity.'
             );
@@ -514,7 +487,7 @@ function adjustCheckoutQty(itemId, delta) {
 
         valEl.textContent = String(qty);
         syncCheckoutQtyButtons(line, qty);
-        syncCheckoutPackUpsell(result.data.pack_upsell_message);
+        syncCheckoutDeliveryUpsell(result.data.delivery_upsell_message);
 
         if (result.data.line_total != null) {
             var priceEl = line.querySelector('[data-line-price]');
@@ -533,7 +506,7 @@ function adjustCheckoutQty(itemId, delta) {
         setCheckoutLineBusy(line, false);
         valEl.textContent = String(previousQty);
         syncCheckoutQtyButtons(line, previousQty);
-        syncCheckoutPackUpsell(null);
+        syncCheckoutDeliveryUpsell(null);
         showCheckoutError('Network error. Please try again.');
     });
 }
@@ -695,7 +668,7 @@ function applyCheckoutTotalsPayload(data) {
     }
 
     syncCheckoutLineDeliveryWarnings(data);
-    syncCheckoutPackUpsell(data.pack_upsell_message);
+    syncCheckoutDeliveryUpsell(data.delivery_upsell_message);
 
     //re-evaluate global stock block status based on visible warnings
     var allWarnings = document.querySelectorAll('.order-line-stock-warn');

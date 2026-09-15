@@ -462,19 +462,15 @@
                 var origPriceG = variant.original_price ? parseFloat(variant.original_price) : 0;
                 var discPctG = variant.discount_percent || 0;
                 var hasDiscountG = origPriceG > 0 && origPriceG > base;
-                var mrpRow = '';
+                var rowG = '<span class="price-main price-selling">&#8377;' + total.toFixed(0) + '</span>';
                 if (hasDiscountG) {
-                    mrpRow = '<div style="margin-bottom:.35rem;"><span class="price-mrp">&#8377;' + origPriceG.toFixed(0) + '</span>';
-                    if (discPctG > 0) {
-                        mrpRow += ' <span class="price-off-badge">' + discPctG + '% OFF</span>';
-                    }
-                    mrpRow += '</div>';
+                    rowG += '<span class="price-mrp">&#8377;' + origPriceG.toFixed(0) + '</span>';
                 }
-                priceBlock.innerHTML = '<div class="price-breakdown">' + mrpRow +
-                    '<div>Base Price: <span class="price-main">&#8377;' + base.toFixed(2) + '</span></div>' +
-                    '<div>GST (' + gstPct + '%): <span class="price-gst">&#8377;' + gstAmount.toFixed(2) + '</span></div>' +
-                    '<div class="price-total-line">Total: <span class="price-main">&#8377;' + total.toFixed(2) + '</span></div>' +
-                    '</div>';
+                if (discPctG > 0) {
+                    rowG += '<span class="price-off-badge">' + discPctG + '% OFF</span>';
+                }
+                rowG += '<span class="pdp-gst-line">Incl. GST (' + gstPct + '%): &#8377;' + gstAmount.toFixed(2) + '</span>';
+                priceBlock.innerHTML = rowG;
             } else {
                 var priceText = isNaN(priceNumber) ? variant.price : priceNumber.toFixed(0);
                 var origPrice = variant.original_price ? parseFloat(variant.original_price) : 0;
@@ -1523,5 +1519,42 @@
             if (raw) btn.setAttribute('data-product-price', raw);
         }).observe(priceEl, { childList: true, subtree: true, characterData: true });
     }
+})();
+
+(function () {
+    var strip = document.getElementById('galleryThumbs');
+    var prevBtn = document.querySelector('.js-gallery-thumb-prev');
+    var nextBtn = document.querySelector('.js-gallery-thumb-next');
+    if (!strip || !prevBtn || !nextBtn) return;
+
+    function thumbs() {
+        return Array.prototype.slice.call(strip.querySelectorAll('.gallery-thumb'));
+    }
+
+    function syncArrows() {
+        var hasMultiple = thumbs().length > 1;
+        prevBtn.hidden = !hasMultiple;
+        nextBtn.hidden = !hasMultiple;
+    }
+
+    // Prev/Next actually move the displayed image (not just scroll the strip) —
+    // they click the neighboring thumbnail so the existing thumb click handler
+    // (updates #mainProductImg + .active class) stays the single source of truth.
+    function goTo(delta) {
+        var list = thumbs();
+        if (list.length < 2) return;
+        var currentIndex = list.findIndex(function (t) { return t.classList.contains('active'); });
+        if (currentIndex === -1) currentIndex = 0;
+        var nextIndex = (currentIndex + delta + list.length) % list.length;
+        var img = list[nextIndex].querySelector('img');
+        if (img) img.click();
+        list[nextIndex].scrollIntoView({ inline: 'nearest', behavior: 'smooth', block: 'nearest' });
+    }
+
+    prevBtn.addEventListener('click', function () { goTo(-1); });
+    nextBtn.addEventListener('click', function () { goTo(1); });
+
+    syncArrows();
+    window.addEventListener('resize', syncArrows, { passive: true });
 })();
 </script>

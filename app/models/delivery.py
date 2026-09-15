@@ -2,9 +2,9 @@
 Delivery state models.
 
 DeliveryState          — master list of all 28 Indian states + 8 UTs, each
-                         with a single fixed delivery_charge (per pack of up
-                         to DELIVERY_PACK_SIZE pieces, default 2) that applies
-                         to every product.
+                         with a single delivery_charge in ₹/kg that applies
+                         to every product. Checkout bills
+                         max(1, ceil(total_cart_weight_kg)) × this rate.
 ProductDeliveryState   — bridge: which states a product ships to.
 """
 
@@ -61,9 +61,9 @@ class DeliveryState(models.Model):
         default=None,
         validators=[MinValueValidator(0)],
         help_text=(
-            "Fixed delivery charge for this state, applied to every product "
-            "(per pack of up to DELIVERY_PACK_SIZE pieces, default 2). "
-            "Blank = not yet configured, flat-rate fallback applies."
+            "Delivery charge per kg for this state, applied to every product "
+            "based on total order weight (rounded up to the next kg, 1kg "
+            "minimum). Blank = not yet configured, flat-rate fallback applies."
         ),
     )
 

@@ -460,10 +460,10 @@ class CheckoutTotalsResult:
     def to_api_dict(self, items) -> dict:
         from decimal import Decimal
 
-        from .state_delivery_service import delivery_pack_upsell_message
+        from .state_delivery_service import cart_total_weight, delivery_weight_upsell_message
 
         discount = self.discount_amount if self.discount_amount is not None else Decimal('0')
-        total_qty = sum((item.quantity for item in items))
+        total_weight, _ = cart_total_weight(items)
         return {
             'success': True,
             'state_id': self.state_id,
@@ -492,7 +492,7 @@ class CheckoutTotalsResult:
             'total': str(self.total),
             'checkout_blocked': self.checkout_blocked,
             'used_flat_fallback': self.used_flat_fallback if self.serviceable else False,
-            'pack_upsell_message': delivery_pack_upsell_message(total_qty),
+            'delivery_upsell_message': delivery_weight_upsell_message(total_weight),
             'lines': self.line_payload(items),
         }
 

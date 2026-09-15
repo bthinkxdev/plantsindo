@@ -30,6 +30,16 @@ from app.services.rental_catalog import combo_is_in_stock
 from app.services.rental_pricing import rental_key as make_rental_key
 
 
+def _max_base_images_setting() -> int:
+    """Max gallery images for a simple product — see PRODUCT_MAX_BASE_IMAGES in settings.py.
+    Kept in sync with app.admin_product_edit_views._max_base_images (same setting, different layer)."""
+    from django.conf import settings
+    try:
+        return max(1, int(getattr(settings, 'PRODUCT_MAX_BASE_IMAGES', 5)))
+    except (TypeError, ValueError):
+        return 5
+
+
 def get_pdp_queryset():
     """queryset for ProductDetailView with prefetch to avoid N+1 on gallery, variants, and content modules."""
     combo_pf = Prefetch(
@@ -183,6 +193,75 @@ def _load_pot_addons(product: Product) -> List[Dict[str, Any]]:
         return []
 
 
+def _safe_json_ld(data: Dict[str, Any]) -> str:
+    """Serialize to a <script type="application/ld+json"> body, escaping HTML-sensitive
+    characters the same way Django's json_script does — safe to render with |safe."""
+    from django.core.serializers.json import DjangoJSONEncoder
+    from django.utils.safestring import mark_safe
+
+    raw = json.dumps(data, cls=DjangoJSONEncoder)
+    raw = raw.replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+    return mark_safe(raw)
+
+
+def _build_product_json_ld(request, product: Product, selected_variant) -> Optional[str]:
+    """
+    schema.org Product structured data — real fields only. Fields with no genuine
+    data (brand, sku, aggregateRating) are omitted rather than fabricated.
+    """
+    price = None
+    in_stock = False
+    if selected_variant is not None:
+        price = selected_variant.price
+        in_stock = (selected_variant.stock_quantity or 0) > 0
+    elif product.is_simple_product() and product.base_price is not None:
+        price = product.base_price
+        in_stock = bool(product.base_stock and product.base_stock > 0)
+
+    image_urls = []
+    try:
+        for url in product.get_card_image_urls(limit=5):
+            image_urls.append(request.build_absolute_uri(url) if url.startswith('/') else url)
+    except Exception:
+        pass
+
+    data: Dict[str, Any] = {
+        '@context': 'https://schema.org/',
+        '@type': 'Product',
+        'name': product.name,
+    }
+    description = product.short_description or product.description
+    if description:
+        data['description'] = description
+    if image_urls:
+        data['image'] = image_urls
+    if product.brand:
+        data['brand'] = {'@type': 'Brand', 'name': product.brand}
+    if selected_variant is not None and selected_variant.sku:
+        data['sku'] = selected_variant.sku
+
+    if price is not None:
+        data['offers'] = {
+            '@type': 'Offer',
+            'url': request.build_absolute_uri(),
+            'priceCurrency': 'INR',
+            'price': str(price),
+            'availability': (
+                'https://schema.org/InStock' if in_stock else 'https://schema.org/OutOfStock'
+            ),
+        }
+
+    total_reviews = product.total_reviews or 0
+    if total_reviews > 0 and product.average_rating:
+        data['aggregateRating'] = {
+            '@type': 'AggregateRating',
+            'ratingValue': str(product.average_rating),
+            'reviewCount': total_reviews,
+        }
+
+    return _safe_json_ld(data)
+
+
 class ProductDetailService:
     """Builds PDP context dictionaries – used by DetailView and lazy fragment views."""
 
@@ -269,10 +348,11 @@ class ProductDetailService:
             'selected_variant': selected_variant,
             'attributes_grouped': attributes_grouped,
             'pdp_breadcrumbs': ProductDetailService.build_breadcrumbs(product),
+            'variants_max_discount': max((v.discount_percent for v in variants), default=0),
         }
 
         if product.is_simple_product():
-            context['product_display_image_urls'] = product.get_card_image_urls(limit=3)
+            context['product_display_image_urls'] = product.get_card_image_urls(limit=_max_base_images_setting())
         else:
             context['product_display_image_urls'] = []
 
@@ -394,6 +474,29 @@ class ProductDetailService:
         context['can_review'] = False
         context['user_review'] = None
         context['review_form'] = None
+
+        # ── Delivery charge hint (centralized ₹/kg rate; see state_delivery_service) ──
+        from django.conf import settings as _settings
+        from app.services.state_delivery_service import (
+            billed_kg,
+            get_deliverable_states_for_product,
+            _product_representative_weight,
+        )
+
+        deliverable_states = get_deliverable_states_for_product(product.pk)
+        configured_rates = [s.delivery_charge for s in deliverable_states if s.delivery_charge is not None]
+        unit_kg = billed_kg(_product_representative_weight(product))
+        context['pdp_delivery_charge'] = (
+            min(configured_rates) * unit_kg if configured_rates
+            else Decimal(str(getattr(_settings, 'FLAT_DELIVERY_CHARGE', 60)))
+        )
+
+        # ── PDP feature-highlight cards (admin-managed, see ProductHighlight) ──
+        # Filtered in Python (not .filter()) to reuse get_pdp_queryset()'s prefetch cache.
+        context['product_highlights'] = [h for h in product.highlights.all() if h.is_active]
+
+        # ── SEO structured data (schema.org Product) — real fields only ────────
+        context['product_json_ld'] = _build_product_json_ld(request, product, selected_variant)
 
         # ── Pot add-ons ────────────────────────────────────────────────────────
         pot_addons = _load_pot_addons(product)

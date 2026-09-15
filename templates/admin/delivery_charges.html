@@ -16,9 +16,10 @@
             Delivery Charges
         </h4>
         <p class="section-hint">
-            One fixed delivery charge per state, applied to every product
-            (per pack of up to {{ DELIVERY_PACK_SIZE|default:2 }} pieces). Product pages only
-            choose which states a product ships to — the charge always comes from here.
+            Delivery charge per kg for this state, applied to every product
+            based on total order weight (rounded up to the next kg, 1kg
+            minimum). Product pages only choose which states a product
+            ships to — the charge always comes from here.
         </p>
 
         {% if charge_form.non_field_errors %}

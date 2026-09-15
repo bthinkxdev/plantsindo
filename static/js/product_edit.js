@@ -34,6 +34,12 @@
         variantImageDelete: app.dataset.urlVariantImageDelete,
         variantImageSetPrimary: app.dataset.urlVariantImageSetPrimary,
         variantImageReorder: app.dataset.urlVariantImageReorder,
+        variantImageMeta: app.dataset.urlVariantImageMeta,
+        highlights: app.dataset.urlHighlights,
+        highlightAdd: app.dataset.urlHighlightAdd,
+        highlightsReorder: app.dataset.urlHighlightsReorder,
+        highlightUpdate: app.dataset.urlHighlightUpdate,
+        highlightDelete: app.dataset.urlHighlightDelete,
     };
 
     function toast(message, type) {
@@ -105,6 +111,15 @@
         }
     });
 
+    var weightInput = document.getElementById("basic-weight");
+    var weightWarning = document.getElementById("basic-weight-warning");
+    if (weightInput && weightWarning) {
+        weightInput.addEventListener("input", function () {
+            var val = parseFloat(weightInput.value);
+            weightWarning.style.display = (!isNaN(val) && val > 0) ? "none" : "";
+        });
+    }
+
     
     var basicForm = document.getElementById("basic-edit-form");
     var basicSaveBtn = document.getElementById("basic-save-btn");
@@ -122,6 +137,7 @@
         var hsnEl = document.getElementById("basic-hsn_code");
         var basePriceEl = document.getElementById("basic-base_price");
         var baseStockEl = document.getElementById("basic-base_stock");
+        var weightEl = document.getElementById("basic-weight");
         var gstPct = (gstPctEl && gstPctEl.value.trim() !== "") ? gstPctEl.value : null;
         if (gstPct !== null) {
             var num = parseFloat(gstPct);
@@ -135,6 +151,8 @@
             name: (document.getElementById("basic-name") && document.getElementById("basic-name").value) || "",
             slug: (document.getElementById("basic-slug") && document.getElementById("basic-slug").value) || "",
             description: (document.getElementById("basic-description") && document.getElementById("basic-description").value) || "",
+            short_tagline: (document.getElementById("basic-short_tagline") && document.getElementById("basic-short_tagline").value) || "",
+            short_description: (document.getElementById("basic-short_description") && document.getElementById("basic-short_description").value) || "",
             brand: (document.getElementById("basic-brand") && document.getElementById("basic-brand").value) || "",
             base_price: basePriceEl && basePriceEl.value.trim() !== "" ? basePriceEl.value.trim() : null,
             base_original_price: (function() {
@@ -142,6 +160,7 @@
                 return el && el.value.trim() !== "" ? el.value.trim() : null;
             })(),
             base_stock: baseStockEl && baseStockEl.value.trim() !== "" ? parseInt(baseStockEl.value.trim(), 10) || 0 : null,
+            weight: weightEl && weightEl.value.trim() !== "" ? weightEl.value.trim() : "0",
             is_featured: document.getElementById("basic-is_featured") ? document.getElementById("basic-is_featured").checked : false,
             is_bestseller: document.getElementById("basic-is_bestseller") ? document.getElementById("basic-is_bestseller").checked : false,
             is_deal_of_day: document.getElementById("basic-is_deal_of_day") ? document.getElementById("basic-is_deal_of_day").checked : false,
@@ -171,9 +190,12 @@
             cur.name !== basicInitial.name ||
             cur.slug !== basicInitial.slug ||
             cur.description !== basicInitial.description ||
+            (cur.short_tagline || "") !== (basicInitial.short_tagline || "") ||
+            (cur.short_description || "") !== (basicInitial.short_description || "") ||
             (cur.brand || "") !== (basicInitial.brand || "") ||
             (cur.base_price || "") !== (basicInitial.base_price || "") ||
             (cur.base_stock || 0) !== (basicInitial.base_stock || 0) ||
+            (cur.weight || "0") !== (basicInitial.weight || "0") ||
             (cur.base_original_price || "") !== (basicInitial.base_original_price || "") ||
             cur.is_featured !== basicInitial.is_featured ||
             cur.is_bestseller !== basicInitial.is_bestseller ||
@@ -648,6 +670,9 @@
                                         ? '<img class="image-thumb" src="' + escapeHtml(img.url) + '" alt="">'
                                         : '<span class="image-thumb" style="width:72px;height:72px;background:#eee;border-radius:6px;display:block;"></span>') +
                                     (img.is_primary ? '<span class="image-primary-badge">Primary</span>' : '') +
+                                    '<input type="text" class="form-control variant-image-title" data-image-id="' + img.id +
+                                        '" value="' + escapeHtml(img.title || "") + '" data-initial="' + escapeHtml(img.title || "") +
+                                        '" placeholder="Image title, e.g. Leaf Detail" style="font-size:.75rem;padding:.25rem .4rem;margin-top:.35rem;">' +
                                     '<div class="image-actions">' +
                                     (!img.is_primary
                                         ? '<button type="button" class="btn btn-sm btn-outline image-set-primary" data-image-id="' +
@@ -676,6 +701,9 @@
                         '<span class="variant-stock">' +
                         (v.stock_quantity || 0) +
                         " in stock</span>" +
+                        (!v.weight || parseFloat(v.weight) <= 0
+                            ? '<span title="Weight not set — delivery will use the flat-rate fallback until this is filled in." style="font-size:.72em;background:#fffbeb;color:#92400e;border:1px solid #fde68a;padding:1px 6px;border-radius:3px;font-weight:600;"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> No weight</span>'
+                            : '') +
                         '<label class="toggle-wrap variant-active-wrap' +
                         (v.is_active ? " checked" : "") +
                         '">' +
@@ -777,12 +805,13 @@
         var section = document.getElementById("simple-product-settings");
         if (!section) return;
         var hasVariants = section.getAttribute("data-has-variants") === "true";
-        var maxImages = parseInt(section.querySelector("#simple-product-images").getAttribute("data-max-images") || "3", 10) || 3;
+        var maxImages = parseInt(section.querySelector("#simple-product-images").getAttribute("data-max-images") || "5", 10) || 5;
         var productId = section.getAttribute("data-product-id");
         var urlUpload = section.getAttribute("data-url-upload-base-image");
         var urlDeleteTpl = section.getAttribute("data-url-delete-base-image");
         var urlSetPrimaryTpl = section.getAttribute("data-url-set-primary-base-image");
         var urlReorder = section.getAttribute("data-url-reorder-base-image");
+        var urlAltTextTpl = section.getAttribute("data-url-alt-text-base-image");
         var listEl = document.getElementById("simple-product-images-list");
         var addBtn = document.getElementById("base-image-add-btn");
 
@@ -810,6 +839,7 @@
                 if (!input.files || !input.files[0]) return;
                 var fd = new FormData();
                 fd.append("image", input.files[0]);
+                fd.append("alt_text", "");
                 fd.append("csrfmiddlewaretoken", csrf);
                 showLoader();
                 fetch(urlUpload, {
@@ -831,6 +861,10 @@
                                     ? '<img class="image-thumb" src="' + escapeHtml(img.url) + '" alt="">'
                                     : '<span class="image-thumb" style="width:72px;height:72px;background:#eee;border-radius:6px;display:block;"></span>') +
                                 (img.is_primary ? '<span class="image-primary-badge">Primary</span>' : "") +
+                                '<input type="text" class="form-control image-title" data-image-id="' + img.id +
+                                    '" value="" data-initial="" placeholder="Image title, e.g. Leaf Detail" style="font-size:.75rem;padding:.25rem .4rem;margin-top:.35rem;">' +
+                                '<input type="text" class="form-control image-alt-text" data-image-id="' + img.id +
+                                    '" value="" data-initial="" placeholder="Alt text (defaults to product name)" style="font-size:.75rem;padding:.25rem .4rem;margin-top:.25rem;">' +
                                 '<div class="image-actions">' +
                                 (img.is_primary
                                     ? ""
@@ -861,7 +895,36 @@
             input.click();
         });
 
-        
+        listEl.addEventListener("blur", function (e) {
+            var isAlt = e.target && e.target.classList && e.target.classList.contains("image-alt-text");
+            var isTitle = e.target && e.target.classList && e.target.classList.contains("image-title");
+            if (!isAlt && !isTitle) return;
+            var inp = e.target;
+            var newVal = inp.value.trim();
+            var initial = inp.getAttribute("data-initial") || "";
+            if (newVal === initial || !urlAltTextTpl) return;
+            var imageId = inp.getAttribute("data-image-id");
+            var altUrl = urlAltTextTpl.replace("/0/", "/" + imageId + "/");
+            var payload = isTitle ? { title: newVal } : { alt_text: newVal };
+            fetch(altUrl, {
+                method: "POST",
+                headers: headers(true),
+                body: JSON.stringify(payload),
+                credentials: "same-origin",
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.success) {
+                        inp.setAttribute("data-initial", newVal);
+                        toast(isTitle ? "Image title saved." : "Alt text saved.");
+                    } else {
+                        toast("Could not save.", "error");
+                    }
+                })
+                .catch(function () { toast("Network error.", "error"); });
+        }, true);
+
+
         app.addEventListener("click", function (e) {
             var btn = e.target.closest("button");
             if (!btn) return;
@@ -1274,7 +1337,32 @@
         }
     });
 
-    
+    app.addEventListener("blur", function (e) {
+        if (!e.target || !e.target.classList || !e.target.classList.contains("variant-image-title")) return;
+        var inp = e.target;
+        var newVal = inp.value.trim();
+        var initial = inp.getAttribute("data-initial") || "";
+        if (newVal === initial || !urls.variantImageMeta) return;
+        var imageId = inp.getAttribute("data-image-id");
+        fetch(url(urls.variantImageMeta, imageId), {
+            method: "POST",
+            headers: headers(true),
+            body: JSON.stringify({ title: newVal }),
+            credentials: "same-origin",
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.success) {
+                    inp.setAttribute("data-initial", newVal);
+                    toast("Image title saved.");
+                } else {
+                    toast("Could not save image title.", "error");
+                }
+            })
+            .catch(function () { toast("Network error.", "error"); });
+    }, true);
+
+
     app.addEventListener("change", function (e) {
         if (!e.target || !e.target.classList.contains("variant-is-active")) return;
         var vid = e.target.getAttribute("data-variant-id");
@@ -1307,8 +1395,191 @@
             });
     });
 
+
+    var highlightsList = document.getElementById("highlights-list");
+    var highlightsLoading = document.getElementById("highlights-loading");
+    var highlightAddBtn = document.getElementById("highlight-add-btn");
+    var ICON_CHOICES = ["house", "wind", "gear", "seedling", "leaf", "sun", "droplet", "shield-alt", "truck", "star"];
+
+    function highlightRowHtml(h) {
+        var iconOptions = ICON_CHOICES.map(function (ic) {
+            return '<option value="' + ic + '"' + (ic === h.icon ? " selected" : "") + ">" + ic + "</option>";
+        }).join("");
+        return (
+            '<div class="attribute-row" data-highlight-id="' + h.id + '">' +
+            '<div class="attribute-row-main" style="flex-wrap:wrap;">' +
+            '<select class="form-control highlight-icon" style="max-width:140px;">' +
+            '<option value=""' + (h.icon ? "" : " selected") + ">(no icon)</option>" +
+            iconOptions +
+            "</select>" +
+            '<input type="text" class="form-control highlight-title" style="max-width:160px;" placeholder="Title, e.g. Perfect for" value="' + escapeHtml(h.title) + '" data-initial="' + escapeHtml(h.title) + '">' +
+            '<input type="text" class="form-control highlight-text" placeholder="Text, e.g. Home & Office" value="' + escapeHtml(h.text) + '" data-initial="' + escapeHtml(h.text) + '">' +
+            '<label class="toggle-wrap' + (h.is_active ? " checked" : "") + '" style="flex-shrink:0;">' +
+            '<input type="checkbox" class="toggle-input highlight-active"' + (h.is_active ? " checked" : "") + '>' +
+            '<span class="toggle-track"><span class="toggle-knob"></span></span>' +
+            "</label>" +
+            '<button type="button" class="btn btn-sm btn-outline highlight-move-up" title="Move up"><i class="fas fa-arrow-up"></i></button>' +
+            '<button type="button" class="btn btn-sm btn-outline highlight-move-down" title="Move down"><i class="fas fa-arrow-down"></i></button>' +
+            '<button type="button" class="btn btn-sm btn-outline highlight-save" disabled>Save</button>' +
+            '<button type="button" class="btn btn-sm btn-danger highlight-delete" title="Delete highlight"><i class="fas fa-trash"></i></button>' +
+            "</div>" +
+            "</div>"
+        );
+    }
+
+    function loadHighlights() {
+        if (!highlightsList) return;
+        if (highlightsLoading) highlightsLoading.style.display = "block";
+        highlightsList.innerHTML = "";
+        fetch(urls.highlights, { method: "GET", credentials: "same-origin" })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (highlightsLoading) highlightsLoading.style.display = "none";
+                var rows = data.highlights || [];
+                if (!rows.length) {
+                    highlightsList.innerHTML = '<p class="save-feedback" style="color:#9ca3af;">No highlights yet — add one below.</p>';
+                    return;
+                }
+                highlightsList.innerHTML = rows.map(highlightRowHtml).join("");
+            })
+            .catch(function () {
+                if (highlightsLoading) highlightsLoading.style.display = "none";
+                highlightsList.innerHTML = '<p class="save-feedback err">Failed to load highlights.</p>';
+            });
+    }
+
+    function highlightRowPayload(row) {
+        return {
+            icon: row.querySelector(".highlight-icon").value,
+            title: row.querySelector(".highlight-title").value.trim(),
+            text: row.querySelector(".highlight-text").value.trim(),
+            is_active: row.querySelector(".highlight-active").checked,
+        };
+    }
+
+    if (highlightAddBtn) {
+        highlightAddBtn.addEventListener("click", function () {
+            showLoader();
+            fetch(urls.highlightAdd, {
+                method: "POST",
+                headers: headers(true),
+                body: JSON.stringify({ title: "", text: "New highlight", icon: "", is_active: true }),
+                credentials: "same-origin",
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (res) {
+                    if (res.success) {
+                        loadHighlights();
+                    } else {
+                        toast((res.errors && res.errors.text && res.errors.text[0]) || "Error", "error");
+                    }
+                })
+                .catch(function () { toast("Network error.", "error"); })
+                .finally(hideLoader);
+        });
+    }
+
+    if (highlightsList) {
+        highlightsList.addEventListener("input", function (e) {
+            var row = e.target.closest(".attribute-row[data-highlight-id]");
+            if (!row) return;
+            var saveBtn = row.querySelector(".highlight-save");
+            if (saveBtn) saveBtn.disabled = false;
+        });
+        highlightsList.addEventListener("change", function (e) {
+            var row = e.target.closest(".attribute-row[data-highlight-id]");
+            if (!row) return;
+            if (e.target.classList.contains("highlight-active") || e.target.classList.contains("highlight-icon")) {
+                var wrap = e.target.closest(".toggle-wrap");
+                if (wrap) wrap.classList.toggle("checked", e.target.checked);
+                var saveBtn = row.querySelector(".highlight-save");
+                if (saveBtn) saveBtn.disabled = false;
+            }
+        });
+        highlightsList.addEventListener("click", function (e) {
+            var btn = e.target.closest ? e.target.closest("button") : null;
+            if (!btn) return;
+            var row = btn.closest(".attribute-row[data-highlight-id]");
+            if (!row) return;
+            var highlightId = row.getAttribute("data-highlight-id");
+
+            if (btn.classList.contains("highlight-save")) {
+                var payload = highlightRowPayload(row);
+                if (!payload.text) {
+                    toast("Highlight text is required.", "error");
+                    return;
+                }
+                showLoader();
+                fetch(url(urls.highlightUpdate, highlightId), {
+                    method: "POST",
+                    headers: headers(true),
+                    body: JSON.stringify(payload),
+                    credentials: "same-origin",
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        if (res.success) {
+                            toast("Highlight saved.");
+                            btn.disabled = true;
+                        } else {
+                            toast((res.errors && res.errors.text && res.errors.text[0]) || "Error", "error");
+                        }
+                    })
+                    .catch(function () { toast("Network error.", "error"); })
+                    .finally(hideLoader);
+                return;
+            }
+
+            if (btn.classList.contains("highlight-delete")) {
+                showLoader();
+                fetch(url(urls.highlightDelete, highlightId), {
+                    method: "POST",
+                    headers: headers(true),
+                    credentials: "same-origin",
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        if (res.success) {
+                            toast("Highlight removed.");
+                            loadHighlights();
+                        } else {
+                            toast("Error removing highlight.", "error");
+                        }
+                    })
+                    .catch(function () { toast("Network error.", "error"); })
+                    .finally(hideLoader);
+                return;
+            }
+
+            if (btn.classList.contains("highlight-move-up") || btn.classList.contains("highlight-move-down")) {
+                var sibling = btn.classList.contains("highlight-move-up") ? row.previousElementSibling : row.nextElementSibling;
+                if (!sibling) return;
+                if (btn.classList.contains("highlight-move-up")) {
+                    highlightsList.insertBefore(row, sibling);
+                } else {
+                    highlightsList.insertBefore(sibling, row);
+                }
+                var order = Array.prototype.slice.call(highlightsList.querySelectorAll("[data-highlight-id]")).map(function (r) {
+                    return parseInt(r.getAttribute("data-highlight-id"), 10);
+                });
+                showLoader();
+                fetch(urls.highlightsReorder, {
+                    method: "POST",
+                    headers: headers(true),
+                    body: JSON.stringify({ order: order }),
+                    credentials: "same-origin",
+                })
+                    .then(function (r) { return r.json(); })
+                    .catch(function () { toast("Network error.", "error"); })
+                    .finally(hideLoader);
+                return;
+            }
+        });
+    }
+
     loadAttributes();
     loadVariants();
+    loadHighlights();
 })();
 
 // ── Delivery States chips ───────────────────────────────────────────────────
