@@ -363,7 +363,7 @@ class VariantImage(TimeStampedModel):
     display_order = models.PositiveIntegerField(default=0, db_index=True)
 
     class Meta:
-        ordering = ['display_order', '-is_primary', 'id']
+        ordering = ['-is_primary', 'display_order', 'id']
         indexes = [models.Index(fields=['variant', 'is_primary']), models.Index(fields=['variant', 'display_order'])]
 
     def __str__(self):
@@ -379,7 +379,7 @@ class ProductImage(TimeStampedModel):
     title = models.CharField(max_length=100, blank=True, help_text='Optional caption shown under this thumbnail on the PDP, e.g. "Leaf Detail".')
 
     class Meta:
-        ordering = ['display_order', '-is_primary', 'id']
+        ordering = ['-is_primary', 'display_order', 'id']
         indexes = [models.Index(fields=['product', 'display_order'])]
 
     def __str__(self):

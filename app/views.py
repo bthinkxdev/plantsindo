@@ -1091,7 +1091,7 @@ class ProductColorImagesView(View):
         if not variant:
             return JsonResponse({'images': []})
         images = []
-        for img in variant.images.filter(image__isnull=False).exclude(image='').order_by('display_order', '-is_primary', 'id'):
+        for img in variant.images.filter(image__isnull=False).exclude(image='').order_by('-is_primary', 'display_order', 'id'):
             if img.image:
                 try:
                     raw_url = img.image.url
@@ -1150,7 +1150,7 @@ class ProductVariantResolveView(View):
                 break
         if not variant:
             return JsonResponse({'success': False, 'error': 'Variant not found', 'variant': None}, status=404)
-        images = list(variant.images.order_by('display_order', '-is_primary', 'id'))
+        images = list(variant.images.order_by('-is_primary', 'display_order', 'id'))
         image_urls = []
         for img in images:
             if img.image:

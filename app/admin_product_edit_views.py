@@ -557,10 +557,9 @@ class VariantImageSetPrimaryView(View):
 
     def post(self, request, image_id):
         img = get_object_or_404(VariantImage, pk=image_id)
-        variant = img.variant
-        VariantImage.objects.filter(variant=variant).update(is_primary=False)
-        img.is_primary = True
-        img.save(update_fields=['is_primary'])
+        with transaction.atomic():
+            VariantImage.objects.filter(variant=img.variant).update(is_primary=False)
+            VariantImage.objects.filter(pk=img.pk).update(is_primary=True)
         return JsonResponse({'success': True})
 
 class VariantImageReorderView(View):
@@ -656,9 +655,9 @@ class ProductImageSetPrimaryView(View):
 
     def post(self, request, image_id):
         img = get_object_or_404(ProductImage, pk=image_id)
-        ProductImage.objects.filter(product=img.product).update(is_primary=False)
-        img.is_primary = True
-        img.save(update_fields=['is_primary'])
+        with transaction.atomic():
+            ProductImage.objects.filter(product=img.product).update(is_primary=False)
+            ProductImage.objects.filter(pk=img.pk).update(is_primary=True)
         return JsonResponse({'success': True})
 
 class ProductImageReorderView(View):
