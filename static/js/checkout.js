@@ -236,7 +236,7 @@ function openRazorpayPopup(data) {
             contact: data.customer_phone || '',
         },
         handler: function(response) {
-            verifyPayment(response, data.razorpay_order_id, verifyUrl, csrf, data.success_url);
+            verifyPayment(response, data.razorpay_order_id, verifyUrl, csrf, data.success_url, data.order_number, data.amount);
         },
         modal: {
             ondismiss: function() {
@@ -251,7 +251,31 @@ function openRazorpayPopup(data) {
     reenablePlaceOrderButton();
 }
 
-function verifyPayment(response, razorpayOrderId, verifyUrl, csrf, successUrl) {
+function fireEarlyPurchasePixel(orderNumber, amountPaise) {
+    // Fired the moment payment is verified — deliberately NOT deferred until the
+    // order-success page loads, since that requires the browser to survive a
+    // redirect + full page load after the customer already saw Razorpay's own
+    // "Payment successful" confirmation (a common point for the tab/app to be
+    // closed, which would otherwise silently drop the Purchase event).
+    // Uses the same eventID as pages/success.html's fbq('track','Purchase', ...)
+    // so Meta's pixel dedup collapses the two into one if both end up firing.
+    if (typeof fbq !== 'function' || !orderNumber) return;
+    var storageKey = 'fbq_purchase_fired_' + orderNumber;
+    try {
+        if (sessionStorage.getItem(storageKey)) return;
+    } catch (e) {}
+    var contentIds = window.CHECKOUT_PIXEL_CONTENT_IDS || [];
+    fbq('track', 'Purchase', {
+        content_ids: contentIds,
+        contents: contentIds.map(function(id) { return { id: id, quantity: 1 }; }),
+        content_type: 'product',
+        value: (parseInt(amountPaise, 10) || 0) / 100,
+        currency: 'INR',
+    }, { eventID: 'order-' + orderNumber });
+    try { sessionStorage.setItem(storageKey, '1'); } catch (e) {}
+}
+
+function verifyPayment(response, razorpayOrderId, verifyUrl, csrf, successUrl, orderNumber, amountPaise) {
     var btn = document.getElementById('placeOrderBtn');
     var btnText = document.getElementById('placeOrderBtnText');
     if (btn) btn.disabled = true;
@@ -273,6 +297,7 @@ function verifyPayment(response, razorpayOrderId, verifyUrl, csrf, successUrl) {
     .then(function(res) { return res.json(); })
     .then(function(data) {
         if (data.status === 'success' && (data.redirect || data.order_number)) {
+            fireEarlyPurchasePixel(orderNumber || data.order_number, amountPaise);
             window.location.href = data.redirect || ('/orders/' + data.order_number + '/');
         } else {
             showCheckoutError(data.message || 'Payment verification failed.');

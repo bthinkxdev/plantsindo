@@ -394,6 +394,10 @@ window.addEventListener('unload', function() {});
     {% for row in checkout_lines %}
     contentIds.push('{% if row.item.combo_id %}{{ row.item.combo_id }}{% else %}{{ row.item.product_id }}{% endif %}');
     {% endfor %}
+    // Reused by checkout.js to fire Purchase at payment-confirmation time (see verifyPayment()) —
+    // avoids depending on the customer's browser actually completing the post-payment redirect
+    // + full page load of the order-success page before the Purchase pixel can fire.
+    window.CHECKOUT_PIXEL_CONTENT_IDS = contentIds;
     if (!contentIds.length) return;
     fbq('track', 'InitiateCheckout', {
         content_ids: contentIds,
